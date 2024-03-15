@@ -1,0 +1,7 @@
+.newHover {
+    transition: 0.3s;
+}
+
+.newHover:hover {
+    background-color: blue;
+}
