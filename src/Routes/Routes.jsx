@@ -9,7 +9,11 @@ import Register from "../Pages/Register/Register";
 import Contact from "../Pages/Contact/Contact";
 import AllCourses from "../Pages/AllCouses/AllCourses";
 import Details from "../Pages/Details/Details";
-
+import PrivateRoute from "./PrivateRoute";
+import AdminHome from "../Pages/Dashboard/AdminHome/AdminHome";
+import AdminRoute from "../Routes/AdminRoute"
+import AllUser from "../Pages/Dashboard/AllUser/AllUser"
+import Dashboard from "../Layout/Dashboard";
 
 
   export const router = createBrowserRouter([
@@ -45,11 +49,57 @@ import Details from "../Pages/Details/Details";
           },
 
           {
-            path: '/details/:id',
+            path: '/courseMaterial/:id',
             element:<Details></Details> ,
             loader: ({ params }) => fetch(`http://localhost:5000/courses/${params.id}`)
           },
         ],
       },
+
+      {
+        path: 'dashboard',
+        element: <PrivateRoute><Dashboard></Dashboard></PrivateRoute>,
+        children: [
+          // normal user routes
+          // {
+          //   index: true,
+          //   element: <AllRequests></AllRequests>
+          // },
+          // {
+          //   path: 'allRequest',
+          //   element: <AllRequests></AllRequests>
+          // },
+  
+        
+          // {
+          //   path: 'approvedRequest',
+          //   element: <ApprovedRequest></ApprovedRequest>
+          // },
+          // {
+          //   path: 'pendingRequest',
+          //   element: <PendingRequest></PendingRequest>
+          // },
+          
+          // {
+          //   path: 'updateRequest/:id',
+          //   element: <UpdateRequest></UpdateRequest>,
+          //   loader: ({params}) => fetch(`http://localhost:5000/rent/${params.id}`)
+          // },
+  
+          
+          {
+            path: 'adminHome',
+            element:<AdminRoute><AdminHome></AdminHome></AdminRoute>
+          },
+        
+          {
+            path: 'allUser',
+            element: <AdminRoute><AllUser></AllUser></AdminRoute>
+          },
+  
+         
+         
+        ]
+      }
     ]);
     

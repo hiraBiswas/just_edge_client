@@ -6,7 +6,7 @@ import { getAuth,updateProfile } from "firebase/auth";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useForm } from 'react-hook-form'; 
-import useAxiosPublic from '../../hooks/UseAxiosPublic'
+import useAxiosPublic from '../../hooks/useAxiosPublic'
 
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
 const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
@@ -167,7 +167,7 @@ const onSubmit = async (data) => {
               name: data.name,
               email: data.email,
               type: 'user',
-              course: data.course,
+              
               fatherName: data.fatherName,
               motherName:data.motherName,
               gender:data.gender,
@@ -180,9 +180,9 @@ const onSubmit = async (data) => {
               guardianMobileNumber:data.guardianMobileNumber,
               educationLevel:data.educationLevel,
               subjectDiplomaGroup:data.subjectDiplomaGroup,
-              institute:data.institute,
+            //   institute:data.institute,
               traineeInstitute:data.traineeInstitute,
-              location:data.location,
+           
               image:res.data.display_url,
             
             };
@@ -224,7 +224,7 @@ const onSubmit = async (data) => {
                     <div className="card flex-shrink-0 shadow-2xl">
                         <form onSubmit={handleSubmit(onSubmit)} className="card-body ">
 
-                            <div className="form-control">
+                            {/* <div className="form-control">
                                 <label className="label">
                                     <span className="label-text text-xl font-medium">Course</span>
                                 </label>
@@ -233,7 +233,7 @@ const onSubmit = async (data) => {
                                     <option>Han Solo</option>
                                     <option>Greedo</option>
                                 </select>
-                            </div>
+                            </div> */}
 
                             <div className="form-control">
                                 <label className="label">
@@ -242,7 +242,7 @@ const onSubmit = async (data) => {
                                 <input {...register('name',{required: true})} type="text" placeholder="trainee name" name="name" className="input input-bordered " required />
                             </div>
 
-                            <div className="form-control">
+                            {/* <div className="form-control">
                                 <label className="label">
                                     <span className="label-text text-xl font-medium">Course Level</span>
                                 </label>
@@ -251,7 +251,7 @@ const onSubmit = async (data) => {
                                     <option>Foundational for non-IT background</option>
                                     <option>Intermediate for Science Background</option>
                                 </select>
-                            </div>
+                            </div> */}
 
                             <div className="form-control">
                                 <label className="label">
@@ -380,14 +380,14 @@ const onSubmit = async (data) => {
 
                             </div>
 
-
+{/* 
                             <div className="form-control">
                                 <label className="label ">
                                     <span className="label-text text-xl font-medium">Name of Dept./Institute/Center</span>
                                 </label>
                                 <input {...register('institute',{required: true})} type="text" placeholder="dept, institute or center" className="input input-bordered" name="institute" required />
 
-                            </div>
+                            </div> */}
 
 
 
@@ -401,13 +401,13 @@ const onSubmit = async (data) => {
 
 
 
-                            <div className="form-control">
+                            {/* <div className="form-control">
                                 <label className="label ">
                                     <span className="label-text text-xl font-medium">Training Location</span>
                                 </label>
                                 <input {...register('location',{required: true})} type="text" placeholder="training location" className="input input-bordered" name="location" required />
 
-                            </div>
+                            </div> */}
 
                             <div className="form-control">
                                 <label className="label ">
@@ -448,7 +448,7 @@ const onSubmit = async (data) => {
                     </div>
                 </div>
             </div>
-            <ToastContainer></ToastContainer>
+            <ToastContainer />
 
         </div>
     );
