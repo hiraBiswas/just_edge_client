@@ -23,7 +23,7 @@ const Home = () => {
          <div>
     <h1 className="text-2xl mt-16 font-bold  lg:text-5xl text-center text-blue-950  ">Courses</h1>
    
-   <div className="container mx-auto text-white shadow-2xl mt-10 py-10 rounded-xl grid gap-12 grid-cols-1 lg:grid-cols-3">
+   <div className="container mx-auto text-white shadow-2xl mt-5  rounded-xl grid gap-12 grid-cols-1 lg:grid-cols-3">
     {courses.map(course => (
         
         <Course key={course._id} course={course}></Course>

@@ -50,7 +50,7 @@ const Dashboard = () => {
             aria-label="close sidebar"
             className="drawer-overlay"
           ></label>
-          <ul className=" p-4 w-80 min-h-full bg-black text-white text-lg lg:text-xl font-semibold mr-5 ">
+          <ul className=" p-4 w-80 min-h-full bg-blue-900 text-white text-lg lg:text-xl font-semibold mr-5 ">
             {/* Sidebar content here */}
             <Link to="/">
               {/* <img className="h-12 w-20" src="https://i.ibb.co/LSJFDGt/Hanover-removebg-preview-2.png" alt="" /> */}

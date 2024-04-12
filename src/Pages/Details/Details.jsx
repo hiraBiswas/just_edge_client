@@ -20,8 +20,16 @@ const Details = () => {
                     <h2 className='text-3xl font-semibold'>Course Material</h2>
                 </div>
                 <div className='w-1/5 mt-16'>
-                    <h2 className='text-3xl font-semibold'>Enrolled Student</h2>
-
+                    <h2 className='text-3xl font-semibold mb-3'>Enrolled Student</h2>
+                    <ul>
+                        {/* Map through enrolled students and display their profile image and displayName */}
+                        {enrolled_student.map((student, index) => (
+                            <li className='flex items-center text-xl py-3' key={index}>
+                                <img className='w-8 h-8 mr-2 rounded-full' src={student.photoURL} alt={student.displayName} />
+                              
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             </div>
             

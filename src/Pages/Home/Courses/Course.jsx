@@ -15,10 +15,19 @@ const Course = ({ course }) => {
 
 
     console.log(user)
+   
     // Function to handle enrollment
     const handleEnroll = () => {
+        if (!user) {
+            // If user is not present, redirect to login page
+            navigate("/login");
+            return; // Stop further execution of the function
+        }
+
+        const { email, displayName, photoUrl } = user;
+        console.log(email, displayName, photoUrl)
         // Make a POST request to enroll the user in the course
-        axiosPublic.post(`/enroll/${_id}`, { user })
+        axiosPublic.post(`/enroll/${_id}`, { email, displayName, photoUrl })
             .then(response => {
                 // Handle successful 
                 toast.success('Enrolled Successfully');
@@ -40,11 +49,11 @@ const Course = ({ course }) => {
                 <div className="max-w-md">
                     <h1 className="mb-5 text-white text-4xl font-bold">{course_name}</h1>
                     {/* Check if user is logged in before showing the "Enroll" button */}
-                    {user && (
+                 
                         <button onClick={handleEnroll} className='btn text-white btn-outline border-white border-2 hover:bg-blue-900 hover:text-white'>
                             Enroll
                         </button>
-                    )}
+                    
                     {/* If user is not logged in, you can redirect them to the login page */}
                     {/* {!user && (
                         <Link to="/login" className="btn text-white btn-outline border-white border-2 hover:bg-blue-900 hover:text-white">
