@@ -1,0 +1,168 @@
+{
+  "courses": [
+    {
+      "courseName": "Basic Networking",
+      "level": "Foundational Level",
+      "courseDuration": "60 hours (20 classes of 3 hours duration)",
+      "minimumEducationalQualification": "HSC Equivalent",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/HVcZpCZ/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Hardware Maintenance",
+      "level": "Foundational Level",
+      "courseDuration": "60 hours (20 classes of 3 hours duration)",
+      "minimumEducationalQualification": "HSC Equivalent",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/bR4rmCS/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Digital Marketing",
+      "level": "Foundational Level",
+      "courseDuration": "60 hours (20 classes of 3 hours duration)",
+      "minimumEducationalQualification": "HSC Equivalent",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/ZKdYFLm/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Graphics Design",
+      "level": "Foundational Level",
+      "courseDuration": "60 hours (20 classes of 3 hours duration)",
+      "minimumEducationalQualification": "HSC Equivalent",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/vDSJsCZ/rsz-67146d9ecb622.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Microsoft Word, Excel and PowerPoint",
+      "level": "Foundational Level",
+      "courseDuration": "60 hours (20 classes of 3 hours duration)",
+      "minimumEducationalQualification": "HSC Equivalent",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/CQ3TRzV/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Basic Web Development",
+      "level": "Foundational Level",
+      "courseDuration": "60 hours (20 classes of 3 hours duration)",
+      "minimumEducationalQualification": "HSC Equivalent",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co/94mzhr5/frontEnd.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Basic Programming with Python",
+      "level": "Foundational Level",
+      "courseDuration": "60 hours (20 classes of 3 hours duration)",
+      "minimumEducationalQualification": "HSC Equivalent",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co/VD3YJBG/python.jpg",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Mobile App Development",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/tZRpJp8/rsz-67146fb7b1d89.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "C#.NET",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/rdCQxZn/rsz-67146c1051d1f.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Database",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co/HpND1Tr/f68c6726447874b0b64a3f83af0fd1ec.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Front-End Development",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/rdCQxZn/rsz-67146c1051d1f.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Java Programming",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/ZdBgGtW/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "PHP (Laravel)",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/ZBhtJc7/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Server-side Programming with Python",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/3dZyMbx/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "WordPress",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/kSgmgrB/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "User Experience (UX) Design",
+      "level": "Intermediate Level",
+      "courseDuration": "81 hours (27 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/DtFqttK/rsz-671484a91de43.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Machine Learning with Python",
+      "level": "Advanced Level",
+      "courseDuration": "108 hours (36 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "background": "Science/Engineering background",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co.com/02sJrfT/image.png",
+      "enrolled_student": []
+    },
+    {
+      "courseName": "Data Visualization with Python",
+      "level": "Advanced Level",
+      "courseDuration": "108 hours (36 classes of 3 hours duration)",
+      "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
+      "background": "Science/Engineering background",
+      "ageLimit": "Under 35",
+      "image": "https://i.ibb.co/fnDZMzG/vis-py.png",
+      "enrolled_student": []
+    }
+  ]
+}

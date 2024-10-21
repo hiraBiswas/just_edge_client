@@ -1,0 +1,57 @@
+.text-with-gradient {
+    background: linear-gradient(90deg, #07076b, #0099DD); /* Define the gradient direction */
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent; /* Ensure text color is transparent */
+    text-fill-color: transparent;
+    display: inline-block; /* Ensure it behaves as a block to handle background */
+  }
+
+  .grad-button{
+    background: linear-gradient(90deg, #07076b, #0099DD);
+  }
+
+  
+  .user-info {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .user-info .sign-out-button {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    transform: translateY(10px); /* Adjust for position below the avatar */
+  }
+  
+  .user-info:hover .sign-out-button {
+    display: block;
+  }
+  
+  .navbar {
+    position: fixed; /* Positioning it over the banner */
+    top: 20px; /* Space from the top */
+    left: 0;
+    right: 0;
+    max-width: calc(100% - 40px); /* Ensures 20px padding on both sides */
+    margin: 0 auto; /* Center the navbar */
+    z-index: 1000; /* Ensure it stays above other content */
+    background-color: #ffffff; /* Fully white background */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Shadow for the floating effect */
+    padding: 0px 0; /* Padding for the navbar items */
+}
+
+.navbar a {
+    color: #000000; /* Black text for better readability */
+}
+
+.navbar a:hover {
+    color: #555555;
+}
+
+/* Mobile dropdown */
+.dropdown-content {
+    background-color: #ffffff; /* Fully white dropdown */
+}

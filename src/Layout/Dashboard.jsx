@@ -50,7 +50,7 @@ const Dashboard = () => {
             aria-label="close sidebar"
             className="drawer-overlay"
           ></label>
-          <ul className=" p-4 w-80 min-h-full bg-blue-900 text-white text-lg lg:text-xl font-semibold mr-5 ">
+          <ul className=" p-4 w-80 min-h-full bg-blue-950 text-white text-lg lg:text-xl font-semibold mr-5 ">
             {/* Sidebar content here */}
             <Link to="/">
               {/* <img className="h-12 w-20" src="https://i.ibb.co/LSJFDGt/Hanover-removebg-preview-2.png" alt="" /> */}
@@ -58,13 +58,13 @@ const Dashboard = () => {
             </Link>
             {isAdmin ? (
               <>
-                <li className=" hover:text-amber-500 flex flex-row pt-3 py-1 ">
-                <NavLink className="hover:text-amber-500 flex justify-center items-center gap-3" to="/dashboard/adminHome"> <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" />   Dashboard</NavLink>
+                <li className=" hover:text-sky-200 flex flex-row pt-3 py-1 ">
+                <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/adminHome"> <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" />   Dashboard</NavLink>
                 </li>
-                <li className=" hover:text-amber-500 flex flex-row py-1 ">
-                  <NavLink className="hover:text-amber-500 flex items-center gap-3 "
+                <li className=" hover:text-sky-200 flex flex-row py-1 ">
+                  <NavLink className="hover:text-sky-200 flex items-center gap-3 "
                    to="/dashboard/allUser">
-                    <PiUsersFill className="text-xl text-white hover:text-amber-500"/>
+                    <PiUsersFill className="text-xl text-white hover:text-sky-200"/>
                     All User
                     </NavLink>
                 </li>
@@ -74,25 +74,25 @@ const Dashboard = () => {
               </>
             ) : (
               <>
-                <li className=" hover:text-amber-500 flex flex-row pt-3 py-2 ">
-                <NavLink className="hover:text-amber-500 flex justify-center items-center gap-3" to="/dashboard/allRequest"> <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" /> All Request</NavLink>
+                <li className=" hover:text-sky-200 flex flex-row pt-3 py-2 ">
+                <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/allRequest"> <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" /> All Request</NavLink>
                 </li>
-                <li className="hover:text-amber-500 flex flex-row py-2 ">
-                  <NavLink className="hover:text-amber-500 flex justify-center items-center gap-3" to="/dashboard/approvedRequest"><IoMdCheckmarkCircle className="text-xl text-white hover:text-amber-500" /> Approved Request</NavLink>
+                <li className="hover:text-sky-200 flex flex-row py-2 ">
+                  <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/approvedRequest"><IoMdCheckmarkCircle className="text-xl text-white hover:text-amber-500" /> Approved Request</NavLink>
                 </li>
-                <li className="hover:text-amber-500 flex flex-row py-2 pb-3">
-                  <NavLink className="hover:text-amber-500 flex justify-center items-center gap-3" to="/dashboard/pendingRequest"><MdPending className="text-xl text-white hover:text-amber-500"  /> Pending Request </NavLink>
+                <li className="hover:text-sky-200 flex flex-row py-2 pb-3">
+                  <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/pendingRequest"><MdPending className="text-xl text-white hover:text-amber-500"  /> Pending Request </NavLink>
                 </li>
               </>
             )}
 
             <hr />
 
-            <Link className="hover:text-amber-500 flex flex-row gap-3 items-center mt-4 pb-2" to="/"><AiFillHome className="text-xl text-white hover:text-amber-500" /><h3 className="font-semibold">Home</h3></Link>
+            <Link className="hover:text-sky-200 flex flex-row gap-3 items-center mt-4 pb-2" to="/"><AiFillHome className="text-xl text-white hover:text-amber-500" /><h3 className="font-semibold">Home</h3></Link>
 
             < Link className="flex items-center gap-3">
-            <IoIosLogOut className="text-xl text-white hover:text-amber-500"  />
-              <button onClick={handleSignOut} className=" text-white  font-semibold hover:text-amber-500">
+            <IoIosLogOut className="text-xl text-white hover:text-sky-200"  />
+              <button onClick={handleSignOut} className=" text-white  font-semibold hover:text-sky-200">
               
  Logout
               </button>

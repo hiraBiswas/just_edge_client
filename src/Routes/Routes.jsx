@@ -7,13 +7,13 @@ import Home from "../Pages/Home/Home";
 import Login from "../Pages/Login/Login";
 import Register from "../Pages/Register/Register";
 import Contact from "../Pages/Contact/Contact";
-import AllCourses from "../Pages/AllCouses/AllCourses";
 import Details from "../Pages/Details/Details";
 import PrivateRoute from "./PrivateRoute";
 import AdminHome from "../Pages/Dashboard/AdminHome/AdminHome";
 import AdminRoute from "../Routes/AdminRoute"
 import AllUser from "../Pages/Dashboard/AllUser/AllUser"
 import Dashboard from "../Layout/Dashboard";
+import About from "../Pages/About/About";
 
 
   export const router = createBrowserRouter([
@@ -43,9 +43,9 @@ import Dashboard from "../Layout/Dashboard";
           },
 
           {
-            path: "/courses",
-            element: <AllCourses></AllCourses>,
-            // loader: () => fetch('http://localhost:5000/courses')
+            path: "/about",
+            element: <About></About>,
+           
           },
 
           {

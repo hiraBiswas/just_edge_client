@@ -92,7 +92,7 @@ const Register = () => {
     
     return (
         <div>
-            <div className="  text-center mt-8">
+            <div className="text-center mt-8">
 
                 <div className="text-center lg:text-left ">
                     <h1 className="text-2xl font-bold text-center lg:text-4xl py-5">Register now!</h1>
@@ -206,13 +206,13 @@ const Register = () => {
                     
 
                             <div className="form-control mt-6">
-                                <button className="btn bg-blue-950 flex-1 text-white">Register</button>
+                                <button className="btn bg-blue-950 flex-1 text-lg text-white">Register</button>
                             </div>
                         </form>
 
 
                         <div>
-                            <p className="p-8 pt-0 text-xl font-medium">Already have an account? <NavLink to="/login" className="text-2xl font-semibold text-blue-950">Login</NavLink> here.</p>
+                            <p className="p-8  text-xl font-medium pt-5">Already have an account? <NavLink to="/login" className="text-2xl font-semibold text-blue-950">Login</NavLink> here.</p>
                         </div>
                     </div>
             

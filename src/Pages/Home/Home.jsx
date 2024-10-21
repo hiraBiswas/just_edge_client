@@ -30,9 +30,7 @@ const Home = () => {
  
        ))}
     </div>
-    {/* <div className="flex justify-center">
-        <Link to='/allFood'><button className="btn bg-red-500 text-white" >See All</button></Link>
-    </div> */}
+
     </div>
         </div>
     );
