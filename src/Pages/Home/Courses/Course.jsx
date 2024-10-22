@@ -1,68 +1,64 @@
 import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
-import axios from 'axios'; // Import axios for making HTTP requests
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../Providers/AuthProvider';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
-import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-  import 'react-toastify/dist/ReactToastify.css';
+import 'react-toastify/dist/ReactToastify.css';
+import { FaGraduationCap, FaClock, FaUser } from 'react-icons/fa'; // Import icons
 
 const Course = ({ course }) => {
-    const { image, course_name, _id } = course;
-    const { user, loading } = useContext(AuthContext);
+    const { image, courseName, _id, minimumEducationalQualification, courseDuration, ageLimit } = course;
+    const { user } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
     const navigate = useNavigate();
 
-
-    console.log(user)
-   
     // Function to handle enrollment
     const handleEnroll = () => {
         if (!user) {
-            // If user is not present, redirect to login page
             navigate("/login");
-            return; // Stop further execution of the function
+            return;
         }
 
         const { email, displayName, photoUrl } = user;
-        console.log(email, displayName, photoUrl)
-        // Make a POST request to enroll the user in the course
         axiosPublic.post(`/enroll/${_id}`, { email, displayName, photoUrl })
             .then(response => {
-                // Handle successful 
                 toast.success('Enrolled Successfully');
-                console.log('Enrollment successful:', response.data);
-               
                 navigate(`/courseMaterial/${_id}`);
             })
             .catch(error => {
-                // Handle errors
                 console.error('Enrollment error:', error);
-                // You can display an error message or handle the error in any appropriate way
             });
     };
 
     return (
-        <div className="hero h-[250px] " style={{ backgroundImage: `url(${image})` }}>
-            <div className="hero-overlay bg-opacity-60 hover:bg-blue-950"></div>
-            <div className="hero-content text-center text-neutral-content">
-                <div className="max-w-md">
-                    <h1 className="mb-5 text-white text-4xl font-bold">{course_name}</h1>
-                    {/* Check if user is logged in before showing the "Enroll" button */}
-                 
-                        <button onClick={handleEnroll} className='btn text-white btn-outline border-white border-2 hover:bg-blue-900 hover:text-white'>
-                            Enroll
-                        </button>
-                    
-                    {/* If user is not logged in, you can redirect them to the login page */}
-                    {/* {!user && (
-                        <Link to="/login" className="btn text-white btn-outline border-white border-2 hover:bg-blue-900 hover:text-white">
-                            Log in to Enroll
-                        </Link>
-                    )} */}
+        <div className="card bg-white border border-gray-200 w-96 drop-shadow-lg rounded-lg overflow-hidden">
+            <figure className="px-5 pt-5">
+                <img className='h-52 w-full object-cover rounded-lg' src={image} alt={courseName} />
+            </figure>
+            <div className="p-5 text-blue-900">
+                <h2 className="card-title text-2xl font-semibold mb-2 text-indigo-600">{courseName}</h2>
+
+                <div className="mb-3 flex items-center">
+                    <FaClock className="text-indigo-600 mr-2" />
+                    <p className="text-md"><span className='font-semibold'>Duration:</span> {courseDuration}</p>
                 </div>
+
+                <div className="mb-3 flex items-center">
+                    <FaGraduationCap className="text-indigo-600 mr-2" />
+                    <p className="text-md"><span className='font-semibold'>Minimum Qualification:</span> {minimumEducationalQualification}</p>
+                </div>
+
+                <div className="mb-3 flex items-center">
+                    <FaUser className="text-indigo-600 mr-2" />
+                    <p className="text-md"><span className='font-semibold'>Age Limit:</span> {ageLimit}</p>
+                </div>
+
+                {/* <button 
+                    onClick={handleEnroll} 
+                    className="w-full mt-4 bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+                    Enroll Now
+                </button> */}
             </div>
-            <ToastContainer />
         </div>
     );
 };
