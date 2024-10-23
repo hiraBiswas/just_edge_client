@@ -60,6 +60,7 @@ useEffect(() => {
   const unsubscribe = onAuthStateChanged(auth, currentUser => {
       setUser(currentUser);
       if (currentUser) {
+        console.log("Current User:", currentUser); 
           // get token and store client
           const userInfo = { email: currentUser.email };
           axiosPublic.post('/jwt', userInfo)

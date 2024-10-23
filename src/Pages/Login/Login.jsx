@@ -1,79 +1,84 @@
-import React, { useContext, useState } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { AuthContext } from '../../Providers/AuthProvider';
+import { useContext, useState } from "react";
+import { useLocation, useNavigate, NavLink } from "react-router-dom";
+import { AuthContext } from "../../Providers/AuthProvider";
 import { ToastContainer, toast } from 'react-toastify';
-  import 'react-toastify/dist/ReactToastify.css';
+import 'react-toastify/dist/ReactToastify.css';
+import { IoEye, IoEyeOff } from "react-icons/io5"; // Import eye icons
 
-const Login = () => {
- 
-  const location = useLocation()
-  console.log('location in login page', location)
-  const navigate = useNavigate()
-  const { signIn, loading, signInWithGoogle } = useContext(AuthContext)
+const SignIn = () => {
+    const location = useLocation();  
+    const navigate = useNavigate(); 
+    const { signIn } = useContext(AuthContext);  
 
+    // State to manage password visibility
+    const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const form = new FormData(e.target);
-    const email = form.get('email');
-    const password = form.get('password');
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        const form = new FormData(e.target);
+        const email = form.get('email');
+        const password = form.get('password');
 
-    try {
-        await signIn(email, password);
-        navigate(location?.state ? location.state : '/');
-    } catch (error) {
-        console.error("Login Error:", error.message);
-        toast.error(error.message);
-    }
-};
-
-
-// const handleGoogleLogin = async () => {
-//   try {
-//     await signInWithGoogle();
-//     navigate(location?.state ? location.state : '/dashboard');
-//   } catch (error) {
-//     console.error('Google Sign-In Error:', error);
-//     toast.error('Failed to sign in with Google');
-//   }
-// };
+        try {
+            await signIn(email, password);  
+            const redirectPath = location.state?.from || '/';
+            navigate(redirectPath);  
+        } catch (error) {
+            console.error("Login Error:", error.message);
+            toast.error(error.message); 
+        }
+    };
 
     return (
-        <div className=" mt-8 " >
-        <div className="max-w-sm lg:max-w-2xl mx-auto"  >
-            <h2 className="text-2xl font-bold text-center lg:text-4xl py-5 ">Login Here !</h2>
-            <div className="flex  rounded-xl">
-
-                <form  onSubmit={handleLogin}   className="py-5 px-5 flex-1 bg-white" >
-                <div className="form-control">
-      <label className="label">
-        <span className="label-text text-lg font-medium">Email</span>
-      </label>
-      <input type="email" placeholder="email" name="email" className="input input-bordered" required />
-    </div>
-    <div className="form-control">
-      <label className="label ">
-        <span className="label-text text-lg font-medium">Password</span>
-      </label>
-      <input type="password" placeholder="password" className="input input-bordered" name="password" required />
-    
-    </div>
-    <div className="form-control mt-6">
-      <button className="btn text-lg bg-blue-950 text-white  border-none drop-shadow">Login</button>
-      
-    </div>
-
-
-    <p className="py-5 text-xl">Create an account. <NavLink to="/register" className="text-blue-950 text-2xl font-semibold">Sign Up</NavLink> now.</p>
-                </form>
-
+        <div>
+            <div className="w-full text-center mt-12">
+                <div className="text-center lg:text-left ">
+                    <h1 className="text-2xl font-bold text-center text-white lg:text-4xl py-5 mb-5">Sign In</h1>
+                </div>
+                <div className="flex justify-center items-center w-full">
+                    <div className="card flex-shrink-0 bg-white drop-shadow-2xl rounded-xl shadow-2xl">
+                        <form onSubmit={handleLogin} className="card-body">
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text text-md font-medium lg:text-lg">Email</span>
+                                </label>
+                                <input type="email" placeholder="email" name="email" className="input input-bordered w-full" required />
+                            </div>
+                            <div className="form-control">
+                                <label className="label ">
+                                    <span className="label-text text-md font-medium lg:text-lg">Password</span>
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        type={showPassword ? 'text' : 'password'} 
+                                        placeholder="password" 
+                                        className="input input-bordered pr-10 w-full box-border" // Ensures full width
+                                        name="password" 
+                                        required 
+                                    />
+                                    <span 
+                                        onClick={() => setShowPassword(!showPassword)} 
+                                        className="absolute inset-y-0 right-3 flex items-center cursor-pointer" 
+                                    >
+                                        {showPassword ? <IoEye className="w-5 h-5" /> : <IoEyeOff className="w-5 h-5" />}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="form-control mt-6">
+                                <button className="btn bg-blue-950 text-md text-white lg:text-lg">Sign In</button>
+                            </div>
+                        </form>
+                        <div>
+                            <p className="p-8 pt-0 text-md font-medium lg:text-lg">
+                                New to the website? <NavLink to="/register" className="text-lg font-bold bg-grad-button lg:text-xl ">Sign Up</NavLink> here.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <ToastContainer />
         </div>
-        <ToastContainer />
-    </div>
-
-
     );
 };
 
-export default Login;
+export default SignIn;
