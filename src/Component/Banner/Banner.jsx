@@ -5,12 +5,12 @@ const Banner = () => {
     const [classCount, setClassCount] = useState(0);
 
     useEffect(() => {
-        // Mocking fetch call for demonstration purposes
+      
         const fetchCounts = async () => {
-            // Simulate fetching data with setTimeout
+            
             setTimeout(() => {
-                setStudentCount(350); // Replace with actual fetch logic
-                setClassCount(21); // Replace with actual fetch logic
+                setStudentCount(350); 
+                setClassCount(21); 
             }, 500);
         };
 
@@ -40,8 +40,8 @@ const Banner = () => {
 
         return (
             <div className="text-center">
-                <h2 className="text-4xl font-bold">{displayCount}</h2>
-                <p className="text-lg">{label}</p>
+                <h2 className="text-2xl font-bold lg:text-4xl">{displayCount}</h2>
+                <p className="text-md lg:text-lg">{label}</p>
             </div>
         );
     };
@@ -54,13 +54,13 @@ const Banner = () => {
             }}>
             <div className="hero-overlay bg-gray-500 bg-opacity-70"></div> 
             <div className="hero-content text-neutral-content text-center">
-                <div className='flex  items-center justify-between lg: gap-52'>
+                <div className='flex  items-center justify-end gap-12 md:gap-20 lg:gap-52'>
                     <div className="max-w-md mt-20">
                         <h1 className="mb-5 text-2xl text-white font-bold lg:text-5xl">JUST EDGE:</h1>
                         <p className="mb-5 text-white font-semibold lg:text-2xl">
                             Building Tomorrow’s Digital Economy at Jashore University
                         </p>
-                        <div className='h-32 w-full bg-white text-black rounded-3xl drop-shadow-xl flex items-center justify-around mt-12'>
+                        <div className='h-24 w-full bg-white text-black rounded-xl drop-shadow-xl flex items-center justify-around mt-8 lg:mt-12 lg:h-32 lg:rounded-3xl'>
                             <Counter count={studentCount} label="Students" />
                             <div className="border-l-2 border-gray-300 h-16"></div> 
                             <Counter count={classCount} label="Courses" />
