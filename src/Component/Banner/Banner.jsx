@@ -54,8 +54,8 @@ const Banner = () => {
             }}>
             <div className="hero-overlay bg-gray-500 bg-opacity-70"></div> 
             <div className="hero-content text-neutral-content text-center">
-                <div className='flex  items-center justify-end gap-12 md:gap-20 lg:gap-52'>
-                    <div className="max-w-md mt-20">
+                <div className='flex  items-center justify-end gap-8 md:gap-20 lg:gap-52'>
+                    <div className="max-w-md md-12 lg:mt-20">
                         <h1 className="mb-5 text-2xl text-white font-bold lg:text-5xl">JUST EDGE:</h1>
                         <p className="mb-5 text-white font-semibold lg:text-2xl">
                             Building Tomorrow’s Digital Economy at Jashore University
@@ -68,7 +68,7 @@ const Banner = () => {
                     </div>
 
                     <div className='mt-24'>
-                        <img className='h-96 w-96' src="./../../../public/logo.png" alt="" />
+                        <img className='h-96 w-96' src="/logo.png" alt="" />
                     </div>
                 </div>
             </div>

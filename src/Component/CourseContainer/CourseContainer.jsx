@@ -19,7 +19,6 @@ const CourseContainer = () => {
       .catch((error) => console.error("Error fetching courses:", error));
   }, []);
 
-  
   const filteredCourses =
     activeTab === "All"
       ? courses
@@ -33,27 +32,27 @@ const CourseContainer = () => {
   ];
 
   return (
-    <div className="container mx-auto mt-8 lg:mt-16">
+    <div className="px-4 lg:px-16 mx-auto mt-8 lg:mt-16 max-w-7xl"> 
       <h1 className="text-2xl font-bold lg:text-4xl text-center text-blue-950">
         Courses
       </h1>
 
-      <div className="container mx-auto mt-8">
-        <Tabs  value={activeTab}>
+      <div className="mt-8">
+        <Tabs value={activeTab}>
           <TabsHeader
-            className="container mx-auto border-gray-300 bg-transparent p-0" 
+            className="border-gray-300 bg-transparent p-0"
             indicatorProps={{
               className:
-                "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none text-lg font-semibold lg:text-2xl", 
+                "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none text-md font-semibold lg:text-2xl",
             }}
           >
-            <div className="flex gap-4"> 
+            <div className="flex gap-2 justify-center lg:gap-6">
               {data.map(({ label, value }) => (
                 <Tab
                   key={value}
                   value={value}
                   onClick={() => setActiveTab(value)}
-                  className={`text-xl font-medium lg:text-2xl lg:font-semibold ${
+                  className={`text-lg font-medium lg:text-2xl lg:font-semibold ${
                     activeTab === value
                       ? "text-gray-900 border-b-2 border-gray-900"
                       : "text-gray-500"
@@ -68,7 +67,7 @@ const CourseContainer = () => {
             {data.map(({ value }) => (
               <TabPanel key={value} value={value}>
                 <div className="mt-10">
-                  <div className="text-white container mx-auto  grid gap-12  grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ">
+                  <div className="grid gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredCourses.map((course) => (
                       <Course key={course._id} course={course}></Course>
                     ))}
