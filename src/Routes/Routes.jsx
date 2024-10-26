@@ -15,6 +15,7 @@ import AllUser from "../Pages/Dashboard/AllUser/AllUser"
 import Dashboard from "../Layout/Dashboard";
 import About from "../Pages/About/About";
 import CourseAssignment from "../Pages/Dashboard/CourseAssignment/CourseAssignment";
+import CourseManagement from "../Pages/Dashboard/CourseManagement/CourseManagement";
 
 
   export const router = createBrowserRouter([
@@ -91,6 +92,11 @@ import CourseAssignment from "../Pages/Dashboard/CourseAssignment/CourseAssignme
           {
             path: 'adminHome',
             element:<AdminRoute><AdminHome></AdminHome></AdminRoute>
+          },
+
+          {
+            path: 'courseManagement',
+            element:<AdminRoute><CourseManagement></CourseManagement></AdminRoute>
           },
         
           {

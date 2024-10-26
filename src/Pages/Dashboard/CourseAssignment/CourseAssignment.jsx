@@ -74,6 +74,13 @@ const CourseAssignment = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentUsers = combinedData.slice(indexOfFirstItem, indexOfLastItem);
 
+  // Define filteredUsers for pagination
+  const filteredUsers = combinedData.filter(
+    (user) =>
+      user.assignedCourse === "" &&
+      (filterCourse ? user.prefCourse === filterCourse : true)
+  );
+
   const handleAssignCourse = async (userId, course) => {
     try {
       const updatedUser = { assignedCourse: course };
@@ -159,7 +166,6 @@ const CourseAssignment = () => {
   return (
     <div>
       <div className="flex justify-between mx-8 items-center">
-        <h2 className="text-3xl font-bold mt-8 mb-5">All Students</h2>
         <h2 className="text-3xl font-bold mt-8 mb-5">
           Total Students: {combinedData.length}
         </h2>
@@ -188,7 +194,7 @@ const CourseAssignment = () => {
         <div className="overflow-x-auto min-h-screen">
           <table className="table w-full">
             <thead>
-              <tr>
+              <tr className="">
                 <th>
                   <input
                     type="checkbox"
@@ -226,9 +232,9 @@ const CourseAssignment = () => {
                   </td>
                   <td>{index + 1}</td>
                   <td className="text-right text-base text-black">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center gap-4">
                       <div className="avatar">
-                        <div className="mask mask-squircle w-8 h-8">
+                        <div className="mask mask-squircle w-12 h-12">
                           <img src={user.image} alt="User Avatar" />
                         </div>
                       </div>
@@ -260,43 +266,58 @@ const CourseAssignment = () => {
                       </select>
                     )}
                   </td>
-
                   <td>
                     <button
                       onClick={() => handleDeleteUser(user)}
-                      className="btn btn-ghost btn-lg"
+                      className="btn btn-ghost btn-xs"
                     >
-                      <FaTrashAlt className="text-blue-950"></FaTrashAlt>
+                      <FaTrashAlt />
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="flex justify-between mt-4 mx-8">
-            <button onClick={handleMakeBatch} className="btn btn-primary">
-              Create Batch
-            </button>
-            <div className="flex items-center">
-              <button
-                className="btn btn-ghost"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
-              >
-                Previous
-              </button>
-              <span className="mx-2">{currentPage}</span>
-              <button
-                className="btn btn-ghost"
-                disabled={indexOfLastItem >= combinedData.length}
-                onClick={() => setCurrentPage(currentPage + 1)}
-              >
-                Next
-              </button>
-            </div>
-          </div>
         </div>
       )}
+
+      {/* Pagination */}
+      <div className="flex justify-center mt-4 text-lg font-semibold text-black">
+        <button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className="btn btn-sm bg-blue-950"
+        >
+          Previous
+        </button>
+        <span className="mx-4">
+          Page {currentPage} of {Math.ceil(filteredUsers.length / itemsPerPage)}
+        </span>
+        <button
+          onClick={() => setCurrentPage((prev) => prev + 1)}
+          disabled={indexOfLastItem >= filteredUsers.length}
+          className="btn btn-sm bg-blue-950"
+        >
+          Next
+        </button>
+      </div>
+
+      <div className="flex justify-center mt-4">
+        <select
+          className="select select-bordered w-full max-w-xs"
+          value={selectedBatch}
+          onChange={(e) => setSelectedBatch(e.target.value)}
+        >
+          <option value="">Select Batch</option>
+          <option value="Batch 1">Batch 1</option>
+          <option value="Batch 2">Batch 2</option>
+          <option value="Batch 3">Batch 3</option>
+          <option value="Batch 4">Batch 4</option>
+        </select>
+        <button className="btn bg-blue-950 ml-2" onClick={handleMakeBatch}>
+          Create Batch
+        </button>
+      </div>
     </div>
   );
 };
