@@ -8,12 +8,11 @@ import "./courseAssignment.css";
 const CourseAssignment = () => {
   const axiosSecure = useAxiosSecure();
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCourse, setSelectedCourse] = useState("");
   const [filterCourse, setFilterCourse] = useState("");
   const [courseList, setCourseList] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [selectedBatch, setSelectedBatch] = useState(""); 
+  const [selectedBatch, setSelectedBatch] = useState("");
   const itemsPerPage = 7;
 
   useEffect(() => {
@@ -28,25 +27,52 @@ const CourseAssignment = () => {
     fetchCourses();
   }, [axiosSecure]);
 
+  // Fetch users data
   const { data: users = [], refetch } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const res = await axiosSecure.get("/users");
-      const filteredUsers = res.data.filter(
-        (user) => user.type === "student" && !user.assignedCourse
-      );
-      return filteredUsers;
+      return res.data.filter((user) => user.type === "student");
     },
   });
 
+  // Fetch students data
+  const { data: students = [] } = useQuery({
+    queryKey: ["students"],
+    queryFn: async () => {
+      const res = await axiosSecure.get("/students");
+      return res.data;
+    },
+  });
+
+  // Combine user and student data
+  const combinedData = students
+    .map((student) => {
+      const userInfo = users.find((user) => user._id === student.userId);
+      if (!userInfo) return null;
+
+      return {
+        _id: userInfo._id,
+        name: userInfo.name,
+        email: userInfo.email,
+        image: userInfo.image,
+        type: userInfo.type,
+        studentID: student.studentID,
+        session: student.session,
+        prefCourse: student.prefCourse,
+        assignedCourse: student.assigned_course || "",
+      };
+    })
+    .filter(
+      (item) =>
+        item !== null &&
+        item.assignedCourse === "" &&
+        (filterCourse ? item.prefCourse === filterCourse : true)
+    );
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-
-  const filteredUsers = filterCourse
-    ? users.filter((user) => user.prefCourse === filterCourse)
-    : users;
-
-  const currentUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+  const currentUsers = combinedData.slice(indexOfFirstItem, indexOfLastItem);
 
   const handleAssignCourse = async (userId, course) => {
     try {
@@ -99,8 +125,6 @@ const CourseAssignment = () => {
       const updatedSelection = prevSelected.includes(userId)
         ? prevSelected.filter((id) => id !== userId)
         : [...prevSelected, userId];
-
-      console.log("Selected User IDs:", updatedSelection);
       return updatedSelection;
     });
   };
@@ -110,10 +134,8 @@ const CourseAssignment = () => {
     if (!selectAll) {
       const allUserIds = currentUsers.map((user) => user._id);
       setSelectedUsers(allUserIds);
-      console.log("Selected All User IDs:", allUserIds);
     } else {
       setSelectedUsers([]);
-      console.log("Selected User IDs: []"); 
     }
   };
 
@@ -136,13 +158,12 @@ const CourseAssignment = () => {
 
   return (
     <div>
-      <div className="flex justify-between mx-8 items-center ">
+      <div className="flex justify-between mx-8 items-center">
         <h2 className="text-3xl font-bold mt-8 mb-5">All Students</h2>
         <h2 className="text-3xl font-bold mt-8 mb-5">
-          Total Students: {filteredUsers.length}
+          Total Students: {combinedData.length}
         </h2>
 
-        {/* Course Filter */}
         <div className="mb-4 flex justify-center">
           <select
             className="select select-bordered"
@@ -159,8 +180,7 @@ const CourseAssignment = () => {
         </div>
       </div>
 
-      {/* If no students prefer the selected course */}
-      {filterCourse && filteredUsers.length === 0 ? (
+      {filterCourse && combinedData.length === 0 ? (
         <div className="text-center text-2xl mt-32 min-h-screen font-semibold text-red-600">
           No students prefer the selected course.
         </div>
@@ -190,7 +210,7 @@ const CourseAssignment = () => {
                 <th className="text-lg font-semibold text-black">Action</th>
               </tr>
             </thead>
-            <tbody className="">
+            <tbody>
               {currentUsers.map((user, index) => (
                 <tr
                   className="text-base text-black compact-row"
@@ -224,11 +244,7 @@ const CourseAssignment = () => {
                     ) : (
                       <select
                         className="select select-bordered select-sm"
-                        value={
-                          user.assignedCourse ||
-                          user.prefCourse ||
-                          selectedCourse
-                        }
+                        value={user.assignedCourse || user.prefCourse} // Set prefCourse as default
                         onChange={(e) =>
                           handleAssignCourse(user._id, e.target.value)
                         }
@@ -244,6 +260,7 @@ const CourseAssignment = () => {
                       </select>
                     )}
                   </td>
+
                   <td>
                     <button
                       onClick={() => handleDeleteUser(user)}
@@ -256,53 +273,30 @@ const CourseAssignment = () => {
               ))}
             </tbody>
           </table>
+          <div className="flex justify-between mt-4 mx-8">
+            <button onClick={handleMakeBatch} className="btn btn-primary">
+              Create Batch
+            </button>
+            <div className="flex items-center">
+              <button
+                className="btn btn-ghost"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                Previous
+              </button>
+              <span className="mx-2">{currentPage}</span>
+              <button
+                className="btn btn-ghost"
+                disabled={indexOfLastItem >= combinedData.length}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
-      <div className="flex justify-center mt-4 text-lg font-semibold text-black">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </button>
-        <span className="mx-4">
-          Page {currentPage} of {Math.ceil(filteredUsers.length / itemsPerPage)}
-        </span>
-        <button
-          onClick={() => setCurrentPage((prev) => prev + 1)}
-          disabled={indexOfLastItem >= filteredUsers.length}
-        >
-          Next
-        </button>
-      </div>
-
-      {/* Batch Selection */}
-      <div className="flex justify-center items-center ">
-  <div className="my-4 mb-5 text-center">
-    <label htmlFor="batch-select" className="font-semibold">
-      Select Batch:
-    </label>
-    <select
-      id="batch-select"
-      className="select select-bordered ml-2"
-      value={selectedBatch}
-      onChange={(e) => setSelectedBatch(e.target.value)}
-    >
-      <option value="">Choose a Batch</option>
-      <option value="Batch A">Batch A</option>
-      <option value="Batch B">Batch B</option>
-    </select>
-    <button
-      className="btn bg-blue-950 ml-4"
-      onClick={handleMakeBatch}
-      disabled={!selectedBatch || selectedUsers.length === 0}
-    >
-      Make Batch
-    </button>
-  </div>
-</div>
-
     </div>
   );
 };

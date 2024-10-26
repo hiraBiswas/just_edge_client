@@ -18,10 +18,18 @@ const AuthProvider = ({ children }) => {
   const axiosPublic = useAxiosPublic();
   
   
-  const createUser = (name, image, type, email, password) => {
-    setLoading(true);
-    return createUserWithEmailAndPassword(auth, email, password);
+  const createUser = async (name, image, type, email, password) => {
+    try {
+      setLoading(true);
+      return await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error; // Re-throw the error to propagate it further
+    } finally {
+      setLoading(false);
+    }
   };
+  
 
   const signIn = (email, password) => {
     setLoading(true);

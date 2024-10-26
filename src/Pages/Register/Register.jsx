@@ -6,7 +6,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useForm } from "react-hook-form";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
-import { HiEye, HiEyeOff } from "react-icons/hi"; 
+import { HiEye, HiEyeOff } from "react-icons/hi";
 import { FaExclamationCircle } from "react-icons/fa";
 
 const Register = () => {
@@ -41,13 +41,10 @@ const Register = () => {
         prefCourse,
       } = data;
 
-      // Set photo URL and user type
-      const image =
-        "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
+      const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
       const type = "student";
 
       // Password validation
-      
       if (password.length < 6) {
         toast.error("Password should be at least 6 characters long");
         return;
@@ -60,58 +57,54 @@ const Register = () => {
         toast.error("Password should contain at least one special character");
         return;
       }
-
       if (password !== confirmPassword) {
         toast.error("Passwords do not match");
         return;
       }
 
-      const assignedCourse = "";
-
       // Firebase authentication
-      createUser(name, image, type, email, password)
-        .then(() => {
-          updateProfile(auth.currentUser, {
-            displayName: name,
-            photoURL: image,
-          })
-            .then(() => {
-              // Database upload
-              axiosPublic
-                .post("/users", {
-                  name,
-                  email,
-                  studentID,
-                  department,
-                  session,
-                  institution,
-                  prefCourse,
-                  image,
-                  type,
-                  assignedCourse,
-                })
-                .then((res) => {
-                  if (res.data.insertedId) {
-                    toast.success("Registered Successfully");
-                    reset();
-                    navigate("/");
-                  }
-                })
-                .catch((error) => {
-                  toast.error(`Error posting user info: ${error.message}`);
-                });
-            })
-            .catch((error) => {
-              toast.error(`Profile update error: ${error.message}`);
-            });
-        })
-        .catch((error) => {
-          toast.error(`User creation error: ${error.message}`);
+      await createUser(name, image, type, email, password);
+      await updateProfile(auth.currentUser, {
+        displayName: name,
+        photoURL: image,
+      });
+
+      // Save common data to users collection
+      const userResponse = await axiosPublic.post("/users", {
+        name,
+        email,
+        image,
+        type,
+      });
+
+      console.log(userResponse);
+
+      // Save additional student-specific data to students collection
+      if (userResponse.data.insertedId) {
+        const studentResponse = await axiosPublic.post("/students", {
+          userId: userResponse.data.insertedId,
+          studentID,
+          department,
+          session,
+          institution,
+          prefCourse,
+          assigned_course: "",
         });
+
+        console.log(studentResponse);
+
+        if (studentResponse.data.insertedId) {
+          toast.success("Registered Successfully");
+          reset();
+          navigate("/");
+        }
+      }
     } catch (error) {
+      console.error("Error during registration:", error);
       toast.error(`Error during form submission: ${error.message}`);
     }
   };
+
 
   return (
     <div className="container mx-auto">
@@ -135,7 +128,6 @@ const Register = () => {
                     required
                   />
                 </div>
-
                 <div className="form-control ">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
@@ -151,7 +143,6 @@ const Register = () => {
                     required
                   />
                 </div>
-
                 <div className="form-control ">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
@@ -167,7 +158,6 @@ const Register = () => {
                     required
                   />
                 </div>
-
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
@@ -183,7 +173,6 @@ const Register = () => {
                     required
                   />
                 </div>
-
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
@@ -199,7 +188,6 @@ const Register = () => {
                     required
                   />
                 </div>
-
                 <div className="form-control ">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
@@ -215,7 +203,6 @@ const Register = () => {
                     required
                   />
                 </div>
-
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
@@ -231,7 +218,6 @@ const Register = () => {
                     required
                   />
                 </div>
-
                 <div>
                   <div className="form-control">
                     <label className="label ">
@@ -253,7 +239,7 @@ const Register = () => {
                         Basic Programming with Python
                       </option>
                       <option value="Front End Development">
-                        Front End Development{" "}
+                        Front End Development
                       </option>
                     </select>
                   </div>
@@ -270,7 +256,7 @@ const Register = () => {
                       type={showPassword ? "text" : "password"}
                       placeholder="password"
                       name="password"
-                      className="input input-bordered w-full" 
+                      className="input input-bordered w-full"
                       required
                     />
                     <span
@@ -285,7 +271,6 @@ const Register = () => {
                     </span>
                   </div>
                 </div>
-
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
@@ -314,36 +299,12 @@ const Register = () => {
                       )}
                     </span>
                   </div>
-
-                  
                 </div>
-
               </div>
-              <div className="text-sm text-gray-500 mt-2 flex justify-center items-center">
-                <FaExclamationCircle />
-                    <p>Password must contain at least 6 characters,1 uppercase letter and 1 special character (e.g., @, #, $) </p>
-            
-                  </div>
-
               <div className="form-control mt-6">
-                <button className="btn bg-blue-950 flex-1 text-lg text-white">
-                  Sign Up
-                </button>
+                <button className="btn btn-primary">Register</button>
               </div>
             </form>
-
-            <div>
-              <p className="p-8 text-md font-medium pt-5 lg:text-lg">
-                Already have an account?{" "}
-                <NavLink
-                  to="/login"
-                  className="text-lg font-bold text-blue-950 lg:text-xl"
-                >
-                  Sign In
-                </NavLink>{" "}
-                here.
-              </p>
-            </div>
           </div>
         </div>
       </div>
