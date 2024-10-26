@@ -1,0 +1,11 @@
+.compact-row td {
+    padding: 0px 1px; /* Minimal padding */
+    line-height: 0.6; /* Further reduced line height */
+    font-size: 1rem; /* Even smaller font size */
+  }
+  
+  .compact-row img {
+    height: 32px; /* Smaller image height */
+    width: 32px; /* Smaller width to match */
+  }
+  

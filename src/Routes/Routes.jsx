@@ -14,6 +14,7 @@ import AdminRoute from "../Routes/AdminRoute"
 import AllUser from "../Pages/Dashboard/AllUser/AllUser"
 import Dashboard from "../Layout/Dashboard";
 import About from "../Pages/About/About";
+import CourseAssignment from "../Pages/Dashboard/CourseAssignment/CourseAssignment";
 
 
   export const router = createBrowserRouter([
@@ -93,8 +94,8 @@ import About from "../Pages/About/About";
           },
         
           {
-            path: 'allUser',
-            element: <AdminRoute><AllUser></AllUser></AdminRoute>
+            path: 'courseAssignment',
+            element: <AdminRoute><CourseAssignment></CourseAssignment></AdminRoute>
           },
   
          

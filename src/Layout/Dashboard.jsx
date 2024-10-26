@@ -63,9 +63,9 @@ const Dashboard = () => {
                 </li>
                 <li className=" hover:text-sky-200 flex flex-row py-1 ">
                   <NavLink className="hover:text-sky-200 flex items-center gap-3 "
-                   to="/dashboard/allUser">
+                   to="/dashboard/courseAssignment">
                     <PiUsersFill className="text-xl text-white hover:text-sky-200"/>
-                    All User
+                    Course Assignment
                     </NavLink>
                 </li>
            
