@@ -3,6 +3,8 @@ import { TiPlus } from "react-icons/ti";
 import { Link } from "react-router-dom";
 import { MdEdit } from "react-icons/md";
 import { FaEye, FaFileArchive } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify"; // Import toast and ToastContainer
+import "react-toastify/dist/ReactToastify.css"; // Import styles
 
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);
@@ -35,6 +37,35 @@ const CourseManagement = () => {
   // Handle page change
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
+  };
+
+  // Archive course handler
+  const handleArchive = async (courseId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/courses/${courseId}`, {
+        method: "PATCH", // Use PATCH to update the record
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isDeleted: true }), // Send isDeleted as true
+      });
+
+      if (response.ok) {
+        // Optionally, update local state to remove the course
+        setCourses((prevCourses) =>
+          prevCourses.map((course) =>
+            course._id === courseId ? { ...course, isDeleted: true } : course
+          )
+        );
+
+        toast.success("Course archived successfully!"); // Show success toast
+      } else {
+        toast.error("Failed to archive course."); // Show error toast
+      }
+    } catch (error) {
+      console.error("Error archiving course:", error);
+      toast.error("Failed to archive course."); // Show error toast
+    }
   };
 
   return (
@@ -83,7 +114,7 @@ const CourseManagement = () => {
             {/* Table Body */}
             <tbody>
               {currentItems.map((course, index) => (
-                <tr key={course._id}>
+                <tr key={course._id} className={course.isDeleted ? "opacity-50" : ""}>
                   <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
                   <td>{course.courseName}</td>
                   <td>{course.level}</td>
@@ -91,13 +122,15 @@ const CourseManagement = () => {
                   <td className="flex items-center justify-center gap-4">
                     {/* Link to course details page */}
                     <Link to={`/dashboard/courseDetails/${course._id}`}>
-    <FaEye className="text-blue-600 cursor-pointer hover:scale-105" />
-</Link>
-
-<Link to={`/dashboard/courseUpdate/${course._id}`}>
-                    <MdEdit className="text-green-600 cursor-pointer hover:scale-105" />
+                      <FaEye className="text-blue-600 cursor-pointer hover:scale-105" />
                     </Link>
-                    <FaFileArchive className="text-red-600 cursor-pointer hover:scale-105" />
+                    <Link to={`/dashboard/courseUpdate/${course._id}`}>
+                      <MdEdit className="text-green-600 cursor-pointer hover:scale-105" />
+                    </Link>
+                    <FaFileArchive
+                      className="text-red-600 cursor-pointer hover:scale-105"
+                      onClick={() => handleArchive(course._id)} // Archive course on click
+                    />
                   </td>
                 </tr>
               ))}
@@ -127,6 +160,9 @@ const CourseManagement = () => {
           Next
         </button>
       </div>
+
+      {/* Toast Container */}
+      <ToastContainer />
     </div>
   );
 };
