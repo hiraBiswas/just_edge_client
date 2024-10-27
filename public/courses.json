@@ -7,7 +7,7 @@
       "minimumEducationalQualification": "HSC Equivalent",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/HVcZpCZ/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Hardware Maintenance",
@@ -16,7 +16,7 @@
       "minimumEducationalQualification": "HSC Equivalent",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/bR4rmCS/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Digital Marketing",
@@ -25,7 +25,7 @@
       "minimumEducationalQualification": "HSC Equivalent",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/ZKdYFLm/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Graphics Design",
@@ -34,7 +34,7 @@
       "minimumEducationalQualification": "HSC Equivalent",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/vDSJsCZ/rsz-67146d9ecb622.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Microsoft Word, Excel and PowerPoint",
@@ -43,7 +43,7 @@
       "minimumEducationalQualification": "HSC Equivalent",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/CQ3TRzV/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Basic Web Development",
@@ -52,7 +52,7 @@
       "minimumEducationalQualification": "HSC Equivalent",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co/94mzhr5/frontEnd.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Basic Programming with Python",
@@ -61,7 +61,7 @@
       "minimumEducationalQualification": "HSC Equivalent",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co/VD3YJBG/python.jpg",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Mobile App Development",
@@ -70,7 +70,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/tZRpJp8/rsz-67146fb7b1d89.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "C#.NET",
@@ -79,7 +79,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/rdCQxZn/rsz-67146c1051d1f.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Database",
@@ -88,7 +88,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co/HpND1Tr/f68c6726447874b0b64a3f83af0fd1ec.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Front-End Development",
@@ -97,7 +97,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/rdCQxZn/rsz-67146c1051d1f.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Java Programming",
@@ -106,7 +106,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/ZdBgGtW/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "PHP (Laravel)",
@@ -115,7 +115,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/ZBhtJc7/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Server-side Programming with Python",
@@ -124,7 +124,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/3dZyMbx/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "WordPress",
@@ -133,7 +133,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/kSgmgrB/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "User Experience (UX) Design",
@@ -142,7 +142,7 @@
       "minimumEducationalQualification": "Honors/Honors Equivalent/Completed",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/DtFqttK/rsz-671484a91de43.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Machine Learning with Python",
@@ -152,7 +152,7 @@
       "background": "Science/Engineering background",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co.com/02sJrfT/image.png",
-      "enrolled_student": []
+      "isDeleted": false
     },
     {
       "courseName": "Data Visualization with Python",
@@ -162,7 +162,7 @@
       "background": "Science/Engineering background",
       "ageLimit": "Under 35",
       "image": "https://i.ibb.co/fnDZMzG/vis-py.png",
-      "enrolled_student": []
+      "isDeleted": false
     }
   ]
 }

@@ -21,8 +21,10 @@ const CourseContainer = () => {
 
   const filteredCourses =
     activeTab === "All"
-      ? courses
-      : courses.filter((course) => course.level === activeTab);
+      ? courses.filter((course) => !course.isDeleted)
+      : courses.filter(
+          (course) => course.level === activeTab && !course.isDeleted
+        );
 
   const data = [
     { label: "All", value: "All" },
