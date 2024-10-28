@@ -2,14 +2,17 @@ import React, { useEffect, useState } from "react";
 import { TiPlus } from "react-icons/ti";
 import { Link } from "react-router-dom";
 import { MdEdit } from "react-icons/md";
-import { FaEye, FaFileArchive } from "react-icons/fa";
-import { toast, ToastContainer } from "react-toastify"; // Import toast and ToastContainer
-import "react-toastify/dist/ReactToastify.css"; // Import styles
+import { FaEye, FaFileArchive, FaRegFileArchive } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true); // Loading state for skeleton
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Number of items to display per page
+  const itemsPerPage = 10;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("");
 
   // Fetch data from API
   useEffect(() => {
@@ -20,51 +23,45 @@ const CourseManagement = () => {
         setCourses(data);
       } catch (error) {
         console.error("Error fetching courses:", error);
+      } finally {
+        setLoading(false); // Set loading to false after data is fetched
       }
     };
     fetchCourses();
   }, []);
 
-  // Calculate the number of pages
   const totalPages = Math.ceil(courses.length / itemsPerPage);
+  const currentItems = courses
+    .filter(
+      (course) =>
+        course.courseName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (selectedLevel ? course.level === selectedLevel : true)
+    )
+    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // Get current items for the current page
-  const currentItems = courses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Handle page change
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  // Archive course handler
   const handleArchive = async (courseId) => {
     try {
       const response = await fetch(`http://localhost:5000/courses/${courseId}`, {
-        method: "PATCH", // Use PATCH to update the record
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ isDeleted: true }), // Send isDeleted as true
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isDeleted: true }),
       });
 
       if (response.ok) {
-        // Optionally, update local state to remove the course
         setCourses((prevCourses) =>
           prevCourses.map((course) =>
             course._id === courseId ? { ...course, isDeleted: true } : course
           )
         );
-
-        toast.success("Course archived successfully!"); // Show success toast
+        toast.success("Course archived successfully!");
       } else {
-        toast.error("Failed to archive course."); // Show error toast
+        toast.error("Failed to archive course.");
       }
     } catch (error) {
       console.error("Error archiving course:", error);
-      toast.error("Failed to archive course."); // Show error toast
+      toast.error("Failed to archive course.");
     }
   };
 
@@ -72,70 +69,99 @@ const CourseManagement = () => {
     <div className="flex flex-col h-screen">
       <div className="overflow-x-auto mt-8 flex-grow">
         <div className="flex justify-between items-center w-full mb-4">
-          {/* Search and Filter Section */}
-          <div className="flex items-center gap-4">
-            <input className="input input-bordered" placeholder="Search" />
-            <select className="select select-bordered">
-              <option disabled selected>
-                Level
-              </option>
-              <option>Foundational</option>
-              <option>Intermediate</option>
-              <option>Advanced</option>
+          <div className="flex items-center">
+            <input
+              className="input input-bordered"
+              placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <select
+              className="select select-bordered"
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+            >
+              <option value="">All Levels</option>
+              <option>Foundational Level</option>
+              <option>Intermediate Level</option>
+              <option>Advanced Level</option>
             </select>
-            <button className="btn px-5">Search</button>
+            <button className="btn px-5 bg-blue-950 text-white">Search</button>
           </div>
-
-          {/* Create Course Button */}
           <div>
             <Link to="/dashboard/createCourse">
-              <button className="btn btn-outline flex items-center gap-2">
-                <TiPlus />
-                Create Course
-              </button>
+            <button className="btn border-blue-950 text-blue-950 hover:bg-blue-950 hover:text-white btn-outline flex items-center gap-2">
+  <TiPlus />
+  Create Course
+</button>
+
             </Link>
           </div>
         </div>
 
-        {/* Table Section */}
+        {/* Table Section with Skeleton Loader */}
         <div className="overflow-x-auto">
-          <table className="table w-full mt-8">
-            {/* Table Header */}
-            <thead className="bg-blue-50">
-              <tr className="text-lg font-medium">
-                <th>#</th>
-                <th>Course Name</th>
-                <th>Level</th>
-                <th>Qualification</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            {/* Table Body */}
-            <tbody>
-              {currentItems.map((course, index) => (
-                <tr key={course._id} className={course.isDeleted ? "opacity-50" : ""}>
-                  <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
-                  <td>{course.courseName}</td>
-                  <td>{course.level}</td>
-                  <td>{course.minimumEducationalQualification}</td>
-                  <td className="flex items-center justify-center gap-4">
-                    {/* Link to course details page */}
-                    <Link to={`/dashboard/courseDetails/${course._id}`}>
-                      <FaEye className="text-blue-600 cursor-pointer hover:scale-105" />
-                    </Link>
-                    <Link to={`/dashboard/courseUpdate/${course._id}`}>
-                      <MdEdit className="text-green-600 cursor-pointer hover:scale-105" />
-                    </Link>
-                    <FaFileArchive
-                      className="text-red-600 cursor-pointer hover:scale-105"
-                      onClick={() => handleArchive(course._id)} // Archive course on click
-                    />
-                  </td>
+          {loading ? (
+            <div className="animate-pulse w-full mt-8">
+              <table className="table w-[1000px]">
+                <thead className="bg-gray-200">
+                  <tr className="text-lg font-medium">
+                    <th>#</th>
+                    <th>Course Name</th>
+                    <th>Level</th>
+                    <th>Qualification</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Skeleton Rows */}
+                  {[...Array(itemsPerPage)].map((_, index) => (
+                    <tr key={index}>
+                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
+                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
+                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
+                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
+                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <table className="table w-[1000px] mt-8">
+              <thead className="bg-blue-950 text-white">
+                <tr className="text-lg font-medium">
+                  <th>#</th>
+                  <th>Course Name</th>
+                  <th>Level</th>
+                  <th>Qualification</th>
+                  <th>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {currentItems.map((course, index) => (
+                  <tr key={course._id} className={course.isDeleted ? "opacity-50" : ""}>
+                    <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
+                    <td>{course.courseName}</td>
+                    <td>{course.level}</td>
+                    <td>{course.minimumEducationalQualification}</td>
+                    <td className="flex items-center justify-center gap-4">
+                      <Link to={`/dashboard/courseDetails/${course._id}`}>
+                        <FaEye className="text-blue-950 cursor-pointer hover:scale-105" />
+                      </Link>
+                      <Link to={`/dashboard/courseUpdate/${course._id}`}>
+                        <MdEdit className="text-green-600 cursor-pointer hover:scale-105" />
+                      </Link>
+                      <FaRegFileArchive
+                        className="text-red-600 cursor-pointer hover:scale-105"
+                        onClick={() => handleArchive(course._id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -148,10 +174,7 @@ const CourseManagement = () => {
         >
           Previous
         </button>
-
-        {/* Display current page */}
         <button className="join-item btn">{`Page ${currentPage}`}</button>
-
         <button
           className="join-item btn"
           disabled={currentPage === totalPages}
