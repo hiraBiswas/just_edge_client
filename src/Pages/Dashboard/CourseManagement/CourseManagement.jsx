@@ -43,12 +43,18 @@ const CourseManagement = () => {
 
   const handleArchive = async (courseId) => {
     try {
+      // Log the data being sent to the backend
+      const dataToSend = { isDeleted: true };
+      console.log("Data being sent to backend:", dataToSend);
+  
       const response = await fetch(`http://localhost:5000/courses/${courseId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isDeleted: true }),
+        body: JSON.stringify(dataToSend), // Send the logged data
       });
-
+  
+      console.log("Response from backend:", response); // Log the response object
+  
       if (response.ok) {
         setCourses((prevCourses) =>
           prevCourses.map((course) =>
@@ -57,16 +63,19 @@ const CourseManagement = () => {
         );
         toast.success("Course archived successfully!");
       } else {
-        toast.error("Failed to archive course.");
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to archive course.");
       }
     } catch (error) {
       console.error("Error archiving course:", error);
       toast.error("Failed to archive course.");
     }
   };
+  
+  
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen w-[1100px] mx-auto">
       <div className="overflow-x-auto mt-8 flex-grow">
         <div className="flex justify-between items-center w-full mb-4">
           <div className="flex items-center">
@@ -101,67 +110,66 @@ const CourseManagement = () => {
 
         {/* Table Section with Skeleton Loader */}
         <div className="overflow-x-auto">
-          {loading ? (
-            <div className="animate-pulse w-full mt-8">
-              <table className="table w-[1000px]">
-                <thead className="bg-gray-200">
-                  <tr className="text-lg font-medium">
-                    <th>#</th>
-                    <th>Course Name</th>
-                    <th>Level</th>
-                    <th>Qualification</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Skeleton Rows */}
-                  {[...Array(itemsPerPage)].map((_, index) => (
-                    <tr key={index}>
-                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
-                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
-                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
-                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
-                      <td className="py-4 px-6 bg-gray-100 rounded-lg"></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <table className="table w-[1000px] mt-8">
-              <thead className="bg-blue-950 text-white">
-                <tr className="text-lg font-medium">
-                  <th>#</th>
-                  <th>Course Name</th>
-                  <th>Level</th>
-                  <th>Qualification</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentItems.map((course, index) => (
-                  <tr key={course._id} className={course.isDeleted ? "opacity-50" : ""}>
-                    <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
-                    <td>{course.courseName}</td>
-                    <td>{course.level}</td>
-                    <td>{course.minimumEducationalQualification}</td>
-                    <td className="flex items-center justify-center gap-4">
-                      <Link to={`/dashboard/courseDetails/${course._id}`}>
-                        <FaEye className="text-blue-950 cursor-pointer hover:scale-105" />
-                      </Link>
-                      <Link to={`/dashboard/courseUpdate/${course._id}`}>
-                        <MdEdit className="text-green-600 cursor-pointer hover:scale-105" />
-                      </Link>
-                      <FaRegFileArchive
-                        className="text-red-600 cursor-pointer hover:scale-105"
-                        onClick={() => handleArchive(course._id)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        {loading ? (
+  <div className="animate-pulse w-full mt-8 mx-auto">
+    <table className="table w-[1000px] mx-auto">
+      <thead className="bg-gray-200">
+        <tr className="text-lg font-medium">
+          <th>#</th>
+          <th>Course Name</th>
+          <th>Level</th>
+          <th>Qualification</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {/* Full-width Skeleton Rows */}
+        {[...Array(itemsPerPage)].map((_, index) => (
+          <tr key={index}>
+            <td colSpan="5">
+              <div className="h-10 bg-gray-100 rounded-lg"></div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+) : (
+  <table className="table w-[1000px] mt-8">
+    <thead className="bg-blue-950 text-white">
+      <tr className="text-lg font-medium">
+        <th>#</th>
+        <th>Course Name</th>
+        <th>Level</th>
+        <th>Qualification</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {currentItems.map((course, index) => (
+        <tr key={course._id} className={course.isDeleted ? "opacity-50" : ""}>
+          <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
+          <td>{course.courseName}</td>
+          <td>{course.level}</td>
+          <td>{course.minimumEducationalQualification}</td>
+          <td className="flex items-center justify-center gap-4">
+            <Link to={`/dashboard/courseDetails/${course._id}`}>
+              <FaEye className="text-blue-950 cursor-pointer hover:scale-105" />
+            </Link>
+            <Link to={`/dashboard/courseUpdate/${course._id}`}>
+              <MdEdit className="text-green-600 cursor-pointer hover:scale-105" />
+            </Link>
+            <FaRegFileArchive
+              className="text-red-600 cursor-pointer hover:scale-105"
+              onClick={() => handleArchive(course._id)}
+            />
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+)}
+ 
         </div>
       </div>
 
