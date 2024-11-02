@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { FaTrashAlt } from "react-icons/fa";
+import { FaRegFileArchive } from "react-icons/fa";
+import { FaEye } from "react-icons/fa";
 import Swal from "sweetalert2";
 import "./courseAssignment.css";
 
@@ -27,7 +28,6 @@ const CourseAssignment = () => {
     fetchCourses();
   }, [axiosSecure]);
 
-  // Fetch users data
   const { data: users = [], refetch } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -36,7 +36,6 @@ const CourseAssignment = () => {
     },
   });
 
-  // Fetch students data
   const { data: students = [] } = useQuery({
     queryKey: ["students"],
     queryFn: async () => {
@@ -45,7 +44,11 @@ const CourseAssignment = () => {
     },
   });
 
-  // Combine user and student data
+  const getCourseNameById = (courseId) => {
+    const course = courseList.find((course) => course._id === courseId);
+    return course ? course.courseName : "Unknown Course";
+  };
+
   const combinedData = students
     .map((student) => {
       const userInfo = users.find((user) => user._id === student.userId);
@@ -59,7 +62,7 @@ const CourseAssignment = () => {
         type: userInfo.type,
         studentID: student.studentID,
         session: student.session,
-        prefCourse: student.prefCourse,
+        prefCourse: getCourseNameById(student.prefCourse),
         assignedCourse: student.assigned_course || "",
       };
     })
@@ -74,7 +77,6 @@ const CourseAssignment = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentUsers = combinedData.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Define filteredUsers for pagination
   const filteredUsers = combinedData.filter(
     (user) =>
       user.assignedCourse === "" &&
@@ -166,7 +168,7 @@ const CourseAssignment = () => {
   return (
     <div>
       <div className="flex justify-between mx-8 items-center">
-        <h2 className="text-3xl font-bold mt-8 mb-5">
+        <h2 className="text-3xl font-bold mt-8 mb-10">
           Total Students: {combinedData.length}
         </h2>
 
@@ -193,8 +195,8 @@ const CourseAssignment = () => {
       ) : (
         <div className="overflow-x-auto min-h-screen">
           <table className="table w-full">
-            <thead>
-              <tr className="">
+            <thead className="bg-blue-950 text-white">
+              <tr className="text-white">
                 <th>
                   <input
                     type="checkbox"
@@ -202,18 +204,18 @@ const CourseAssignment = () => {
                     onChange={handleSelectAll}
                   />
                 </th>
-                <th className="text-lg font-semibold text-black">#</th>
-                <th className="text-lg font-semibold text-black">Image</th>
-                <th className="text-lg font-semibold text-black">Name</th>
-                <th className="text-lg font-semibold text-black">Student ID</th>
-                <th className="text-lg font-semibold text-black">Session</th>
-                <th className="text-lg font-semibold text-black">
+                <th className="text-lg font-semibold text-white">#</th>
+                <th className="text-lg font-semibold text-white">Image</th>
+                <th className="text-lg font-semibold text-white">Name</th>
+                <th className="text-lg font-semibold text-white">Student ID</th>
+                <th className="text-lg font-semibold text-white">Session</th>
+                <th className="text-lg font-semibold text-white">
                   Preferable Course
                 </th>
-                <th className="text-lg font-semibold text-black">
+                <th className="text-lg font-semibold text-white">
                   Assign Course
                 </th>
-                <th className="text-lg font-semibold text-black">Action</th>
+                <th className="text-lg font-semibold text-white">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -250,7 +252,7 @@ const CourseAssignment = () => {
                     ) : (
                       <select
                         className="select select-bordered select-sm"
-                        value={user.assignedCourse || user.prefCourse} // Set prefCourse as default
+                        value={user.assignedCourse || user.prefCourse}
                         onChange={(e) =>
                           handleAssignCourse(user._id, e.target.value)
                         }
@@ -267,11 +269,14 @@ const CourseAssignment = () => {
                     )}
                   </td>
                   <td>
+                    <button className="ml-5">
+                      <FaEye />
+                    </button>
                     <button
                       onClick={() => handleDeleteUser(user)}
-                      className="btn btn-ghost btn-xs"
+                      className="ml-5"
                     >
-                      <FaTrashAlt />
+                     <FaRegFileArchive />
                     </button>
                   </td>
                 </tr>
@@ -314,9 +319,14 @@ const CourseAssignment = () => {
           <option value="Batch 3">Batch 3</option>
           <option value="Batch 4">Batch 4</option>
         </select>
-        <button className="btn bg-blue-950 ml-2" onClick={handleMakeBatch}>
-          Create Batch
-        </button>
+        <button
+  className="btn bg-blue-950 ml-2 text-white mb-8"
+  onClick={handleMakeBatch}
+  disabled={selectedUsers.length === 0 || !selectedBatch}
+>
+  Create Batch
+</button>
+
       </div>
     </div>
   );

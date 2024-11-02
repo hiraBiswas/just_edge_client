@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../Providers/AuthProvider";
 import { getAuth, updateProfile } from "firebase/auth";
@@ -7,25 +7,32 @@ import "react-toastify/dist/ReactToastify.css";
 import { useForm } from "react-hook-form";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 import { HiEye, HiEyeOff } from "react-icons/hi";
-import { FaExclamationCircle } from "react-icons/fa";
 
 const Register = () => {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm();
-
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const [courses, setCourses] = useState([]); // State to store courses
   const location = useLocation();
   const navigate = useNavigate();
   const auth = getAuth();
   const { createUser } = useContext(AuthContext);
   const axiosPublic = useAxiosPublic();
-
-  // State to manage password visibility
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Fetch courses from the database
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await axiosPublic.get("/courses");
+        setCourses(response.data); // Assuming response.data contains an array of courses
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        toast.error("Failed to load courses");
+      }
+    };
+
+    fetchCourses();
+  }, [axiosPublic]);
 
   const onSubmit = async (data) => {
     try {
@@ -38,7 +45,7 @@ const Register = () => {
         department,
         session,
         institution,
-        prefCourse,
+        prefCourse, // This will hold the selected courseId
       } = data;
 
       const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
@@ -77,9 +84,6 @@ const Register = () => {
         type,
       });
 
-      console.log(userResponse);
-
-      // Save additional student-specific data to students collection
       if (userResponse.data.insertedId) {
         const studentResponse = await axiosPublic.post("/students", {
           userId: userResponse.data.insertedId,
@@ -88,11 +92,11 @@ const Register = () => {
           session,
           institution,
           prefCourse,
-          assigned_course: "",
+          isDeleted: false, 
         });
 
         console.log(studentResponse);
-
+        
         if (studentResponse.data.insertedId) {
           toast.success("Registered Successfully");
           reset();
@@ -218,31 +222,24 @@ const Register = () => {
                     required
                   />
                 </div>
-                <div>
-                  <div className="form-control">
-                    <label className="label ">
-                      <span className="label-text text-md font-medium lg:text-lg">
-                        Preferable Course *
-                      </span>
-                    </label>
-                    <select
-                      {...register("prefCourse", { required: true })}
-                      className="select select-bordered ml-2"
-                      required
-                    >
-                      <option value="">Select Preferable Course</option>
-                      <option value="Data Visualization with Python">
-                        Data Visualization with Python
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text text-md font-medium lg:text-lg">
+                      Preferable Course *
+                    </span>
+                  </label>
+                  <select
+                    {...register("prefCourse", { required: true })}
+                    className="select select-bordered"
+                    required
+                  >
+                    <option value="">Select Preferable Course</option>
+                    {courses.map((course) => (
+                      <option key={course._id} value={course._id}>
+                        {course.courseName}
                       </option>
-                      <option value="Database">Database</option>
-                      <option value="Basic Programming with Python">
-                        Basic Programming with Python
-                      </option>
-                      <option value="Front End Development">
-                        Front End Development
-                      </option>
-                    </select>
-                  </div>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-control">
                   <label className="label">
@@ -302,7 +299,7 @@ const Register = () => {
                 </div>
               </div>
               <div className="form-control mt-6">
-                <button className="btn btn-primary">Register</button>
+                <button className="btn bg-blue-950 text-white">Register</button>
               </div>
             </form>
           </div>
