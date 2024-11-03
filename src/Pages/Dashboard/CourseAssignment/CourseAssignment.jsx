@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { FaRegFileArchive } from "react-icons/fa";
-import { FaEye } from "react-icons/fa";
+import { FaRegFileArchive, FaEye } from "react-icons/fa";
 import Swal from "sweetalert2";
 import "./courseAssignment.css";
+import useAxiosPublic from "../../../hooks/useAxiosPublic";
+import axios from "axios";
 
 const CourseAssignment = () => {
   const axiosSecure = useAxiosSecure();
@@ -14,8 +15,11 @@ const CourseAssignment = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState("");
+  const [assignedCourses, setAssignedCourses] = useState({});
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const itemsPerPage = 7;
 
+  // Fetch courses
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -28,7 +32,8 @@ const CourseAssignment = () => {
     fetchCourses();
   }, [axiosSecure]);
 
-  const { data: users = [], refetch } = useQuery({
+  // Fetch users and students data
+  const { data: users = [] } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const res = await axiosSecure.get("/users");
@@ -49,85 +54,54 @@ const CourseAssignment = () => {
     return course ? course.courseName : "Unknown Course";
   };
 
-  const combinedData = students
-    .map((student) => {
-      const userInfo = users.find((user) => user._id === student.userId);
-      if (!userInfo) return null;
+  const combinedData = React.useMemo(() => {
+    return students
+      .map((student) => {
+        const userInfo = users.find((user) => user._id === student.userId);
+        console.log("User Info:", userInfo);
+        if (!userInfo) return null;
 
-      return {
-        _id: userInfo._id,
-        name: userInfo.name,
-        email: userInfo.email,
-        image: userInfo.image,
-        type: userInfo.type,
-        studentID: student.studentID,
-        session: student.session,
-        prefCourse: getCourseNameById(student.prefCourse),
-        assignedCourse: student.assigned_course || "",
-      };
-    })
-    .filter(
-      (item) =>
-        item !== null &&
-        item.assignedCourse === "" &&
-        (filterCourse ? item.prefCourse === filterCourse : true)
-    );
+        return {
+          _id: userInfo._id,
+          name: userInfo.name,
+          email: userInfo.email,
+          image: userInfo.image,
+          type: userInfo.type,
+          studentID: student.studentID,
+          session: student.session,
+          prefCourse: getCourseNameById(student.prefCourse),
+          assignedCourse: student.assigned_course || "",
+        };
+      })
+
+      .filter(
+        (item) =>
+          item !== null &&
+          item.assignedCourse === "" &&
+          (filterCourse ? item.prefCourse === filterCourse : true)
+      );
+  }, [students, users, filterCourse, courseList]);
+
+  useEffect(() => {
+    const initialAssignedCourses = {};
+    combinedData.forEach((student) => {
+      if (!assignedCourses[student._id]) {
+        initialAssignedCourses[student._id] = student.prefCourse;
+      }
+    });
+
+    if (Object.keys(initialAssignedCourses).length > 0) {
+      setAssignedCourses((prev) => ({
+        ...prev,
+        ...initialAssignedCourses,
+      }));
+    }
+  }, [combinedData]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentUsers = combinedData.slice(indexOfFirstItem, indexOfLastItem);
-
-  const filteredUsers = combinedData.filter(
-    (user) =>
-      user.assignedCourse === "" &&
-      (filterCourse ? user.prefCourse === filterCourse : true)
-  );
-
-  const handleAssignCourse = async (userId, course) => {
-    try {
-      const updatedUser = { assignedCourse: course };
-      await axiosSecure.patch(`/users/${userId}`, updatedUser);
-      refetch();
-
-      Swal.fire({
-        title: "Assigned!",
-        text: "Course assigned successfully.",
-        icon: "success",
-      });
-    } catch (error) {
-      console.error("Error assigning course:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Something went wrong!",
-      });
-    }
-  };
-
-  const handleDeleteUser = (user) => {
-    Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        axiosSecure.delete(`/users/${user._id}`).then((res) => {
-          if (res.data.deletedCount > 0) {
-            refetch();
-            Swal.fire({
-              title: "Deleted!",
-              text: "Your file has been deleted.",
-              icon: "success",
-            });
-          }
-        });
-      }
-    });
-  };
+  const totalPages = Math.ceil(combinedData.length / itemsPerPage);
 
   const handleSelectUser = (userId) => {
     setSelectedUsers((prevSelected) => {
@@ -139,18 +113,36 @@ const CourseAssignment = () => {
   };
 
   const handleSelectAll = () => {
-    setSelectAll(!selectAll);
-    if (!selectAll) {
-      const allUserIds = currentUsers.map((user) => user._id);
-      setSelectedUsers(allUserIds);
-    } else {
-      setSelectedUsers([]);
-    }
+    setSelectAll((prev) => !prev);
+    setSelectedUsers((prev) =>
+      !prev ? currentUsers.map((user) => user._id) : []
+    );
   };
 
   const handleMakeBatch = () => {
     if (selectedBatch) {
-      console.log("Batch:", selectedBatch, "Users:", selectedUsers);
+      const selectedUserDetails = selectedUsers.map((userId) => {
+        const assignedCourseName =
+          assignedCourses[userId] ||
+          students.find((student) => student.userId === userId)?.prefCourse;
+        const assignedCourse = courseList.find(
+          (course) => course.courseName === assignedCourseName
+        );
+
+        return {
+          id: userId,
+          assignedCourse: assignedCourseName || "Not Assigned",
+          courseId: assignedCourse ? assignedCourse._id : null,
+        };
+      });
+
+      console.log(
+        "Batch:",
+        selectedBatch,
+        "Selected Users:",
+        selectedUserDetails
+      );
+
       Swal.fire({
         title: "Batch Created!",
         text: `Assigned selected students to Batch ${selectedBatch}`,
@@ -247,36 +239,39 @@ const CourseAssignment = () => {
                   <td>{user.session}</td>
                   <td>{user.prefCourse}</td>
                   <td>
-                    {user.assignedCourse ? (
-                      user.assignedCourse
-                    ) : (
-                      <select
-                        className="select select-bordered select-sm"
-                        value={user.assignedCourse || user.prefCourse}
-                        onChange={(e) =>
-                          handleAssignCourse(user._id, e.target.value)
-                        }
-                      >
-                        <option disabled value="">
-                          Select Course
+                    <select
+                      className="select select-bordered select-sm"
+                      value={assignedCourses[user._id] || user.prefCourse}
+                      onChange={(e) => {
+                        setAssignedCourses((prev) => ({
+                          ...prev,
+                          [user._id]: e.target.value,
+                        }));
+                      }}
+                    >
+                      <option disabled value="">
+                        Select Course
+                      </option>
+                      {courseList.map((course) => (
+                        <option key={course._id} value={course.courseName}>
+                          {course.courseName}
                         </option>
-                        {courseList.map((course) => (
-                          <option key={course._id} value={course.courseName}>
-                            {course.courseName}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                      ))}
+                    </select>
                   </td>
                   <td>
-                    <button className="ml-5">
+                    <button
+                      className="ml-5"
+                      onClick={() => {
+                        setSelectedStudent(user);
+                        document.getElementById("studentModal").showModal();
+                      }}
+                    >
                       <FaEye />
                     </button>
-                    <button
-                      onClick={() => handleDeleteUser(user)}
-                      className="ml-5"
-                    >
-                     <FaRegFileArchive />
+
+                    <button className="ml-5">
+                      <FaRegFileArchive />
                     </button>
                   </td>
                 </tr>
@@ -296,11 +291,11 @@ const CourseAssignment = () => {
           Previous
         </button>
         <span className="mx-4">
-          Page {currentPage} of {Math.ceil(filteredUsers.length / itemsPerPage)}
+          Page {currentPage} of {totalPages}
         </span>
         <button
           onClick={() => setCurrentPage((prev) => prev + 1)}
-          disabled={indexOfLastItem >= filteredUsers.length}
+          disabled={currentPage >= totalPages}
           className="btn btn-sm bg-blue-950"
         >
           Next
@@ -320,14 +315,51 @@ const CourseAssignment = () => {
           <option value="Batch 4">Batch 4</option>
         </select>
         <button
-  className="btn bg-blue-950 ml-2 text-white mb-8"
-  onClick={handleMakeBatch}
-  disabled={selectedUsers.length === 0 || !selectedBatch}
->
-  Create Batch
-</button>
-
+          className="btn bg-blue-950 ml-2 text-white mb-8"
+          onClick={handleMakeBatch}
+          disabled={selectedUsers.length === 0 || !selectedBatch}
+        >
+          Create Batch
+        </button>
       </div>
+
+      {/* Modal for student details */}
+      {/* Modal for student details */}
+      <dialog id="studentModal" className="modal modal-bottom sm:modal-middle">
+        <div className="modal-box">
+          {selectedStudent ? (
+            <>
+              <h3 className="font-bold text-lg">{selectedStudent.name}</h3>
+              <img
+                src={selectedStudent.image}
+                alt="Student Avatar"
+                className="w-24 h-24 rounded-full"
+              />
+              <p className="py-4">Email: {selectedStudent.email}</p>
+              <p>Student ID: {selectedStudent.studentID}</p>
+              <p>Session: {selectedStudent.session}</p>
+              <p>Preferred Course: {selectedStudent.prefCourse}</p>
+              <p>
+                Assigned Course:{" "}
+                {assignedCourses[selectedStudent._id] || "Not Assigned"}
+              </p>
+              <div className="modal-action">
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setSelectedStudent(null);
+                    document.getElementById("studentModal").close(); // Close the modal
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          ) : (
+            <p>Loading...</p>
+          )}
+        </div>
+      </dialog>
     </div>
   );
 };
