@@ -14,6 +14,8 @@ import { MdEdit } from "react-icons/md";
 import { TbBrandBooking } from "react-icons/tb";
 import { MdPending } from "react-icons/md";
 import { IoMdCheckmarkCircle } from "react-icons/io";
+import { VscCombine } from "react-icons/vsc";
+import { MdAssignmentInd } from "react-icons/md";
 
 const Dashboard = () => {
     const [isAdmin] = useAdmin();
@@ -66,14 +68,18 @@ const Dashboard = () => {
                 <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/courseManagement"> <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" />Course Management</NavLink>
                 </li>
 
+                <li className=" hover:text-sky-200 flex flex-row pt-3 py-1 ">
+                <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/batchManagement"> <VscCombine  className="text-xl text-white hover:text-amber-500" />Batch Management</NavLink>
+                </li>
+
                 <li className=" hover:text-sky-200 flex flex-row py-1 ">
                   <NavLink className="hover:text-sky-200 flex items-center gap-3 "
                    to="/dashboard/courseAssignment">
-                    <PiUsersFill className="text-xl text-white hover:text-sky-200"/>
+                    <MdAssignmentInd className="text-xl text-white hover:text-sky-200"/>
                     Course Assignment
                     </NavLink>
                 </li>
-           
+                 
 
               
               </>

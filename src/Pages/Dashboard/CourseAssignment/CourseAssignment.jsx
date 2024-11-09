@@ -1,23 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from '@tanstack/react-query';
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { FaRegFileArchive, FaEye } from "react-icons/fa";
 import Swal from "sweetalert2";
 import "./courseAssignment.css";
-import useAxiosPublic from "../../../hooks/useAxiosPublic";
-import axios from "axios";
 
 const CourseAssignment = () => {
   const axiosSecure = useAxiosSecure();
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterCourse, setFilterCourse] = useState("");
+  const [filterCourse, setFilterCourse] = useState(""); // changed to filter by course
+  const [batchList, setBatchList] = useState([]);
   const [courseList, setCourseList] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState("");
-  const [assignedCourses, setAssignedCourses] = useState({});
+  const [assignedBatches, setAssignedBatches] = useState({});
   const [selectedStudent, setSelectedStudent] = useState(null);
   const itemsPerPage = 7;
+  const queryClient = useQueryClient();
+
+
+  // Fetch batches
+  useEffect(() => {
+    const fetchBatches = async () => {
+      try {
+        const response = await axiosSecure.get("/batches");
+        setBatchList(response.data);
+      } catch (error) {
+        console.error("Error fetching batches:", error);
+      }
+    };
+    fetchBatches();
+  }, [axiosSecure]);
 
   // Fetch courses
   useEffect(() => {
@@ -49,6 +64,11 @@ const CourseAssignment = () => {
     },
   });
 
+  const getBatchNameById = (batchId) => {
+    const batch = batchList.find((batch) => batch._id === batchId);
+    return batch ? batch.batchName : "Unknown Batch";
+  };
+
   const getCourseNameById = (courseId) => {
     const course = courseList.find((course) => course._id === courseId);
     return course ? course.courseName : "Unknown Course";
@@ -58,9 +78,8 @@ const CourseAssignment = () => {
     return students
       .map((student) => {
         const userInfo = users.find((user) => user._id === student.userId);
-        console.log("User Info:", userInfo);
         if (!userInfo) return null;
-
+  
         return {
           _id: userInfo._id,
           name: userInfo.name,
@@ -69,31 +88,33 @@ const CourseAssignment = () => {
           type: userInfo.type,
           studentID: student.studentID,
           session: student.session,
+          prefBatch: getBatchNameById(student.prefBatch),
           prefCourse: getCourseNameById(student.prefCourse),
-          assignedCourse: student.assigned_course || "",
+          enrolled_batch: student.enrolled_batch, // include enrolled_batch
+          assignedBatch: student.assigned_batch || "",
         };
       })
-
       .filter(
         (item) =>
           item !== null &&
-          item.assignedCourse === "" &&
-          (filterCourse ? item.prefCourse === filterCourse : true)
+          item.enrolled_batch === null && // Only show students without an enrolled batch
+          (filterCourse ? item.prefCourse === filterCourse : true) // updated filter by course
       );
-  }, [students, users, filterCourse, courseList]);
+  }, [students, users, filterCourse, batchList, courseList]);
+  
 
   useEffect(() => {
-    const initialAssignedCourses = {};
+    const initialAssignedBatches = {};
     combinedData.forEach((student) => {
-      if (!assignedCourses[student._id]) {
-        initialAssignedCourses[student._id] = student.prefCourse;
+      if (!assignedBatches[student._id]) {
+        initialAssignedBatches[student._id] = student.prefBatch;
       }
     });
 
-    if (Object.keys(initialAssignedCourses).length > 0) {
-      setAssignedCourses((prev) => ({
+    if (Object.keys(initialAssignedBatches).length > 0) {
+      setAssignedBatches((prev) => ({
         ...prev,
-        ...initialAssignedCourses,
+        ...initialAssignedBatches,
       }));
     }
   }, [combinedData]);
@@ -118,47 +139,107 @@ const CourseAssignment = () => {
       !prev ? currentUsers.map((user) => user._id) : []
     );
   };
-
-  const handleMakeBatch = () => {
-    if (selectedBatch) {
-      const selectedUserDetails = selectedUsers.map((userId) => {
-        const assignedCourseName =
-          assignedCourses[userId] ||
-          students.find((student) => student.userId === userId)?.prefCourse;
-        const assignedCourse = courseList.find(
-          (course) => course.courseName === assignedCourseName
-        );
-
-        return {
-          id: userId,
-          assignedCourse: assignedCourseName || "Not Assigned",
-          courseId: assignedCourse ? assignedCourse._id : null,
-        };
+  const handleAssignBatch = async () => {
+    if (selectedUsers.length > 0) {
+      const selectedUserDetails = selectedUsers.map(async (userId) => {
+        // Get the student associated with the user
+        const student = students.find((student) => student.userId === userId);
+  
+        if (student) {
+          const studentId = student._id; // Get the student._id from the student object
+  
+          const assignedBatchName = assignedBatches[userId] || student.prefBatch;
+  
+          // Find the corresponding batch from the batchList
+          const assignedBatch = batchList.find(
+            (batch) => batch.batchName === assignedBatchName
+          );
+  
+          // Prepare the data to be updated (only update the enrolled_batch)
+          const updateData = {
+            enrolled_batch: assignedBatch ? assignedBatch._id : null, // Only update enrolled_batch
+          };
+  
+          // Perform the patch request to update the student's enrolled_batch
+          try {
+            const response = await axiosSecure.patch(
+              `/students/${studentId}`,
+              updateData
+            );
+  
+            if (response.status === 200) {
+              console.log(`Assigned Batch ${assignedBatchName} to student ${studentId}`);
+              Swal.fire({
+                title: "Batch Assigned!",
+                text: `Assigned selected students to Batch ${assignedBatchName}`,
+                icon: "success",
+              });
+  
+              // Refetch the students data after the patch operation
+              await queryClient.refetchQueries(["students"]);
+            }
+          } catch (error) {
+            console.error("Error assigning batch:", error);
+            Swal.fire({
+              icon: "error",
+              title: "Error Assigning Batch",
+              text: "There was an issue assigning the batch. Please try again.",
+            });
+          }
+        }
       });
-
-      console.log(
-        "Batch:",
-        selectedBatch,
-        "Selected Users:",
-        selectedUserDetails
-      );
-
-      Swal.fire({
-        title: "Batch Created!",
-        text: `Assigned selected students to Batch ${selectedBatch}`,
-        icon: "success",
-      });
+  
+      await Promise.all(selectedUserDetails); // Ensure all updates are completed before finishing the process
     } else {
       Swal.fire({
         icon: "error",
-        title: "No Batch Selected",
-        text: "Please select a batch before proceeding.",
+        title: "No Students Selected",
+        text: "Please select students before proceeding.",
       });
     }
   };
+  
+  
+  
+  // Archive Handler to set isDeleted to true
+  const handleArchive = async () => {
+    if (selectedUsers.length > 0) {
+      const selectedUserDetails = selectedUsers.map((userId) => {
+        // Archive the student by setting isDeleted to true
+        axiosSecure
+          .patch(`/students/${userId}`, {
+            isDeleted: true, // Mark student as archived
+          })
+          .then(() => {
+            Swal.fire({
+              title: "Student Archived!",
+              text: `Student ${userId} has been archived successfully.`,
+              icon: "success",
+            });
+          })
+          .catch((error) => {
+            console.error("Error archiving student:", error);
+            Swal.fire({
+              icon: "error",
+              title: "Failed to Archive Student",
+              text: "Something went wrong while archiving the student.",
+            });
+          });
+      });
+  
+      if (selectedUserDetails.some((user) => user === null)) return;
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "No Students Selected",
+        text: "Please select students before proceeding.",
+      });
+    }
+  };
+  
 
   return (
-    <div>
+    <div className="">
       <div className="flex justify-between mx-8 items-center">
         <h2 className="text-3xl font-bold mt-8 mb-10">
           Total Students: {combinedData.length}
@@ -167,8 +248,8 @@ const CourseAssignment = () => {
         <div className="mb-4 flex justify-center">
           <select
             className="select select-bordered"
-            value={filterCourse}
-            onChange={(e) => setFilterCourse(e.target.value)}
+            value={filterCourse} // updated filterCourse
+            onChange={(e) => setFilterCourse(e.target.value)} // updated filterCourse
           >
             <option value="">Filter by Course</option>
             {courseList.map((course) => (
@@ -185,7 +266,7 @@ const CourseAssignment = () => {
           No students prefer the selected course.
         </div>
       ) : (
-        <div className="overflow-x-auto min-h-screen">
+        <div className="overflow-x-auto">
           <table className="table w-full">
             <thead className="bg-blue-950 text-white">
               <tr className="text-white">
@@ -201,12 +282,8 @@ const CourseAssignment = () => {
                 <th className="text-lg font-semibold text-white">Name</th>
                 <th className="text-lg font-semibold text-white">Student ID</th>
                 <th className="text-lg font-semibold text-white">Session</th>
-                <th className="text-lg font-semibold text-white">
-                  Preferable Course
-                </th>
-                <th className="text-lg font-semibold text-white">
-                  Assign Course
-                </th>
+                <th className="text-lg font-semibold text-white">Preferred Course</th>
+                <th className="text-lg font-semibold text-white">Assign Batch</th>
                 <th className="text-lg font-semibold text-white">Action</th>
               </tr>
             </thead>
@@ -239,25 +316,30 @@ const CourseAssignment = () => {
                   <td>{user.session}</td>
                   <td>{user.prefCourse}</td>
                   <td>
-                    <select
-                      className="select select-bordered select-sm"
-                      value={assignedCourses[user._id] || user.prefCourse}
-                      onChange={(e) => {
-                        setAssignedCourses((prev) => ({
-                          ...prev,
-                          [user._id]: e.target.value,
-                        }));
-                      }}
-                    >
-                      <option disabled value="">
-                        Select Course
-                      </option>
-                      {courseList.map((course) => (
-                        <option key={course._id} value={course.courseName}>
-                          {course.courseName}
-                        </option>
-                      ))}
-                    </select>
+                 <td>
+ 
+    <select
+      className="select select-bordered select-sm"
+      value={assignedBatches[user._id] || ""}
+      onChange={(e) => {
+        setAssignedBatches((prev) => ({
+          ...prev,
+          [user._id]: e.target.value,
+        }));
+      }}
+    >
+      <option value="">Select Batch</option>
+      {batchList
+        .filter((batch) => batch.status === "Soon to be started") // filter batches
+        .map((batch) => (
+          <option key={batch._id} value={batch.batchName}>
+            {batch.batchName}
+          </option>
+        ))}
+    </select>
+  
+</td>
+
                   </td>
                   <td>
                     <button
@@ -270,7 +352,7 @@ const CourseAssignment = () => {
                       <FaEye />
                     </button>
 
-                    <button className="ml-5">
+                    <button onClick={handleArchive} className="ml-5">
                       <FaRegFileArchive />
                     </button>
                   </td>
@@ -303,27 +385,14 @@ const CourseAssignment = () => {
       </div>
 
       <div className="flex justify-center mt-4">
-        <select
-          className="select select-bordered w-full max-w-xs"
-          value={selectedBatch}
-          onChange={(e) => setSelectedBatch(e.target.value)}
-        >
-          <option value="">Select Batch</option>
-          <option value="Batch 1">Batch 1</option>
-          <option value="Batch 2">Batch 2</option>
-          <option value="Batch 3">Batch 3</option>
-          <option value="Batch 4">Batch 4</option>
-        </select>
         <button
           className="btn bg-blue-950 ml-2 text-white mb-8"
-          onClick={handleMakeBatch}
-          disabled={selectedUsers.length === 0 || !selectedBatch}
+          onClick={handleAssignBatch}
         >
-          Create Batch
+          Assign Batch
         </button>
       </div>
 
-      {/* Modal for student details */}
       {/* Modal for student details */}
       <dialog id="studentModal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
@@ -340,15 +409,15 @@ const CourseAssignment = () => {
               <p>Session: {selectedStudent.session}</p>
               <p>Preferred Course: {selectedStudent.prefCourse}</p>
               <p>
-                Assigned Course:{" "}
-                {assignedCourses[selectedStudent._id] || "Not Assigned"}
+                Assigned Batch:{" "}
+                {assignedBatches[selectedStudent._id] || "Not Assigned"}
               </p>
               <div className="modal-action">
                 <button
                   className="btn"
                   onClick={() => {
                     setSelectedStudent(null);
-                    document.getElementById("studentModal").close(); // Close the modal
+                    document.getElementById("studentModal").close();
                   }}
                 >
                   Close
