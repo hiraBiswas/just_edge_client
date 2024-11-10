@@ -10,6 +10,8 @@ const BatchManagement = () => {
   const [loading, setLoading] = useState(true);
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState(""); // State for search input
+  const [selectedStatus, setSelectedStatus] = useState(""); // State for status filter
 
   useEffect(() => {
     fetchBatches();
@@ -38,6 +40,7 @@ const BatchManagement = () => {
     }
   };
 
+  // Handle page change
   const totalPages = Math.ceil(batches.length / itemsPerPage);
   const currentItems = batches.slice(
     (currentPage - 1) * itemsPerPage,
@@ -46,15 +49,32 @@ const BatchManagement = () => {
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Mapping course IDs to names
   const courseMap = courses.reduce((acc, course) => {
     acc[course._id] = course.courseName;
     return acc;
   }, {});
 
+  // Search and filter logic
+  const filteredBatches = batches.filter((batch) => {
+    const courseName = courseMap[batch.course_id] || "";
+    const batchName = batch.batchName || "";
+    const status = batch.status || "";
+
+    const matchesSearch =
+      courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      batchName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus = selectedStatus
+      ? status.toLowerCase() === selectedStatus.toLowerCase()
+      : true;
+
+    return matchesSearch && matchesStatus;
+  });
+
   const handleCloseModal = () => {
-    // Close the modal and refresh the batch list
-    document.getElementById('my_modal_5').close();
-    fetchBatches(); // Ensure that the batch list is refreshed
+    document.getElementById("my_modal_5").close();
+    fetchBatches(); // Refresh the batch list after creating a new batch
   };
 
   return (
@@ -65,23 +85,30 @@ const BatchManagement = () => {
             <div>
               <input
                 className="input input-bordered join-item"
-                placeholder="Search"
+                placeholder="Search by course or batch"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)} // Update search query
               />
             </div>
-            <select className="select select-bordered join-item">
-              <option disabled selected>
-                Filter
-              </option>
-              <option>Sci-fi</option>
-              <option>Drama</option>
-              <option>Action</option>
+            <select
+              className="select select-bordered join-item"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)} // Update selected status filter
+            >
+              <option value="">Filter by status</option>
+              <option value="Soon to be started">Soon to be started</option>
+              <option value="On going">On going</option>
+              <option value="Completed">Completed</option>
             </select>
             <div className="indicator">
               <button className="btn join-item">Search</button>
             </div>
           </div>
 
-          <button className="btn btn-outline" onClick={() => document.getElementById('my_modal_5').showModal()}>
+          <button
+            className="btn btn-outline"
+            onClick={() => document.getElementById("my_modal_5").showModal()}
+          >
             <FaPlus /> Create Batch
           </button>
         </div>
@@ -110,6 +137,10 @@ const BatchManagement = () => {
                 </tbody>
               </table>
             </div>
+          ) : filteredBatches.length === 0 ? (
+            <div className="text-center mt-8 text-lg text-gray-500">
+              No batches found for the applied filters.
+            </div>
           ) : (
             <table className="table w-[1000px] mt-8">
               <thead className="bg-blue-950 text-white">
@@ -122,15 +153,22 @@ const BatchManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentItems.map((batch, index) => (
+                {filteredBatches.slice(
+                  (currentPage - 1) * itemsPerPage,
+                  currentPage * itemsPerPage
+                ).map((batch, index) => (
                   <tr key={batch._id}>
                     <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                     <td>{batch.batchName}</td>
                     <td>{courseMap[batch.course_id] || "Unknown Course"}</td>
                     <td>{batch.status}</td>
                     <td className="flex justify-center gap-4">
-                      <button><MdEdit /></button>
-                      <button><FaFileArchive /></button>
+                      <button>
+                        <MdEdit />
+                      </button>
+                      <button>
+                        <FaFileArchive />
+                      </button>
                     </td>
                   </tr>
                 ))}

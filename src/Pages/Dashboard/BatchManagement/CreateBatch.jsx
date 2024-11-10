@@ -164,7 +164,7 @@ const CreateBatch = () => {
         </div>
 
         {/* Submit Button */}
-        <button type="submit" className="btn btn-primary mt-4">
+        <button type="submit" className="btn bg-blue-950 text-white mt-4">
           Create Batch
         </button>
       </form>
