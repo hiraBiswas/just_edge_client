@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
+import { MdEdit } from "react-icons/md";
+import { FaFileArchive } from "react-icons/fa";
+import CreateBatch from "./CreateBatch";
 
 const BatchManagement = () => {
   const [batches, setBatches] = useState([]);
@@ -9,31 +12,31 @@ const BatchManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/batches");
-        const data = await response.json();
-        setBatches(data);
-      } catch (error) {
-        console.error("Error fetching batches:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchCourses = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/courses");
-        const data = await response.json();
-        setCourses(data);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      }
-    };
-
     fetchBatches();
     fetchCourses();
   }, []);
+
+  const fetchBatches = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/batches");
+      const data = await response.json();
+      setBatches(data);
+    } catch (error) {
+      console.error("Error fetching batches:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCourses = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/courses");
+      const data = await response.json();
+      setCourses(data);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
 
   const totalPages = Math.ceil(batches.length / itemsPerPage);
   const currentItems = batches.slice(
@@ -43,11 +46,16 @@ const BatchManagement = () => {
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Create a mapping of course IDs to course names for quick lookup
   const courseMap = courses.reduce((acc, course) => {
     acc[course._id] = course.courseName;
     return acc;
   }, {});
+
+  const handleCloseModal = () => {
+    // Close the modal and refresh the batch list
+    document.getElementById('my_modal_5').close();
+    fetchBatches(); // Ensure that the batch list is refreshed
+  };
 
   return (
     <div className="flex flex-col h-screen w-[1100px] mx-auto">
@@ -55,12 +63,10 @@ const BatchManagement = () => {
         <div className="flex justify-between">
           <div className="join">
             <div>
-              <div>
-                <input
-                  className="input input-bordered join-item"
-                  placeholder="Search"
-                />
-              </div>
+              <input
+                className="input input-bordered join-item"
+                placeholder="Search"
+              />
             </div>
             <select className="select select-bordered join-item">
               <option disabled selected>
@@ -75,13 +81,11 @@ const BatchManagement = () => {
             </div>
           </div>
 
-          <div>
-            <button className="btn btn-outline">
-              <FaPlus /> Create Batch
-            </button>
-          </div>
+          <button className="btn btn-outline" onClick={() => document.getElementById('my_modal_5').showModal()}>
+            <FaPlus /> Create Batch
+          </button>
         </div>
-        {/* Table Section with Skeleton Loader */}
+
         <div className="overflow-x-auto w-[1100px]">
           {loading ? (
             <div className="animate-pulse w-full mt-8 mx-auto">
@@ -96,7 +100,6 @@ const BatchManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Full-width Skeleton Rows */}
                   {[...Array(itemsPerPage)].map((_, index) => (
                     <tr key={index}>
                       <td colSpan="5">
@@ -125,9 +128,9 @@ const BatchManagement = () => {
                     <td>{batch.batchName}</td>
                     <td>{courseMap[batch.course_id] || "Unknown Course"}</td>
                     <td>{batch.status}</td>
-                    <td>
-                      <button>Edit</button>
-                      <button>Delete</button>
+                    <td className="flex justify-center gap-4">
+                      <button><MdEdit /></button>
+                      <button><FaFileArchive /></button>
                     </td>
                   </tr>
                 ))}
@@ -137,7 +140,6 @@ const BatchManagement = () => {
         </div>
       </div>
 
-      {/* Pagination Controls */}
       <div className="flex justify-end join my-4">
         <button
           className="join-item btn"
@@ -155,6 +157,16 @@ const BatchManagement = () => {
           Next
         </button>
       </div>
+
+      {/* Modal Structure */}
+      <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+        <div className="modal-box">
+          <CreateBatch onBatchCreated={fetchBatches} />
+          <div className="modal-action">
+            <button className="btn" onClick={handleCloseModal}>Close</button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 };
