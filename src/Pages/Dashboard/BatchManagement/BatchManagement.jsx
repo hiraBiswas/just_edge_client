@@ -3,6 +3,7 @@ import { FaPlus } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { FaFileArchive } from "react-icons/fa";
 import CreateBatch from "./CreateBatch";
+import UpdateBatch from "./UpdateBatch"; // Assuming UpdateBatch component is created
 
 const BatchManagement = () => {
   const [batches, setBatches] = useState([]);
@@ -10,8 +11,9 @@ const BatchManagement = () => {
   const [loading, setLoading] = useState(true);
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState(""); // State for search input
-  const [selectedStatus, setSelectedStatus] = useState(""); // State for status filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedBatchId, setSelectedBatchId] = useState(null); // State to hold selected batch ID for editing
 
   useEffect(() => {
     fetchBatches();
@@ -74,7 +76,13 @@ const BatchManagement = () => {
 
   const handleCloseModal = () => {
     document.getElementById("my_modal_5").close();
-    fetchBatches(); // Refresh the batch list after creating a new batch
+    setSelectedBatchId(null); // Clear selected batch ID when modal is closed
+    fetchBatches(); // Refresh the batch list after editing
+  };
+
+  const handleEditBatch = (batchId) => {
+    setSelectedBatchId(batchId); // Set the selected batch ID
+    document.getElementById("my_modal_5").showModal(); // Open the modal
   };
 
   return (
@@ -87,13 +95,13 @@ const BatchManagement = () => {
                 className="input input-bordered join-item"
                 placeholder="Search by course or batch"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)} // Update search query
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <select
               className="select select-bordered join-item"
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)} // Update selected status filter
+              onChange={(e) => setSelectedStatus(e.target.value)}
             >
               <option value="">Filter by status</option>
               <option value="Soon to be started">Soon to be started</option>
@@ -163,7 +171,7 @@ const BatchManagement = () => {
                     <td>{courseMap[batch.course_id] || "Unknown Course"}</td>
                     <td>{batch.status}</td>
                     <td className="flex justify-center gap-4">
-                      <button>
+                      <button onClick={() => handleEditBatch(batch._id)}>
                         <MdEdit />
                       </button>
                       <button>
@@ -196,10 +204,19 @@ const BatchManagement = () => {
         </button>
       </div>
 
-      {/* Modal Structure */}
       <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
-          <CreateBatch onBatchCreated={fetchBatches} />
+          {selectedBatchId ? (
+            <UpdateBatch
+              batchId={selectedBatchId}
+              onBatchUpdated={(updatedBatchName) => {
+               
+              }}
+           
+            />
+          ) : (
+            <CreateBatch onBatchCreated={() => { /* Logic for batch created */ }} />
+          )}
           <div className="modal-action">
             <button className="btn" onClick={handleCloseModal}>Close</button>
           </div>
