@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { toast, ToastContainer } from 'react-toastify'; // Import ToastContainer here
-import 'react-toastify/dist/ReactToastify.css'; // Import the CSS for the toast notifications
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CreateBatch = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);  // Error handling state
-  const [startDate, setStartDate] = useState("");  // To track the selected start date
-  
-  // Get the current date in the format YYYY-MM-DD
-  const today = new Date().toISOString().split("T")[0]; // Get today's date
+  const [error, setError] = useState(null);  
+  const [startDate, setStartDate] = useState(""); 
+
+  const today = new Date().toISOString().split("T")[0]; 
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -36,16 +35,14 @@ const CreateBatch = () => {
     const selectedCourseId = formData.get('courseName');
     const batchNumberInput = formData.get('batchNumber');
     
-    // Find the selected course object to retrieve its name
     const course = courses.find(course => course._id === selectedCourseId);
     const courseName = course ? course.courseName : "Unknown Course";
-    
-    // Format the batch name as "CourseName - BatchName"
+
     const formattedBatchName = `${courseName} - ${batchNumberInput}`;
     
     // Prepare data to send to backend
     const data = {
-      course_id: selectedCourseId,  // Use course_id instead of courseId
+      course_id: selectedCourseId,  
       batchName: formattedBatchName,
       startDate: formData.get('startDate'),
       endDate: formData.get('endDate'),
@@ -55,7 +52,6 @@ const CreateBatch = () => {
     };
   
     try {
-      // Sending data to the backend (POST request to /batches)
       const response = await fetch('http://localhost:5000/batches', {
         method: 'POST',
         headers: {
@@ -69,35 +65,29 @@ const CreateBatch = () => {
       }
   
       const result = await response.json();
-      
-      // Show success toast notification
       toast.success("Batch created successfully!"); 
-  
-      // Clear the form
-      e.target.reset(); // Reset form fields
+      e.target.reset();
       
-      // Reset the selected course state
+      
       setSelectedCourse(""); 
   
       console.log("Batch created:", result);
     } catch (error) {
       console.error("Error submitting batch:", error);
       setError("Failed to create batch. Please try again later.");
-      
-      // Show error toast notification
       toast.error("Failed to create batch. Please try again later.");
     }
   };
 
   const handleStartDateChange = (e) => {
-    setStartDate(e.target.value);  // Update start date when changed
+    setStartDate(e.target.value);  
   };
 
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Create New Batch</h2>
       
-      {error && <div className="text-red-500">{error}</div>}  {/* Display error message */}
+      {error && <div className="text-red-500">{error}</div>}  
 
       <form onSubmit={handleSubmit} className="space-y-4">
         
@@ -146,8 +136,8 @@ const CreateBatch = () => {
             name="startDate"
             className="input input-bordered w-full"
             required
-            min={today}  // Disable past dates
-            onChange={handleStartDateChange}  // Update start date state
+            min={today}
+            onChange={handleStartDateChange} 
           />
         </div>
 
@@ -159,11 +149,10 @@ const CreateBatch = () => {
             name="endDate"
             className="input input-bordered w-full"
             required
-            min={startDate || today}  // Ensure end date is >= start date
+            min={startDate || today} 
           />
         </div>
 
-        {/* Submit Button */}
         <button type="submit" className="btn bg-blue-950 text-white mt-4">
           Create Batch
         </button>
@@ -172,12 +161,12 @@ const CreateBatch = () => {
   );
 };
 
-// Add ToastContainer to show toast messages
+
 export default function CreateBatchWrapper() {
   return (
     <>
       <CreateBatch />
-      <ToastContainer />  {/* Add ToastContainer here */}
+      <ToastContainer />  
     </>
   );
 }

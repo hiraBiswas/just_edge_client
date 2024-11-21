@@ -56,14 +56,14 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
       });
 
       if (response.ok) {
-        toast.success("Batch updated successfully!"); // Show success toast
+        toast.success("Batch updated successfully!"); 
         onBatchUpdated(updatedBatchData.batchName);
       } else {
-        toast.error("Failed to update batch."); // Show error toast
+        toast.error("Failed to update batch."); 
       }
     } catch (error) {
       console.error("Error updating batch:", error);
-      toast.error("An error occurred while updating the batch."); // Show error toast
+      toast.error("An error occurred while updating the batch."); 
     }
   };
 
@@ -129,7 +129,7 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
         <button type="submit" className="btn btn-primary w-full">Update Batch</button>
       </form>
 
-      {/* Toast container to display notifications */}
+    
       <ToastContainer />
     </div>
   );

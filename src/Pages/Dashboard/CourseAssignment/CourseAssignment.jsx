@@ -133,34 +133,162 @@ const CourseAssignment = () => {
     });
   };
 
+  // const handleSelectAll = () => {
+  //   setSelectAll((prev) => !prev);
+  
+  //   setSelectedUsers((prev) =>
+  //     selectAll
+  //       ? [] // Deselect all users if currently selected
+  //       : currentUsers.map((user) => user._id) // Select all visible users
+  //   );
+  // };
+
   const handleSelectAll = () => {
     setSelectAll((prev) => !prev);
-    setSelectedUsers((prev) =>
-      !prev ? currentUsers.map((user) => user._id) : []
-    );
+  
+    const allCurrentUserIds = currentUsers.map((user) => user._id);
+    
+    setSelectedUsers((prev) => {
+      // If currently selecting all, add all current users
+      if (!selectAll) {
+        // Merge with existing selected users to avoid duplicates
+        const newSelectedUsers = [...new Set([...prev, ...allCurrentUserIds])];
+        
+        // Track batch increments
+        const batchIncrements = {};
+        newSelectedUsers.forEach(userId => {
+          const user = currentUsers.find(u => u._id === userId);
+          if (user && user.prefBatch) {
+            batchIncrements[user.prefBatch] = (batchIncrements[user.prefBatch] || 0) + 1;
+          }
+        });
+  
+        // Update assigned batches based on current page's selections
+        setAssignedBatches(prev => {
+          const updatedBatches = {...prev};
+          newSelectedUsers.forEach(userId => {
+            const user = currentUsers.find(u => u._id === userId);
+            if (user && !updatedBatches[userId]) {
+              updatedBatches[userId] = user.prefBatch;
+            }
+          });
+          return updatedBatches;
+        });
+  
+        return newSelectedUsers;
+      }
+      
+      // If deselecting all, remove only the current page's users
+      return prev.filter(id => !allCurrentUserIds.includes(id));
+    });
   };
+  
+  // const handleAssignBatch = async () => {
+  //   if (selectedUsers.length > 0) {
+  //     const selectedUserDetails = selectedUsers.map(async (userId) => {
+  //       // Get the student associated with the user
+  //       const student = students.find((student) => student.userId === userId);
+  
+  //       if (student) {
+  //         const studentId = student._id; // Get the student._id from the student object
+  
+  //         const assignedBatchName = assignedBatches[userId] || student.prefBatch;
+  
+  //         // Find the corresponding batch from the batchList
+  //         const assignedBatch = batchList.find(
+  //           (batch) => batch.batchName === assignedBatchName
+  //         );
+  
+  //         // Prepare the data to be updated (only update the enrolled_batch)
+  //         const updateData = {
+  //           enrolled_batch: assignedBatch ? assignedBatch._id : null, // Only update enrolled_batch
+  //         };
+  
+  //         // Perform the patch request to update the student's enrolled_batch
+  //         try {
+  //           const response = await axiosSecure.patch(
+  //             `/students/${studentId}`,
+  //             updateData
+  //           );
+  
+  //           if (response.status === 200) {
+  //             console.log(`Assigned Batch ${assignedBatchName} to student ${studentId}`);
+  //             Swal.fire({
+  //               title: "Batch Assigned!",
+  //               text: `Assigned selected students to Batch ${assignedBatchName}`,
+  //               icon: "success",
+  //             });
+  
+  //             // Refetch the students data after the patch operation
+  //             await queryClient.refetchQueries(["students"]);
+  //           }
+  //         } catch (error) {
+  //           console.error("Error assigning batch:", error);
+  //           Swal.fire({
+  //             icon: "error",
+  //             title: "Error Assigning Batch",
+  //             text: "There was an issue assigning the batch. Please try again.",
+  //           });
+  //         }
+  //       }
+  //     });
+  
+  //     await Promise.all(selectedUserDetails); // Ensure all updates are completed before finishing the process
+  //   } else {
+  //     Swal.fire({
+  //       icon: "error",
+  //       title: "No Students Selected",
+  //       text: "Please select students before proceeding.",
+  //     });
+  //   }
+  // };
+  
+  
+  
   const handleAssignBatch = async () => {
+    console.log("Starting batch assignment process...");
+    console.log("Selected Users:", selectedUsers);
+    console.log("Current Assigned Batches:", assignedBatches);
+  
     if (selectedUsers.length > 0) {
+      // Map to store batch IDs and their new enrolledStudentNumber
+      const batchUpdates = {};
+      const successfulAssignments = [];
+      const failedAssignments = [];
+  
       const selectedUserDetails = selectedUsers.map(async (userId) => {
+        console.log(`Processing user ID: ${userId}`);
+        
         // Get the student associated with the user
         const student = students.find((student) => student.userId === userId);
   
         if (student) {
-          const studentId = student._id; // Get the student._id from the student object
-  
+          const studentId = student._id;
           const assignedBatchName = assignedBatches[userId] || student.prefBatch;
+  
+          console.group(`Student ${studentId} Details`);
+          console.log(`Preferred batch: ${student.prefBatch}`);
+          console.log(`Assigned batch from UI: ${assignedBatchName}`);
   
           // Find the corresponding batch from the batchList
           const assignedBatch = batchList.find(
             (batch) => batch.batchName === assignedBatchName
           );
   
-          // Prepare the data to be updated (only update the enrolled_batch)
+          if (!assignedBatch) {
+            console.warn(`Batch "${assignedBatchName}" not found!`);
+            failedAssignments.push(userId);
+            console.groupEnd();
+            return;
+          }
+  
+          console.log(`Assigned batch ID: ${assignedBatch._id}, Name: ${assignedBatch.batchName}`);
+  
+          // Prepare the data to be updated
           const updateData = {
-            enrolled_batch: assignedBatch ? assignedBatch._id : null, // Only update enrolled_batch
+            enrolled_batch: assignedBatch._id,
           };
   
-          // Perform the patch request to update the student's enrolled_batch
           try {
             const response = await axiosSecure.patch(
               `/students/${studentId}`,
@@ -168,28 +296,90 @@ const CourseAssignment = () => {
             );
   
             if (response.status === 200) {
-              console.log(`Assigned Batch ${assignedBatchName} to student ${studentId}`);
-              Swal.fire({
-                title: "Batch Assigned!",
-                text: `Assigned selected students to Batch ${assignedBatchName}`,
-                icon: "success",
-              });
-  
-              // Refetch the students data after the patch operation
-              await queryClient.refetchQueries(["students"]);
+              console.log(`Batch ${assignedBatchName} assigned to student ${studentId}`);
+              successfulAssignments.push(userId);
+              
+              // Increment batch update count
+              batchUpdates[assignedBatch._id] = (batchUpdates[assignedBatch._id] || 0) + 1;
             }
           } catch (error) {
-            console.error("Error assigning batch:", error);
-            Swal.fire({
-              icon: "error",
-              title: "Error Assigning Batch",
-              text: "There was an issue assigning the batch. Please try again.",
-            });
+            console.error(`Error assigning batch to student ${studentId}:`, error);
+            failedAssignments.push(userId);
           }
+          console.groupEnd();
         }
       });
   
-      await Promise.all(selectedUserDetails); // Ensure all updates are completed before finishing the process
+      await Promise.all(selectedUserDetails);
+  
+      // Log batch update details
+      console.log("Batch Updates:", batchUpdates);
+  
+      // Update the enrolledStudentNumber for all affected batches
+      const batchUpdatePromises = Object.entries(batchUpdates).map(
+        async ([batchId, increment]) => {
+          console.group(`Batch ${batchId} Update`);
+          console.log(`Updating batch with increment: ${increment}`);
+          
+          const batch = batchList.find((batch) => batch._id === batchId);
+  
+          if (!batch) {
+            console.warn(`Batch ID ${batchId} not found!`);
+            console.groupEnd();
+            return;
+          }
+  
+          const newEnrolledStudentNumber = (batch.enrolledStudentNumber || 0) + increment;
+  
+          try {
+            const response = await axiosSecure.patch(`/batches/${batchId}`, {
+              enrolledStudentNumber: newEnrolledStudentNumber,
+            });
+  
+            if (response.status === 200) {
+              console.log(`Batch ${batchId} updated successfully`);
+              console.log(`New enrolledStudentNumber: ${newEnrolledStudentNumber}`);
+            }
+          } catch (error) {
+            console.error(`Error updating batch ${batchId}:`, error);
+          }
+          console.groupEnd();
+        }
+      );
+  
+      await Promise.all(batchUpdatePromises);
+  
+      // Comprehensive notification
+      if (successfulAssignments.length > 0) {
+        Swal.fire({
+          title: "Batch Assignment Completed",
+          html: `
+            <p>Successfully assigned batches to ${successfulAssignments.length} students.</p>
+            ${failedAssignments.length > 0 ? `<p style="color:red">${failedAssignments.length} assignments failed.</p>` : ''}
+          `,
+          icon: successfulAssignments.length === selectedUsers.length ? "success" : "warning",
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Batch Assignment Failed",
+          text: "No students could be assigned to batches.",
+        });
+      }
+  
+      // Log final summary
+      console.log("Batch Assignment Summary:");
+      console.log("Total Selected Users:", selectedUsers.length);
+      console.log("Successful Assignments:", successfulAssignments.length);
+      console.log("Failed Assignments:", failedAssignments.length);
+  
+      // Refetch data to reflect updates
+      await queryClient.refetchQueries(["students"]);
+      await queryClient.refetchQueries(["batches"]);
+  
+      // Reset selection after assignment
+      setSelectedUsers([]);
+      setSelectAll(false);
     } else {
       Swal.fire({
         icon: "error",
@@ -198,10 +388,8 @@ const CourseAssignment = () => {
       });
     }
   };
-  
-  
-  
-  // Archive Handler to set isDeleted to true
+ 
+ 
   const handleArchive = async () => {
     if (selectedUsers.length > 0) {
       const selectedUserDetails = selectedUsers.map((userId) => {
@@ -410,7 +598,7 @@ const CourseAssignment = () => {
               <p>Preferred Course: {selectedStudent.prefCourse}</p>
               <p>
                 Assigned Batch:{" "}
-                {assignedBatches[selectedStudent._id] || "Not Assigned"}
+                {assignedBatches[selectedStudent.enrolled_batch] || "Not Assigned"}
               </p>
               <div className="modal-action">
                 <button

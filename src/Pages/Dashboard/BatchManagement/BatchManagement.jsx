@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { FaFileArchive } from "react-icons/fa";
+import { FaFileArchive,FaEye } from "react-icons/fa";
 import CreateBatch from "./CreateBatch";
-import UpdateBatch from "./UpdateBatch"; // Assuming UpdateBatch component is created
+import UpdateBatch from "./UpdateBatch"; 
+import { Link } from "react-router-dom";
 
 const BatchManagement = () => {
   const [batches, setBatches] = useState([]);
@@ -13,7 +14,7 @@ const BatchManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [selectedBatchId, setSelectedBatchId] = useState(null); // State to hold selected batch ID for editing
+  const [selectedBatchId, setSelectedBatchId] = useState(null); 
 
   useEffect(() => {
     fetchBatches();
@@ -51,13 +52,11 @@ const BatchManagement = () => {
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Mapping course IDs to names
   const courseMap = courses.reduce((acc, course) => {
     acc[course._id] = course.courseName;
     return acc;
   }, {});
 
-  // Search and filter logic
   const filteredBatches = batches.filter((batch) => {
     const courseName = courseMap[batch.course_id] || "";
     const batchName = batch.batchName || "";
@@ -76,13 +75,13 @@ const BatchManagement = () => {
 
   const handleCloseModal = () => {
     document.getElementById("my_modal_5").close();
-    setSelectedBatchId(null); // Clear selected batch ID when modal is closed
-    fetchBatches(); // Refresh the batch list after editing
+    setSelectedBatchId(null);
+    fetchBatches();
   };
 
   const handleEditBatch = (batchId) => {
-    setSelectedBatchId(batchId); // Set the selected batch ID
-    document.getElementById("my_modal_5").showModal(); // Open the modal
+    setSelectedBatchId(batchId);
+    document.getElementById("my_modal_5").showModal();
   };
 
   return (
@@ -171,12 +170,18 @@ const BatchManagement = () => {
                     <td>{courseMap[batch.course_id] || "Unknown Course"}</td>
                     <td>{batch.status}</td>
                     <td className="flex justify-center gap-4">
+                    <Link to={`/dashboard/batchDetails/${batch._id}`}>
+  <FaEye className="text-blue-950 cursor-pointer hover:scale-105" />
+</Link>
+
                       <button onClick={() => handleEditBatch(batch._id)}>
                         <MdEdit />
                       </button>
+                      
                       <button>
                         <FaFileArchive />
                       </button>
+                      
                     </td>
                   </tr>
                 ))}
