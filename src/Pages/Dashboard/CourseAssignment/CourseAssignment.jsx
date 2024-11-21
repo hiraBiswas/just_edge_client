@@ -521,7 +521,7 @@ const CourseAssignment = () => {
         .filter((batch) => batch.status === "Soon to be started") // filter batches
         .map((batch) => (
           <option key={batch._id} value={batch.batchName}>
-            {batch.batchName}
+            {batch.batchName} ({batch.enrolledStudentNumber})
           </option>
         ))}
     </select>
