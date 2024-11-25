@@ -133,16 +133,7 @@ const CourseAssignment = () => {
     });
   };
 
-  // const handleSelectAll = () => {
-  //   setSelectAll((prev) => !prev);
-  
-  //   setSelectedUsers((prev) =>
-  //     selectAll
-  //       ? [] // Deselect all users if currently selected
-  //       : currentUsers.map((user) => user._id) // Select all visible users
-  //   );
-  // };
-
+ 
   const handleSelectAll = () => {
     setSelectAll((prev) => !prev);
   
@@ -182,67 +173,6 @@ const CourseAssignment = () => {
       return prev.filter(id => !allCurrentUserIds.includes(id));
     });
   };
-  
-  // const handleAssignBatch = async () => {
-  //   if (selectedUsers.length > 0) {
-  //     const selectedUserDetails = selectedUsers.map(async (userId) => {
-  //       // Get the student associated with the user
-  //       const student = students.find((student) => student.userId === userId);
-  
-  //       if (student) {
-  //         const studentId = student._id; // Get the student._id from the student object
-  
-  //         const assignedBatchName = assignedBatches[userId] || student.prefBatch;
-  
-  //         // Find the corresponding batch from the batchList
-  //         const assignedBatch = batchList.find(
-  //           (batch) => batch.batchName === assignedBatchName
-  //         );
-  
-  //         // Prepare the data to be updated (only update the enrolled_batch)
-  //         const updateData = {
-  //           enrolled_batch: assignedBatch ? assignedBatch._id : null, // Only update enrolled_batch
-  //         };
-  
-  //         // Perform the patch request to update the student's enrolled_batch
-  //         try {
-  //           const response = await axiosSecure.patch(
-  //             `/students/${studentId}`,
-  //             updateData
-  //           );
-  
-  //           if (response.status === 200) {
-  //             console.log(`Assigned Batch ${assignedBatchName} to student ${studentId}`);
-  //             Swal.fire({
-  //               title: "Batch Assigned!",
-  //               text: `Assigned selected students to Batch ${assignedBatchName}`,
-  //               icon: "success",
-  //             });
-  
-  //             // Refetch the students data after the patch operation
-  //             await queryClient.refetchQueries(["students"]);
-  //           }
-  //         } catch (error) {
-  //           console.error("Error assigning batch:", error);
-  //           Swal.fire({
-  //             icon: "error",
-  //             title: "Error Assigning Batch",
-  //             text: "There was an issue assigning the batch. Please try again.",
-  //           });
-  //         }
-  //       }
-  //     });
-  
-  //     await Promise.all(selectedUserDetails); // Ensure all updates are completed before finishing the process
-  //   } else {
-  //     Swal.fire({
-  //       icon: "error",
-  //       title: "No Students Selected",
-  //       text: "Please select students before proceeding.",
-  //     });
-  //   }
-  // };
-  
   
   
   const handleAssignBatch = async () => {
