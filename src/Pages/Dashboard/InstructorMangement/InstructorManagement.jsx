@@ -5,6 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { FaEyeSlash } from "react-icons/fa6";
 import { IoEyeSharp } from "react-icons/io5";
 import useAxiosPublic from "../../../hooks/useAxiosPublic";
+import InstructorsCard from "./InstructorsCard";
+import InstructorContainer from "./InstructorContainer";
 
 const InstructorManagement = () => {
   const { register, handleSubmit, reset } = useForm();
@@ -149,6 +151,8 @@ const InstructorManagement = () => {
           </div>
         </div>
       )}
+
+      <InstructorContainer></InstructorContainer>
 
       <ToastContainer />
     </div>
