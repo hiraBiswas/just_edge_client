@@ -70,25 +70,20 @@ const BatchManagement = () => {
       return acc;
     }, {});
   }, [combinedInstructors]);
-
-  // Fetch batches
   useEffect(() => {
     const fetchBatches = async () => {
       try {
         const response = await axiosSecure.get("/batches");
-        console.log(response.data); // Log the batches data to inspect its structure
-
-        // Update batches with instructor names
+        console.log(response.data);
+  
         const updatedBatches = response.data.map(batch => {
-          const instructorNames = batch.instructorIds
-            ? batch.instructorIds.map(id => instructorMap[id] || "Unknown")
-            : ["Unassigned"];
+          const instructorNames = batch.instructors.length ? batch.instructors : ["Unassigned"];
           return {
             ...batch,
             instructors: instructorNames,
           };
         });
-
+  
         setBatches(updatedBatches);
       } catch (error) {
         console.error("Error fetching batches:", error);
@@ -96,9 +91,10 @@ const BatchManagement = () => {
         setLoading(false);
       }
     };
-
+  
     fetchBatches();
-  }, [axiosSecure, instructorMap]);  // Ensure that the effect runs when instructorMap changes
+  }, [axiosSecure]);
+  
 
   const handleAssignInstructor = async (batchId, instructorId) => {
     try {
