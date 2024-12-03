@@ -70,65 +70,79 @@ const BatchManagement = () => {
       return acc;
     }, {});
   }, [combinedInstructors]);
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const response = await axiosSecure.get("/batches");
-        console.log(response.data);
+
+
+useEffect(() => {
+  const fetchBatches = async () => {
+    try {
+      const response = await axiosSecure.get("/batches");
+      console.log(response.data); 
+
+      // Update batches with instructor names
+      const updatedBatches = response.data.map(batch => {
   
-        const updatedBatches = response.data.map(batch => {
-          const instructorNames = batch.instructors.length ? batch.instructors : ["Unassigned"];
-          return {
-            ...batch,
-            instructors: instructorNames,
-          };
-        });
-  
-        setBatches(updatedBatches);
-      } catch (error) {
-        console.error("Error fetching batches:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    fetchBatches();
-  }, [axiosSecure]);
+        const instructorNames = batch.instructors || []; 
+        return {
+          ...batch,
+          instructors: instructorNames,
+        };
+      });
+
+      setBatches(updatedBatches);
+    } catch (error) {
+      console.error("Error fetching batches:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchBatches();
+}, [axiosSecure]);  
+
   
 
   const handleAssignInstructor = async (batchId, instructorId) => {
     try {
+      // POST the instructor assignment
       const response = await axiosSecure.post("/instructors-batches", {
         instructorId,
         batchId,
       });
-
+  
       if (response.status === 201) {
+        // Get the instructor's name from the instructor map
+        const instructorName = instructorMap[instructorId] || "Unknown";
+  
         toast.success("Instructor assigned successfully!");
-
-        // Update the batches state with the new instructor information
+  
+        // Update the batches state immediately with the instructor's name
         setBatches((prevBatches) => {
           return prevBatches.map((batch) =>
             batch._id === batchId
               ? {
                   ...batch,
-                  instructors: [...batch.instructors, instructorMap[instructorId] || "Unknown"],
+                  instructors: [...batch.instructors, instructorName], // Add the name directly
                 }
               : batch
           );
         });
-
-        // Clear the selected instructor after assignment
+  
+        // Reset the selected instructor for the current batch
         setInstructorSelection((prev) => ({
           ...prev,
-          [batchId]: "", // Reset the instructor selection for that batch
+          [batchId]: "", // Reset the instructor selection after assignment
         }));
       }
     } catch (error) {
-      console.error("Error assigning instructor:", error);
-      toast.error("Error assigning instructor.");
+      if (error.response && error.response.status === 409) {
+        toast.error(error.response.data.message || "Instructor already assigned.");
+      } else {
+        toast.error("Error assigning instructor.");
+      }
     }
   };
+  
+  
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
