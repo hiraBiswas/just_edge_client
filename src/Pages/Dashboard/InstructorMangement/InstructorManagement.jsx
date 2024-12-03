@@ -5,7 +5,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { FaEyeSlash } from "react-icons/fa6";
 import { IoEyeSharp } from "react-icons/io5";
 import useAxiosPublic from "../../../hooks/useAxiosPublic";
-import InstructorContainer from "./InstructorContainer";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { Link } from "react-router-dom";
 import { FaEye, FaRegFileArchive } from "react-icons/fa";
@@ -15,46 +14,95 @@ const InstructorManagement = () => {
   const { register, handleSubmit, reset } = useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Track loading state
-  const [searchTerm, setSearchTerm] = useState(""); // Define searchTerm state
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const axiosPublic = useAxiosPublic();
   const axiosSecure = useAxiosSecure();
 
-  const [users, setUsers] = useState([]); // Initialize users state
-  const [instructors, setInstructors] = useState([]); // Initialize instructors state
-  const [loading, setLoading] = useState(true); // Loading state for skeleton
+  const [users, setUsers] = useState([]);
+  const [instructors, setInstructors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8; // Change this to 2 to show 2 items per page
+  const itemsPerPage = 8;
 
+  // Fetch instructors and users
+  const fetchInstructors = async () => {
+    try {
+      const usersResponse = await axiosSecure.get("/users");
+      const instructorsResponse = await axiosSecure.get("/instructors");
+
+      setUsers(usersResponse.data);
+      setInstructors(instructorsResponse.data);
+    } catch (error) {
+      console.error("Error fetching instructors:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInstructors(); // Fetch instructors on initial load
+  }, [axiosSecure]);
+
+
+    // Combine users and instructors data
+    const combinedData = React.useMemo(() => {
+      const combined = instructors
+        .map((instructor) => {
+          const userInfo = users.find((user) => user._id === instructor.userId);
+          if (!userInfo) return null;
+  
+          return {
+            _id: userInfo._id,
+            name: userInfo.name,
+            email: userInfo.email,
+            image: userInfo.image,
+            contact: instructor.contact,
+          };
+        })
+        .filter(Boolean);
+  
+      return combined;
+    }, [instructors, users]);
+
+  // Handle new instructor form submission
   const onSubmit = async (data) => {
     const { name, email, contact } = data;
-    const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg"; // Static image URL
+    const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
 
     try {
-      setIsLoading(true); // Set loading to true before making the API call
-      const userPayload = {
-        name,
-        email,
-        image,
-        type: "instructor",
-      };
-
+      setIsLoading(true);
+      const userPayload = { name, email, image, type: "instructor" };
       const userResponse = await axiosPublic.post("/users", userPayload);
 
       if (userResponse.data.insertedId) {
         const instructorPayload = {
           userId: userResponse.data.insertedId,
           contact,
-          password: "123456", // Default password
+          password: "123456",
           isDeleted: false,
         };
 
         const instructorResponse = await axiosPublic.post("/instructors", instructorPayload);
 
         if (instructorResponse.data.insertedId) {
+          // Add the new instructor to state
+          const newInstructor = {
+            _id: userResponse.data.insertedId,
+            name,
+            email,
+            image,
+            contact,
+          };
+
+          setInstructors((prevInstructors) => [newInstructor, ...prevInstructors]);
+
           toast.success("Instructor registered successfully");
-          reset(); 
-          setIsModalOpen(false); 
+          reset();
+          setIsModalOpen(false);
+
+          // Refetch instructors after adding a new one
+          fetchInstructors();
         } else {
           throw new Error("Failed to save instructor data.");
         }
@@ -64,54 +112,19 @@ const InstructorManagement = () => {
     } catch (error) {
       toast.error(`Error: ${error.message}`);
     } finally {
-      setIsLoading(false); // Set loading to false after the API calls are finished
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    const fetchInstructors = async () => {
-      try {
-        const usersResponse = await axiosSecure.get("/users");
-        const instructorsResponse = await axiosSecure.get("/instructors");
 
-        setUsers(usersResponse.data);
-        setInstructors(instructorsResponse.data);
-      } catch (error) {
-        console.error("Error fetching instructors:", error);
-      } finally {
-        setLoading(false); // Set loading to false after data is fetched
-      }
-    };
-    fetchInstructors();
-  }, [axiosSecure]);
-
-   // Combine users and instructors data
-   const combinedData = React.useMemo(() => {
-    const combined = instructors
-      .map((instructor) => {
-        const userInfo = users.find((user) => user._id === instructor.userId);
-        if (!userInfo) return null;
-
-        return {
-          _id: userInfo._id,
-          name: userInfo.name,
-          email: userInfo.email,
-          image: userInfo.image,
-          contact: instructor.contact, // Use the contact from instructor data
-        };
-      })
-      .filter(Boolean); // Remove null values
-
-    return combined;
-  }, [instructors, users]);
 
   // Paginate the combined data
   const totalPages = Math.ceil(combinedData.length / itemsPerPage);
   const currentItems = combinedData
-     .filter((instructor) =>
-       instructor.name.toLowerCase().includes(searchTerm.toLowerCase())
-     )
-     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    .filter((instructor) =>
+      instructor.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -124,7 +137,7 @@ const InstructorManagement = () => {
               className="input input-bordered"
               placeholder="Search"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)} // Update searchTerm state on input change
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
             <button className="btn px-5 bg-blue-950 text-white">Search</button>
           </div>
@@ -224,7 +237,6 @@ const InstructorManagement = () => {
       )}
 
       <div className="flex-grow overflow-x-auto">
-        {/* Table Section with Skeleton Loader */}
         <div className="overflow-x-auto">
           {loading ? (
             <div className="animate-pulse w-full mt-8 mx-auto">
@@ -243,7 +255,7 @@ const InstructorManagement = () => {
                   {[...Array(itemsPerPage)].map((_, index) => (
                     <tr key={index}>
                       <td colSpan="6">
-                        <div className="h-8 bg-gray-100 rounded-lg"></div> {/* Adjusted row height */}
+                        <div className="h-8 bg-gray-100 rounded-lg"></div>
                       </td>
                     </tr>
                   ))}
@@ -267,7 +279,7 @@ const InstructorManagement = () => {
                   <tr
                     key={instructor._id}
                     className={instructor.isDeleted ? "opacity-50" : "h-5"}
-                    style={{ height: "20px" }} // Adjusted row height
+                    style={{ height: "20px" }}
                   >
                     <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
                     <td>
@@ -299,7 +311,6 @@ const InstructorManagement = () => {
         </div>
       </div>
 
-      {/* Pagination Controls */}
       <div className="flex justify-end join my-4 px-8 py-4 mt-auto">
         <button
           className="join-item btn"

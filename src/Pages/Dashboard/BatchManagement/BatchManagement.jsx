@@ -19,6 +19,7 @@ const BatchManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState(null);
+  const [selectedInstructor, setSelectedInstructor] = useState(""); // State to track selected instructor
   const queryClient = useQueryClient();
   const axiosSecure = useAxiosSecure();
 
@@ -89,25 +90,22 @@ const BatchManagement = () => {
 
       if (response.status === 201) {
         toast.success("Instructor assigned successfully!");
-        // Optional: Refetch or update the batches locally
-        queryClient.invalidateQueries(["batches"]);
+
+        // Update the batches state with the new instructor information
+        setBatches((prevBatches) => {
+          return prevBatches.map((batch) =>
+            batch._id === batchId
+              ? { ...batch, instructor: instructorMap[instructorId] } // Update the batch with the new instructor
+              : batch
+          );
+        });
+
+        // Clear the selected instructor after assignment
+        setSelectedInstructor("");  // Reset the instructor dropdown
       }
     } catch (error) {
       console.error("Error assigning instructor:", error);
-
-      if (error.response) {
-        // Handle specific backend errors
-        if (error.response.status === 409) {
-          toast.error("This instructor is already assigned to the batch.");
-        } else if (error.response.status === 400) {
-          toast.error("Invalid instructor or batch ID.");
-        } else {
-          toast.error("An error occurred while assigning the instructor.");
-        }
-      } else {
-        // Handle network or other errors
-        toast.error("Failed to connect to the server. Please try again.");
-      }
+      toast.error("Error assigning instructor.");
     }
   };
 
@@ -183,11 +181,32 @@ const BatchManagement = () => {
         </div>
 
         <div className="overflow-x-auto w-[1100px]">
-          {loading || usersLoading || instructorsLoading ? (
-            <div>Loading...</div>
+          {(loading || usersLoading || instructorsLoading) ? (
+            <div className="animate-pulse w-full mt-8 mx-auto">
+              <table className="table w-[1000px] mx-auto">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th>Index</th>
+                    <th>Batch</th>
+                    <th>Status</th>
+                    <th>Instructor</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(itemsPerPage)].map((_, index) => (
+                    <tr key={index}>
+                      <td colSpan="5">
+                        <div className="h-8 bg-gray-100 rounded-lg"></div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <table className="table w-[1000px] mt-8">
-              <thead className="bg-blue-950 text-white">
+              <thead className="bg-blue-950 text-white text-lg">
                 <tr>
                   <th>Index</th>
                   <th>Batch</th>
@@ -204,21 +223,18 @@ const BatchManagement = () => {
                     <td>{batch.status}</td>
                     <td>{batch.instructor || "Unassigned"}</td>
 
-
                     <td>
                       <div className="flex items-center justify-between gap-4">
                         <select
                           className="select select-bordered select-sm"
+                          value={selectedInstructor} // Track selected instructor
                           onChange={(e) => {
                             const selectedUserId = e.target.value;
-                            const instructor = combinedInstructors.find(
-                              (instructor) => instructor.userId === selectedUserId
-                            );
-                            if (instructor) {
-                              handleAssignInstructor(batch._id, instructor._id);
+                            setSelectedInstructor(selectedUserId); // Set the selected instructor
+                            if (selectedUserId) {
+                              handleAssignInstructor(batch._id, selectedUserId);
                             }
                           }}
-                          defaultValue=""
                         >
                           <option value="" disabled>
                             Assign Instructor

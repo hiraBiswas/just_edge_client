@@ -17,52 +17,61 @@ const CourseAssignment = () => {
   const [selectedBatch, setSelectedBatch] = useState("");
   const [assignedBatches, setAssignedBatches] = useState({});
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const itemsPerPage = 7;
+  const [searchTerm, setSearchTerm] = useState("");
+  const itemsPerPage = 8;
   const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(true); 
+  
 
 
   // Fetch batches
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const response = await axiosSecure.get("/batches");
-        setBatchList(response.data);
-      } catch (error) {
-        console.error("Error fetching batches:", error);
-      }
-    };
-    fetchBatches();
-  }, [axiosSecure]);
+useEffect(() => {
+  const fetchBatches = async () => {
+    try {
+      const response = await axiosSecure.get("/batches");
+      setBatchList(response.data);
+    } catch (error) {
+      console.error("Error fetching batches:", error);
+    } finally {
+      setLoading(false);  // Ensure that loading is set to false after data is fetched or failed
+    }
+  };
+  setLoading(true);  // Set loading to true when data is being fetched
+  fetchBatches();
+}, [axiosSecure]);
 
-  // Fetch courses
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const response = await axiosSecure.get("/courses");
-        setCourseList(response.data);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      }
-    };
-    fetchCourses();
-  }, [axiosSecure]);
+// Fetch courses
+useEffect(() => {
+  const fetchCourses = async () => {
+    try {
+      const response = await axiosSecure.get("/courses");
+      setCourseList(response.data);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    } finally {
+      setLoading(false);  // Ensure that loading is set to false after data is fetched or failed
+    }
+  };
+  setLoading(true);  // Set loading to true when data is being fetched
+  fetchCourses();
+}, [axiosSecure]);
 
-  // Fetch users and students data
-  const { data: users = [] } = useQuery({
-    queryKey: ["users"],
-    queryFn: async () => {
-      const res = await axiosSecure.get("/users");
-      return res.data.filter((user) => user.type === "student");
-    },
-  });
+// Fetch users and students data
+const { data: users = [] } = useQuery({
+  queryKey: ["users"],
+  queryFn: async () => {
+    const res = await axiosSecure.get("/users");
+    return res.data.filter((user) => user.type === "student");
+  },
+});
 
-  const { data: students = [] } = useQuery({
-    queryKey: ["students"],
-    queryFn: async () => {
-      const res = await axiosSecure.get("/students");
-      return res.data;
-    },
-  });
+const { data: students = [] } = useQuery({
+  queryKey: ["students"],
+  queryFn: async () => {
+    const res = await axiosSecure.get("/students");
+    return res.data;
+  },
+});
 
   const getBatchNameById = (batchId) => {
     const batch = batchList.find((batch) => batch._id === batchId);
@@ -102,6 +111,15 @@ const CourseAssignment = () => {
       );
   }, [students, users, filterCourse, batchList, courseList]);
   
+// Paginate the combined data
+const totalPages = Math.ceil(combinedData.length / itemsPerPage);
+const currentItems = combinedData
+   .filter((instructor) =>
+     instructor.name.toLowerCase().includes(searchTerm.toLowerCase())
+   )
+   .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   useEffect(() => {
     const initialAssignedBatches = {};
@@ -122,7 +140,7 @@ const CourseAssignment = () => {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentUsers = combinedData.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(combinedData.length / itemsPerPage);
+
 
   const handleSelectUser = (userId) => {
     setSelectedUsers((prevSelected) => {
@@ -357,12 +375,12 @@ const CourseAssignment = () => {
   
 
   return (
-    <div className="">
+    <div className="h-screen">
       <div className="flex justify-between mx-8 items-center">
         <h2 className="text-3xl font-bold mt-8 mb-10">
           Total Students: {combinedData.length}
         </h2>
-
+  
         <div className="mb-4 flex justify-center">
           <select
             className="select select-bordered"
@@ -379,138 +397,177 @@ const CourseAssignment = () => {
         </div>
       </div>
 
-      {filterCourse && combinedData.length === 0 ? (
-        <div className="text-center text-2xl mt-32 min-h-screen font-semibold text-red-600">
-          No students prefer the selected course.
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead className="bg-blue-950 text-white">
-              <tr className="text-white">
-                <th>
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={handleSelectAll}
-                  />
-                </th>
-                <th className="text-lg font-semibold text-white">#</th>
-                <th className="text-lg font-semibold text-white">Image</th>
-                <th className="text-lg font-semibold text-white">Name</th>
-                <th className="text-lg font-semibold text-white">Student ID</th>
-                <th className="text-lg font-semibold text-white">Session</th>
-                <th className="text-lg font-semibold text-white">Preferred Course</th>
-                <th className="text-lg font-semibold text-white">Assign Batch</th>
-                <th className="text-lg font-semibold text-white">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentUsers.map((user, index) => (
-                <tr
-                  className="text-base text-black compact-row"
-                  key={user._id}
-                  style={{ height: "15px", padding: "0.25rem" }}
-                >
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(user._id)}
-                      onChange={() => handleSelectUser(user._id)}
-                    />
-                  </td>
-                  <td>{index + 1}</td>
-                  <td className="text-right text-base text-black">
-                    <div className="flex items-center justify-center gap-4">
-                      <div className="avatar">
-                        <div className="mask mask-squircle w-12 h-12">
-                          <img src={user.image} alt="User Avatar" />
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{user.name}</td>
-                  <td>{user.studentID}</td>
-                  <td>{user.session}</td>
-                  <td>{user.prefCourse}</td>
-                  <td>
-                 <td>
- 
-    <select
-      className="select select-bordered select-sm"
-      value={assignedBatches[user._id] || ""}
-      onChange={(e) => {
-        setAssignedBatches((prev) => ({
-          ...prev,
-          [user._id]: e.target.value,
-        }));
-      }}
-    >
-      <option value="">Select Batch</option>
-      {batchList
-        .filter((batch) => batch.status === "Soon to be started") // filter batches
-        .map((batch) => (
-          <option key={batch._id} value={batch.batchName}>
-            {batch.batchName} 
-          </option>
+      
+      {loading ? (
+  <div className="overflow-x-auto">
+    <table className="table w-full">
+      <thead className="bg-blue-950 text-white">
+        <tr className="text-white">
+          <th>
+            <input
+              type="checkbox"
+              checked={selectAll}
+              onChange={handleSelectAll}
+            />
+          </th>
+          <th className="text-lg font-semibold text-white">#</th>
+          <th className="text-lg font-semibold text-white">Image</th>
+          <th className="text-lg font-semibold text-white">Name</th>
+          <th className="text-lg font-semibold text-white">Student ID</th>
+          <th className="text-lg font-semibold text-white">Session</th>
+          <th className="text-lg font-semibold text-white">Preferred Course</th>
+          <th className="text-lg font-semibold text-white">Assign Batch</th>
+          <th className="text-lg font-semibold text-white">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {/* Skeleton Loader for Each Row */}
+        {[...Array(itemsPerPage)].map((_, index) => (
+          <tr key={index} className="animate-pulse">
+            <td colSpan="9">
+              <div className="skeleton h-32 w-full bg-gray-300"></div>
+            </td>
+          </tr>
         ))}
-    </select>
+      </tbody>
+    </table>
+  </div>
+) : combinedData.length === 0 ? (
+  filterCourse ? (
+    <div className="text-center text-2xl mt-32 min-h-screen font-semibold text-red-600">
+      No students prefer the selected course.
+    </div>
+  ) : (
+    <div className="text-center text-2xl mt-32 min-h-screen font-semibold text-red-600">
+      No students available.
+    </div>
+  )
+) : (
+  <div className="overflow-x-auto">
+    {/* Render table only if there are students */}
+    {combinedData.length > 0 && (
+      <table className="table w-full">
+        <thead className="bg-blue-950 text-white">
+          <tr className="text-white">
+            <th>
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={handleSelectAll}
+              />
+            </th>
+            <th className="text-lg font-semibold text-white">#</th>
+            <th className="text-lg font-semibold text-white">Image</th>
+            <th className="text-lg font-semibold text-white">Name</th>
+            <th className="text-lg font-semibold text-white">Student ID</th>
+            <th className="text-lg font-semibold text-white">Session</th>
+            <th className="text-lg font-semibold text-white">Preferred Course</th>
+            <th className="text-lg font-semibold text-white">Assign Batch</th>
+            <th className="text-lg font-semibold text-white">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentUsers.map((user, index) => (
+            <tr key={user._id} className="text-base text-black compact-row">
+              <td>
+                <input
+                  type="checkbox"
+                  checked={selectedUsers.includes(user._id)}
+                  onChange={() => handleSelectUser(user._id)}
+                />
+              </td>
+              <td>{index + 1}</td>
+              <td className="text-right text-base text-black">
+                <div className="flex items-center justify-center gap-4">
+                  <div className="avatar">
+                    <div className="mask mask-squircle w-12 h-12">
+                      <img src={user.image} alt="User Avatar" />
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>{user.name}</td>
+              <td>{user.studentID}</td>
+              <td>{user.session}</td>
+              <td>{user.prefCourse}</td>
+              <td>
+                <select
+                  className="select select-bordered select-sm"
+                  value={assignedBatches[user._id] || ""}
+                  onChange={(e) => {
+                    setAssignedBatches((prev) => ({
+                      ...prev,
+                      [user._id]: e.target.value,
+                    }));
+                  }}
+                >
+                  <option value="">Select Batch</option>
+                  {batchList
+                    .filter((batch) => batch.status === "Soon to be started")
+                    .map((batch) => (
+                      <option key={batch._id} value={batch.batchName}>
+                        {batch.batchName}
+                      </option>
+                    ))}
+                </select>
+              </td>
+              <td>
+                <button
+                  className="ml-5"
+                  onClick={() => {
+                    setSelectedStudent(user);
+                    document.getElementById("studentModal").showModal();
+                  }}
+                >
+                  <FaEye />
+                </button>
+
+                <button onClick={handleArchive} className="ml-5">
+                  <FaRegFileArchive />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+)}
+
+
+
+
+<div className="flex  items-center">
+    <div className="flex justify-center mb-8 mt-4">
+      <button
+        className="btn bg-blue-950 text-white"
+        onClick={handleAssignBatch}
+      >
+        Assign Batch
+      </button>
+    </div>
+
+    <div className="flex justify-end w-full px-8 py-4 mt-auto">
+      <button
+        className="join-item btn"
+        disabled={currentPage === 1}
+        onClick={() => handlePageChange(currentPage - 1)}
+      >
+        Previous
+      </button>
+      <button className="join-item btn">{`Page ${currentPage}`}</button>
+      <button
+        className="join-item btn"
+        disabled={currentPage === totalPages}
+        onClick={() => handlePageChange(currentPage + 1)}
+      >
+        Next
+      </button>
+    </div>
+  </div>
+
+
   
-</td>
-
-                  </td>
-                  <td>
-                    <button
-                      className="ml-5"
-                      onClick={() => {
-                        setSelectedStudent(user);
-                        document.getElementById("studentModal").showModal();
-                      }}
-                    >
-                      <FaEye />
-                    </button>
-
-                    <button onClick={handleArchive} className="ml-5">
-                      <FaRegFileArchive />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Pagination */}
-      <div className="flex justify-center mt-4 text-lg font-semibold text-black">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          className="btn btn-sm bg-blue-950"
-        >
-          Previous
-        </button>
-        <span className="mx-4">
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          onClick={() => setCurrentPage((prev) => prev + 1)}
-          disabled={currentPage >= totalPages}
-          className="btn btn-sm bg-blue-950"
-        >
-          Next
-        </button>
-      </div>
-
-      <div className="flex justify-center mt-4">
-        <button
-          className="btn bg-blue-950 ml-2 text-white mb-8"
-          onClick={handleAssignBatch}
-        >
-          Assign Batch
-        </button>
-      </div>
-
       {/* Modal for student details */}
       <dialog id="studentModal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
@@ -549,6 +606,7 @@ const CourseAssignment = () => {
       </dialog>
     </div>
   );
+  
 };
 
 export default CourseAssignment;
