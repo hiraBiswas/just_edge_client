@@ -6,7 +6,6 @@ import UpdateBatch from "./UpdateBatch";
 import { Link } from "react-router-dom";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { useQuery } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -19,25 +18,8 @@ const BatchManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState(null);
-  const [selectedInstructor, setSelectedInstructor] = useState(""); // State to track selected instructor
-  const queryClient = useQueryClient();
+  const [instructorSelection, setInstructorSelection] = useState({});
   const axiosSecure = useAxiosSecure();
-
-  // Fetch batches
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const response = await axiosSecure.get("/batches");
-        setBatches(response.data);
-      } catch (error) {
-        console.error("Error fetching batches:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBatches();
-  }, [axiosSecure]);
 
   // Fetch courses
   useEffect(() => {
@@ -81,6 +63,43 @@ const BatchManagement = () => {
     });
   }, [instructors, users]);
 
+  // Instructor map is created after combinedInstructors is ready
+  const instructorMap = React.useMemo(() => {
+    return combinedInstructors.reduce((acc, instructor) => {
+      acc[instructor.userId] = instructor.name;
+      return acc;
+    }, {});
+  }, [combinedInstructors]);
+
+  // Fetch batches
+  useEffect(() => {
+    const fetchBatches = async () => {
+      try {
+        const response = await axiosSecure.get("/batches");
+        console.log(response.data); // Log the batches data to inspect its structure
+
+        // Update batches with instructor names
+        const updatedBatches = response.data.map(batch => {
+          const instructorNames = batch.instructorIds
+            ? batch.instructorIds.map(id => instructorMap[id] || "Unknown")
+            : ["Unassigned"];
+          return {
+            ...batch,
+            instructors: instructorNames,
+          };
+        });
+
+        setBatches(updatedBatches);
+      } catch (error) {
+        console.error("Error fetching batches:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBatches();
+  }, [axiosSecure, instructorMap]);  // Ensure that the effect runs when instructorMap changes
+
   const handleAssignInstructor = async (batchId, instructorId) => {
     try {
       const response = await axiosSecure.post("/instructors-batches", {
@@ -95,13 +114,19 @@ const BatchManagement = () => {
         setBatches((prevBatches) => {
           return prevBatches.map((batch) =>
             batch._id === batchId
-              ? { ...batch, instructor: instructorMap[instructorId] } // Update the batch with the new instructor
+              ? {
+                  ...batch,
+                  instructors: [...batch.instructors, instructorMap[instructorId] || "Unknown"],
+                }
               : batch
           );
         });
 
         // Clear the selected instructor after assignment
-        setSelectedInstructor("");  // Reset the instructor dropdown
+        setInstructorSelection((prev) => ({
+          ...prev,
+          [batchId]: "", // Reset the instructor selection for that batch
+        }));
       }
     } catch (error) {
       console.error("Error assigning instructor:", error);
@@ -113,11 +138,6 @@ const BatchManagement = () => {
 
   const courseMap = courses.reduce((acc, course) => {
     acc[course._id] = course.courseName;
-    return acc;
-  }, {});
-
-  const instructorMap = combinedInstructors.reduce((acc, instructor) => {
-    acc[instructor.userId] = instructor.name;
     return acc;
   }, {});
 
@@ -221,16 +241,19 @@ const BatchManagement = () => {
                     <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                     <td>{batch.batchName}</td>
                     <td>{batch.status}</td>
-                    <td>{batch.instructor || "Unassigned"}</td>
+                    <td>{batch.instructors.join(", ") || "Unassigned"}</td>
 
                     <td>
                       <div className="flex items-center justify-between gap-4">
                         <select
                           className="select select-bordered select-sm"
-                          value={selectedInstructor} // Track selected instructor
+                          value={instructorSelection[batch._id] || ""}
                           onChange={(e) => {
                             const selectedUserId = e.target.value;
-                            setSelectedInstructor(selectedUserId); // Set the selected instructor
+                            setInstructorSelection((prev) => ({
+                              ...prev,
+                              [batch._id]: selectedUserId,
+                            }));
                             if (selectedUserId) {
                               handleAssignInstructor(batch._id, selectedUserId);
                             }
@@ -240,7 +263,7 @@ const BatchManagement = () => {
                             Assign Instructor
                           </option>
                           {combinedInstructors.map((instructor) => (
-                            <option key={instructor._id} value={instructor.userId}>
+                            <option key={instructor.userId} value={instructor.userId}>
                               {instructor.name}
                             </option>
                           ))}
@@ -249,6 +272,7 @@ const BatchManagement = () => {
                         <Link to={`/dashboard/batchDetails/${batch._id}`}>
                           <FaEye className="w-4 h-4" />
                         </Link>
+
                         <button onClick={() => setSelectedBatchId(batch._id)}>
                           <MdEdit className="w-4 h-4" />
                         </button>
@@ -274,6 +298,7 @@ const BatchManagement = () => {
           Previous
         </button>
         <button className="join-item btn">{`Page ${currentPage}`}</button>
+
         <button
           className="join-item btn"
           disabled={currentPage === totalPages}
