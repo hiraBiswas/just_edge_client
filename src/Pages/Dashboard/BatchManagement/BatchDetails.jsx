@@ -155,8 +155,6 @@ const BatchDetails = () => {
           >
             <RxCross2 />
           </button>
-
-
           
           {/* Pass batchId to CreateRoutine component */}
           <CreateRoutine batchId={batchId} closeModal={closeModal} />
