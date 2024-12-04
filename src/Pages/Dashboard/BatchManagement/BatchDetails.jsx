@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom"; // Import Link for navigation
+import { Link, useParams } from "react-router-dom";
 import useAxiosSecure from "./../../../hooks/useAxiosSecure"; // Import your custom hook for axios
+import CreateRoutine from './CreateRoutine'; // Import your CreateRoutine component
+import { RxCross2 } from "react-icons/rx"; // Import the cross icon
 
 const BatchDetails = () => {
   const { id: batchId } = useParams(); // Get batch ID from URL params
@@ -43,7 +45,11 @@ const BatchDetails = () => {
   }, [batchId, axiosSecure]);
 
   if (loading) {
-    return <div className="text-center mt-12">Loading students and batch details...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <span className="loading loading-ring loading-lg"></span>
+      </div>
+    );
   }
 
   if (!batch) {
@@ -90,7 +96,17 @@ const BatchDetails = () => {
           <strong>Total Enrolled Students:</strong> {batch.enrolledStudentNumber}
         </p>
       )}
-  
+
+      {/* Button for creating routine */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => document.getElementById("my_modal_5").showModal()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Create Routine
+        </button>
+      </div>
+
       {filteredStudents.length > 0 ? (
         <table className="table-auto w-full border-collapse border border-gray-200">
           <thead>
@@ -119,9 +135,31 @@ const BatchDetails = () => {
           No students enrolled in this batch.
         </div>
       )}
+
+      {/* Create Routine Modal using <dialog> */}
+      <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+        <div className="modal-box relative">
+          {/* Close Button */}
+          <button
+            type="button"
+            className="absolute top-2 right-2 text-xl"
+            onClick={() => document.getElementById("my_modal_5").close()} // Close modal on click
+          >
+            <RxCross2 />
+          </button>
+
+
+          
+          {/* Pass batchId to CreateRoutine component */}
+          <CreateRoutine batchId={batchId} />
+          
+          <div className="modal-action">
+         
+          </div>
+        </div>
+      </dialog>
     </div>
   );
-  
 };
 
 export default BatchDetails;

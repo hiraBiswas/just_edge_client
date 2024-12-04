@@ -8,6 +8,8 @@ import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { useQuery } from "@tanstack/react-query";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ImCross } from "react-icons/im";
+import { RxCross2 } from "react-icons/rx";
 
 const BatchManagement = () => {
   const [batches, setBatches] = useState([]);
@@ -235,7 +237,7 @@ useEffect(() => {
               </table>
             </div>
           ) : (
-            <table className="table w-[1000px] mt-8">
+            <table className="table w-[1100px] mt-8">
               <thead className="bg-blue-950 text-white text-lg">
                 <tr>
                   <th>Index</th>
@@ -319,15 +321,25 @@ useEffect(() => {
       </div>
 
       <div className="modal">
-        <dialog id="my_modal_5">
-          <div className="modal-box">
-            {selectedBatchId ? (
-              <UpdateBatch batchId={selectedBatchId} />
-            ) : (
-              <CreateBatch />
-            )}
-          </div>
-        </dialog>
+      <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+  <div className="modal-box">
+    <div className="absolute top-0 right-6 p-4">
+      <button
+        className="text-2xl font-bold hover:text-3xl hover:scale-110 transition-transform duration-200 cursor-pointer"
+        onClick={() => document.getElementById("my_modal_5").close()}
+      >
+        <RxCross2 />
+      </button>
+    </div>
+
+    {selectedBatchId ? (
+      <UpdateBatch batchId={selectedBatchId} />
+    ) : (
+      <CreateBatch />
+    )}
+  </div>
+</dialog>
+
       </div>
       <ToastContainer />
     </div>

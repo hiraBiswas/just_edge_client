@@ -9,6 +9,7 @@ import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { Link } from "react-router-dom";
 import { FaEye, FaRegFileArchive } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
+import { FaPlus } from "react-icons/fa6";
 
 const InstructorManagement = () => {
   const { register, handleSubmit, reset } = useForm();
@@ -143,10 +144,10 @@ const InstructorManagement = () => {
           </div>
           <div>
             <button
-              className="btn bg-blue-950 text-white"
+              className="btn btn-outline text-bg-950"
               onClick={() => setIsModalOpen(true)}
             >
-              Add New Instructor
+              <FaPlus /> Add New Instructor
             </button>
           </div>
         </div>
@@ -157,7 +158,7 @@ const InstructorManagement = () => {
           <div className="bg-white rounded-lg shadow-lg p-4 w-2/5 h-4/5 relative">
             <div className="flex justify-center mb-6">
               <h2 className="text-xl font-semibold mt-6 text-center">
-                Add New Instructor
+            Add New Instructor
               </h2>
             </div>
 
