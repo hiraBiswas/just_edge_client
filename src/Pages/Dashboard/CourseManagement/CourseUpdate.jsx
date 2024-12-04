@@ -110,11 +110,19 @@ const UpdateCourse = () => {
     console.log("Selected image:", e.target.files[0]);
   };
 
-  if (loading) return <p>Loading course details...</p>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <span className="loading loading-ring loading-lg"></span>
+      </div>
+    );
+  }
+
   if (error) return <p>Error: {error}</p>;
 
   return (
     <div className="p-6 bg-white w-[1100px] mx-auto mt-5">
+      {/* Updated Breadcrumbs */}
       <nav className="text-gray-600 mb-4" aria-label="Breadcrumb">
         <ol className="list-none p-0 inline-flex space-x-2">
           <li className="flex items-center">
@@ -126,11 +134,13 @@ const UpdateCourse = () => {
             <span className="mx-2">/</span>
           </li>
           <li className="text-black font-medium text-xl">Update Course</li>
+          <span className="mx-2">/</span>
+          <li className="text-black font-medium text-xl"> {course.courseName}</li> 
         </ol>
       </nav>
 
       <div className="w-[600px] mx-auto shadow-xl mt-8 p-8">
-        <h2 className="text-2xl font-bold mb-4 text-center">Update Course</h2>
+        {/* <h2 className="text-2xl font-bold mb-4 text-center">Update Course</h2> */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center space-x-4">
             <label className="font-medium w-40">Course Name:</label>

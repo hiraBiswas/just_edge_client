@@ -425,7 +425,7 @@ const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
         {[...Array(itemsPerPage)].map((_, index) => (
           <tr key={index} className="animate-pulse">
             <td colSpan="9">
-              <div className="skeleton h-32 w-full bg-gray-300"></div>
+              <div className="skeleton h-8 w-full bg-gray-300"></div>
             </td>
           </tr>
         ))}

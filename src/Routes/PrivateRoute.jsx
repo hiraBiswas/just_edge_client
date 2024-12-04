@@ -8,7 +8,12 @@ const PrivateRoute = ({children}) => {
     const location = useLocation()
     console.log(location.pathname)
     if(loading){
-        return <progress className="progress text-6xl  w-56"></progress>
+
+        return (
+            <div className="flex justify-center items-center h-screen">
+               <span className="loading loading-ring loading-lg"></span>
+            </div>
+        );
     }
 
     if(user?.email){
