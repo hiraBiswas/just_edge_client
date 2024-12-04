@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import useAxiosSecure from "./../../../hooks/useAxiosSecure"; // Import your custom hook for axios
 import CreateRoutine from './CreateRoutine'; // Import your CreateRoutine component
+import UpdateRoutine from './UpdateRoutine'; // Import your UpdateRoutine component
 import { RxCross2 } from "react-icons/rx"; // Import the cross icon
 
 const BatchDetails = () => {
@@ -11,12 +12,14 @@ const BatchDetails = () => {
   const [batch, setBatch] = useState(null); // Store batch data
   const [users, setUsers] = useState([]); // Store users data
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [routine, setRoutine] = useState(null); // Store routine data for the batch
 
   const axiosSecure = useAxiosSecure(); // Get the axios instance with secure headers
 
-  // Fetch students, batch, and users data
+  // Custom order for days starting from Saturday
+  const dayOrder = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -36,6 +39,10 @@ const BatchDetails = () => {
           (student) => student.enrolled_batch === batchId
         );
         setFilteredStudents(filtered);
+
+        // Check if routine exists
+        const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
+        setRoutine(routineResponse.data || null);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -54,16 +61,6 @@ const BatchDetails = () => {
     );
   }
 
-
-
-  const closeModal = () => {
-    document.getElementById("my_modal_5").close(); // Directly close the modal
-  };
-
-  const openModal = () => {
-    setIsModalOpen(true); // Open the modal when needed
-  };
-
   if (!batch) {
     return (
       <div className="text-center text-gray-500">
@@ -77,6 +74,21 @@ const BatchDetails = () => {
     const user = Array.isArray(users) ? users.find((user) => user._id === userId) : null;
     return user ? user.name : "N/A";
   };
+
+  // Format the time in 12-hour format with AM/PM
+  const formatTime = (time) => {
+    const [hours, minutes] = time.split(':');
+    const date = new Date();
+    date.setHours(hours);
+    date.setMinutes(minutes);
+
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Sort the routine schedule based on the custom day order
+  const sortedSchedule = routine ? routine.schedule.sort((a, b) => {
+    return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
+  }) : [];
 
   return (
     <div className="w-[1100px] mx-auto p-6">
@@ -109,63 +121,119 @@ const BatchDetails = () => {
         </p>
       )}
 
-      {/* Button for creating routine */}
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => document.getElementById("my_modal_5").showModal()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Create Routine
-        </button>
-      </div>
-
-      {filteredStudents.length > 0 ? (
-        <table className="table-auto w-full border-collapse border border-gray-200">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-4 py-2">#</th>
-              <th className="border border-gray-300 px-4 py-2">Name</th>
-              <th className="border border-gray-300 px-4 py-2">Student ID</th>
-              <th className="border border-gray-300 px-4 py-2">Department</th>
-              <th className="border border-gray-300 px-4 py-2">Institution</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredStudents.map((student, index) => (
-              <tr key={student._id}>
-                <td className="border border-gray-300 px-4 py-2">{index + 1}</td>
-                <td className="border border-gray-300 px-4 py-2">{getUserName(student.userId) || "N/A"}</td>
-                <td className="border border-gray-300 px-4 py-2">{student.studentID}</td>
-                <td className="border border-gray-300 px-4 py-2">{student.department}</td>
-                <td className="border border-gray-300 px-4 py-2">{student.institution}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <div className="text-center mt-10 text-xl font-semibold text-gray-500">
-          No students enrolled in this batch.
+      {/* Section for Routine Display and Options */}
+      <section className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-medium text-xl">Current Routine</h3>
+          {/* Update Routine Button or Create Routine Button */}
+          {routine ? (
+            <button
+              onClick={() => document.getElementById("update_routine_modal").showModal()}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+            >
+              Update Routine
+            </button>
+          ) : (
+            <button
+              onClick={() => document.getElementById("create_routine_modal").showModal()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Create Routine
+            </button>
+          )}
         </div>
-      )}
+        {routine ? (
+          <div className="rounded-lg p-4 mb-4">
+            <table className="table-auto w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-4 py-2">Day</th>
+                  <th className="border border-gray-300 px-4 py-2">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedSchedule.map((item, index) => (
+                  <tr key={index}>
+                    <td className="border border-gray-300 px-4 py-2">{item.day}</td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {formatTime(item.startTime)} - {formatTime(item.endTime)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="border rounded-lg p-4 mb-4 text-gray-500">
+            No routine has been created for this batch yet.
+          </div>
+        )}
+      </section>
 
-      {/* Create Routine Modal using <dialog> */}
-      <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+      {/* Section for Enrolled Students */}
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Enrolled Students</h2>
+        {filteredStudents.length > 0 ? (
+          <table className="table-auto w-full border-collapse border border-gray-200">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-4 py-2">#</th>
+                <th className="border border-gray-300 px-4 py-2">Name</th>
+                <th className="border border-gray-300 px-4 py-2">Student ID</th>
+                <th className="border border-gray-300 px-4 py-2">Department</th>
+                <th className="border border-gray-300 px-4 py-2">Institution</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredStudents.map((student, index) => (
+                <tr key={student._id}>
+                  <td className="border border-gray-300 px-4 py-2">{index + 1}</td>
+                  <td className="border border-gray-300 px-4 py-2">{getUserName(student.userId) || "N/A"}</td>
+                  <td className="border border-gray-300 px-4 py-2">{student.studentID}</td>
+                  <td className="border border-gray-300 px-4 py-2">{student.department}</td>
+                  <td className="border border-gray-300 px-4 py-2">{student.institution}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="text-center mt-10 text-xl font-semibold text-gray-500">
+            No students enrolled in this batch.
+          </div>
+        )}
+      </section>
+
+      {/* Create Routine Modal */}
+      <dialog id="create_routine_modal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box relative">
           {/* Close Button */}
           <button
             type="button"
             className="absolute top-2 right-2 text-xl"
-            onClick={() => document.getElementById("my_modal_5").close()} // Close modal on click
+            onClick={() => document.getElementById("create_routine_modal").close()} // Close modal on click
           >
             <RxCross2 />
           </button>
           
-          {/* Pass batchId to CreateRoutine component */}
-          <CreateRoutine batchId={batchId} closeModal={closeModal} />
+          {/* CreateRoutine Component */}
+          <CreateRoutine batchId={batchId} closeModal={() => document.getElementById("create_routine_modal").close()} />
+        </div>
+      </dialog>
+
+      {/* Update Routine Modal */}
+      <dialog id="update_routine_modal" className="modal modal-bottom sm:modal-middle">
+        <div className="modal-box relative">
+          {/* Close Button */}
+          <button
+            type="button"
+            className="absolute top-2 right-2 text-xl"
+            onClick={() => document.getElementById("update_routine_modal").close()} // Close modal on click
+          >
+            <RxCross2 />
+          </button>
           
-          <div className="modal-action">
-         
-          </div>
+          {/* UpdateRoutine Component */}
+          <UpdateRoutine batchId={batchId} routine={routine} closeModal={() => document.getElementById("update_routine_modal").close()} />
         </div>
       </dialog>
     </div>

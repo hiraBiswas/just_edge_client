@@ -89,7 +89,7 @@ const CreateRoutine = ({ batchId, closeModal }) => {
 
   // Days for dropdown selection
   const daysOfWeek = [
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+    "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
   ];
 
   return (
