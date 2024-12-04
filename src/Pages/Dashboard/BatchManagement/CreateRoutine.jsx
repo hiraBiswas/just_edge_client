@@ -66,31 +66,24 @@ const CreateRoutine = ({ batchId, closeModal }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     const scheduleData = {
       batchId: batchId,
       schedule: schedule,
     };
-
+  
     try {
-      // Sending the data to the backend
       const response = await axiosSecure.post("/routine", scheduleData);
-
+  
       if (response.status === 201) {
-        e.target.reset(); // Clear the form fields after successful submission
-        toast.success("Routine saved successfully!"); // Show success toast
-
-        // Close the modal after saving the routine
-        closeModal();
+        e.target.reset();
+        toast.success("Routine saved successfully!");
+        closeModal(); 
       } else {
-        // Show error toast if the response status is not 201
         toast.error("Failed to create routine");
       }
     } catch (error) {
       console.error("Error details:", error.response?.data || error.message);
-
-      // No modal closing and no toast for errors
-      // Just log the error and keep the modal open
     }
   };
 

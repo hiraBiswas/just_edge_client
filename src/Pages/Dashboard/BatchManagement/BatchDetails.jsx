@@ -11,6 +11,8 @@ const BatchDetails = () => {
   const [batch, setBatch] = useState(null); // Store batch data
   const [users, setUsers] = useState([]); // Store users data
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
 
   const axiosSecure = useAxiosSecure(); // Get the axios instance with secure headers
 
@@ -52,8 +54,10 @@ const BatchDetails = () => {
     );
   }
 
+
+
   const closeModal = () => {
-    setIsModalOpen(false); // Close the modal when routine is saved
+    document.getElementById("my_modal_5").close(); // Directly close the modal
   };
 
   const openModal = () => {
