@@ -52,6 +52,14 @@ const BatchDetails = () => {
     );
   }
 
+  const closeModal = () => {
+    setIsModalOpen(false); // Close the modal when routine is saved
+  };
+
+  const openModal = () => {
+    setIsModalOpen(true); // Open the modal when needed
+  };
+
   if (!batch) {
     return (
       <div className="text-center text-gray-500">
@@ -151,7 +159,7 @@ const BatchDetails = () => {
 
           
           {/* Pass batchId to CreateRoutine component */}
-          <CreateRoutine batchId={batchId} />
+          <CreateRoutine batchId={batchId} closeModal={closeModal} />
           
           <div className="modal-action">
          
