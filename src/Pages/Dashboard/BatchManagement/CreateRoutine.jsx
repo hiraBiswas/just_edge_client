@@ -3,12 +3,13 @@ import useAxiosSecure from "../../../hooks/useAxiosSecure"; // Import custom hoo
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const CreateRoutine = ({ batchId, closeModal }) => {
+const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   const [batchName, setBatchName] = useState("");
   const [numDays, setNumDays] = useState(3);
   const [schedule, setSchedule] = useState(
     Array.from({ length: numDays }, () => ({ day: "", startTime: "", endTime: "" }))
   );
+  const [loading, setLoading] = useState(false); // Loading state for routine creation
   const axiosSecure = useAxiosSecure();
 
   // Fetch batch data
@@ -40,7 +41,7 @@ const CreateRoutine = ({ batchId, closeModal }) => {
     return schedule.some((entry, i) => entry.day === day && i !== index);
   };
 
-  //individual input change
+  // Individual input change
   const handleChange = (index, field, value) => {
     const updatedSchedule = [...schedule];
     updatedSchedule[index][field] = value;
@@ -56,14 +57,12 @@ const CreateRoutine = ({ batchId, closeModal }) => {
       const startTime = updatedSchedule[index].startTime;
       if (value < startTime) {
         toast.error("End time must be after the start time.");
-
         return; 
       }
     }
 
     setSchedule(updatedSchedule);
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -87,10 +86,24 @@ const CreateRoutine = ({ batchId, closeModal }) => {
     }
   };
 
+
   // Days for dropdown selection
   const daysOfWeek = [
     "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
   ];
+
+  // Reset form state when the modal is closed
+  const resetForm = () => {
+    setBatchName("");
+    setNumDays(3);
+    setSchedule(Array.from({ length: 3 }, () => ({ day: "", startTime: "", endTime: "" })));
+  };
+
+  useEffect(() => {
+    return () => {
+      resetForm(); // Clean up form data when modal is closed
+    };
+  }, []);
 
   return (
     <form className="text-black p-5" onSubmit={handleSubmit}>
@@ -171,23 +184,30 @@ const CreateRoutine = ({ batchId, closeModal }) => {
       ))}
 
       <div className="flex justify-center">
-        <button type="submit" className="btn bg-blue-950 text-white">
-          Save Routine
+        <button type="submit" className="btn bg-blue-950 text-white" disabled={loading}>
+          {loading ? "Saving..." : "Save Routine"}
         </button>
       </div>
-      <ToastContainer
-  position="top-center"
-  autoClose={2000}
-  hideProgressBar={false}
-  newestOnTop={false}
-  closeOnClick
-  rtl={false}
-  pauseOnFocusLoss
-  draggable
-  pauseOnHover
-  style={{ width: '300px', height: 'auto', margin: '3px' }}
-/>
 
+      {/* Loader and Toast */}
+      {loading && (
+        <div className="flex justify-center mt-4">
+         <span className="loading loading-ring loading-lg"></span> {/* You can replace this with a real loader component */}
+        </div>
+      )}
+
+      <ToastContainer
+        position="top-center"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        style={{ width: '300px', height: 'auto', margin: '3px' }}
+      />
     </form>
   );
 };

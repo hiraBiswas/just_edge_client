@@ -106,7 +106,7 @@ const BatchDetails = () => {
             </Link>
           </li>
           <li className="text-gray-700 text-xl font-medium">
-            Course Details
+            Batch Details
           </li>
           <li className="text-gray-700 text-xl font-medium">
             {batch.batchName || "Batch Details"}
@@ -129,14 +129,14 @@ const BatchDetails = () => {
           {routine ? (
             <button
               onClick={() => document.getElementById("update_routine_modal").showModal()}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+              className="px-4 py-2 bg-blue-950 text-white rounded-lg hover:bg-blue-900"
             >
               Update Routine
             </button>
           ) : (
             <button
               onClick={() => document.getElementById("create_routine_modal").showModal()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-950 text-white rounded-lg hover:bg-blue-900"
             >
               Create Routine
             </button>
