@@ -22,24 +22,26 @@ const BatchDetails = () => {
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
+      if (batch && users.length > 0 && routine) return;  // Prevent refetch if data already exists
+  
       try {
         const studentsResponse = await axiosSecure.get("/students");
         const studentsData = studentsResponse.data;
         setStudents(studentsData);
-
+  
         const usersResponse = await axiosSecure.get("/users");
         const usersData = usersResponse.data;
         setUsers(Array.isArray(usersData) ? usersData : []);
-
+  
         const batchResponse = await axiosSecure.get(`/batches/${batchId}`);
         const batchData = batchResponse.data;
         setBatch(batchData);
-
+  
         const filtered = studentsData.filter(
           (student) => student.enrolled_batch === batchId
         );
         setFilteredStudents(filtered);
-
+  
         // Check if routine exists
         const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
         setRoutine(routineResponse.data || null);
@@ -49,9 +51,10 @@ const BatchDetails = () => {
         setLoading(false);
       }
     };
-
+  
     fetchData();
-  }, [batchId, axiosSecure]);
+  }, [batchId, axiosSecure]);  // Ensure axiosSecure is stable
+  
 
   if (loading) {
     return (
@@ -89,6 +92,9 @@ const BatchDetails = () => {
   const sortedSchedule = routine ? routine.schedule.sort((a, b) => {
     return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
   }) : [];
+
+  // Create a copy of the routine for passing as prop
+  const propRoutine = { ...routine }; // Create a copy
 
   return (
     <div className="w-[1100px] mx-auto p-6">
@@ -170,8 +176,8 @@ const BatchDetails = () => {
         )}
       </section>
 
-      {/* Section for Enrolled Students */}
-      <section>
+       {/* Section for Enrolled Students */}
+       <section>
         <h2 className="text-2xl font-semibold mb-4">Enrolled Students</h2>
         {filteredStudents.length > 0 ? (
           <table className="table-auto w-full border-collapse border border-gray-200">
@@ -233,7 +239,7 @@ const BatchDetails = () => {
           </button>
           
           {/* UpdateRoutine Component */}
-          <UpdateRoutine batchId={batchId} routine={routine} closeModal={() => document.getElementById("update_routine_modal").close()} />
+          <UpdateRoutine batchId={batchId}  closeModal={() => document.getElementById("update_routine_modal").close()} />
         </div>
       </dialog>
     </div>
