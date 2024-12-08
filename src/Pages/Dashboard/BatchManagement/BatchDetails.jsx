@@ -23,9 +23,10 @@ const BatchDetails = () => {
   const fetchRoutines = async () => {
     try {
       const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
-      setRoutine(routineResponse.data || null); // Update routine state
+      setRoutine(routineResponse.data || null);
     } catch (error) {
       console.error("Error fetching routine:", error);
+      setRoutine(null);
     }
   };
 
@@ -52,12 +53,11 @@ const BatchDetails = () => {
         setFilteredStudents(filtered);
   
         // Check if routine exists
-        const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
-        setRoutine(routineResponse.data || null);
+        await fetchRoutines(); // Call fetchRoutines to fetch routine data
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setLoading(false);
+        setLoading(false); // Stop loading spinner
       }
     };
   
@@ -101,9 +101,6 @@ const BatchDetails = () => {
     return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
   }) : [];
 
-  // Create a copy of the routine for passing as prop
-  const propRoutine = { ...routine }; // Create a copy
-
   return (
     <div className="w-[1100px] mx-auto p-6">
       {/* Breadcrumb Navigation */}
@@ -128,12 +125,6 @@ const BatchDetails = () => {
         </ul>
       </div>
   
-      {/* Show total enrolled students only if greater than 0 */}
-      {batch.enrolledStudentNumber > 0 && (
-        <p className="text-xl mb-4">
-          <strong>Total Enrolled Students:</strong> {batch.enrolledStudentNumber}
-        </p>
-      )}
 
       {/* Section for Routine Display and Options */}
       <section className="mb-6">
@@ -184,9 +175,13 @@ const BatchDetails = () => {
         )}
       </section>
 
-       {/* Section for Enrolled Students */}
-       <section>
-        <h2 className="text-2xl font-semibold mb-4">Enrolled Students</h2>
+      {/* Section for Enrolled Students */}
+      <section>
+      {batch.enrolledStudentNumber > 0 && (
+        <p className="text-xl mb-4">
+          <strong>Total Enrolled Students:</strong> {batch.enrolledStudentNumber}
+        </p>
+      )}
         {filteredStudents.length > 0 ? (
           <table className="table-auto w-full border-collapse border border-gray-200">
             <thead>
@@ -250,7 +245,11 @@ const BatchDetails = () => {
           </button>
           
           {/* UpdateRoutine Component */}
-          <UpdateRoutine batchId={batchId}  closeModal={() => document.getElementById("update_routine_modal").close()} />
+          <UpdateRoutine 
+            batchId={batchId} 
+            closeModal={() => document.getElementById("update_routine_modal").close()} 
+            fetchRoutines={fetchRoutines}  
+          />
         </div>
       </dialog>
     </div>

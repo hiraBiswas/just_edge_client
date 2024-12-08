@@ -1,138 +1,137 @@
-import React, { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import React, { useState, useEffect } from "react";
+import useAxiosSecure from "../../../hooks/useAxiosSecure"; // Import custom hook for secure axios instance
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const UpdateBatch = ({ batchId, onBatchUpdated }) => {
-  const [batchData, setBatchData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [batchName, setBatchName] = useState("");
-  const [batchNum, setBatchNum] = useState("");
-  const [status, setStatus] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
+  const [schedule, setSchedule] = useState([]);
+  const [loading, setLoading] = useState(false); // Local loader for the update button
+  const [error, setError] = useState(null);
+  const axiosSecure = useAxiosSecure();
 
   useEffect(() => {
+    const fetchRoutine = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axiosSecure.get(`/routine/${batchId}`);
+        setSchedule(response.data.schedule || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (batchId) {
-      fetchBatchDetails(batchId);
+      fetchRoutine();
     }
-  }, [batchId]);
+  }, [batchId, axiosSecure]);
 
-  const fetchBatchDetails = async (id) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`http://localhost:5000/batches/${id}`);
-      const data = await response.json();
-
-      setBatchData(data);
-      setLoading(false);
-
-      const [courseName, batchNumber] = data.batchName?.split(" - ") || ["", ""];
-      setBatchName(courseName); 
-      setBatchNum(batchNumber);
-      setStatus(data.status);
-      setStartDate(data.startDate);
-      setEndDate(data.endDate);
-    } catch (error) {
-      console.error("Error fetching batch details:", error);
-      setLoading(false);
-    }
+  const handleChange = (index, field, value) => {
+    const updatedSchedule = [...schedule];
+    updatedSchedule[index][field] = value;
+    setSchedule(updatedSchedule);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const updatedBatchData = {
-      batchName: `${batchName} - ${batchNum}`,
-      status,
-      startDate,
-      endDate
-    };
+    const updatedRoutineData = { schedule };
 
     try {
-      const response = await fetch(`http://localhost:5000/batches/${batchId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedBatchData)
-      });
+      setLoading(true); // Show loading spinner on the form submit
+      const response = await axiosSecure.patch(`/routine/${batchId}`, updatedRoutineData);
 
-      if (response.ok) {
-        toast.success("Batch updated successfully!"); 
-        onBatchUpdated(updatedBatchData.batchName);
+      if (response.status === 200) {
+        toast.success("Routine updated successfully!");
+        closeModal(); // Close modal
+        fetchRoutines(); // Refresh routine data after update
       } else {
-        toast.error("Failed to update batch."); 
+        toast.error("Failed to update routine");
       }
     } catch (error) {
-      console.error("Error updating batch:", error);
-      toast.error("An error occurred while updating the batch."); 
+      toast.error("Error updating routine");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (!batchData) return <div>No batch data found</div>;
+  const daysOfWeek = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-  const today = new Date().toISOString().split("T")[0];
+  if (error) return <div className="text-center text-red-500">Error: {error}</div>;
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Course Name:</label>
-          <input type="text" value={batchName} disabled className="input input-bordered w-full" />
+    <form className="text-black p-5" onSubmit={handleSubmit}>
+      <h3 className="text-center font-semibold text-black text-xl">Update Routine</h3>
+
+      {schedule.map((daySchedule, index) => (
+        <div key={index} className="mb-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label htmlFor={`day-${index}`} className="block text-sm font-medium">Day {index + 1}</label>
+              <select
+                id={`day-${index}`}
+                value={daySchedule.day}
+                onChange={(e) => handleChange(index, "day", e.target.value)}
+                className="mt-1 p-2 border border-gray-300 rounded"
+                required
+              >
+                <option value="">Select a day</option>
+                {daysOfWeek.map((day) => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor={`startTime-${index}`} className="block text-sm font-medium">Start Time</label>
+              <input
+                type="time"
+                id={`startTime-${index}`}
+                value={daySchedule.startTime}
+                onChange={(e) => handleChange(index, "startTime", e.target.value)}
+                className="mt-1 p-2 border border-gray-300 rounded"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor={`endTime-${index}`} className="block text-sm font-medium">End Time</label>
+              <input
+                type="time"
+                id={`endTime-${index}`}
+                value={daySchedule.endTime}
+                onChange={(e) => handleChange(index, "endTime", e.target.value)}
+                className="mt-1 p-2 border border-gray-300 rounded"
+                required
+              />
+            </div>
+          </div>
         </div>
+      ))}
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Batch Number:</label>
-          <input
-            type="text"
-            value={batchNum}
-            onChange={(e) => setBatchNum(e.target.value)}
-            className="input input-bordered w-full"
-          />
-        </div>
+      <div className="flex justify-center">
+        <button type="submit" className="btn bg-blue-950 text-white" disabled={loading}>
+          {loading ? "Updating..." : "Update Routine"}
+        </button>
+      </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Status:</label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="input input-bordered w-full"
-          >
-            <option value="" disabled>Select Status</option>
-            <option value="Soon to be started">Soon to be started</option>
-            <option value="On going">On going</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Start Date:</label>
-          <input
-            type="date"
-            value={startDate}
-           
-            onChange={(e) => setStartDate(e.target.value)}
-            className="input input-bordered w-full"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">End Date:</label>
-          <input
-            type="date"
-            value={endDate}
-            min={startDate }
-            onChange={(e) => setEndDate(e.target.value)}
-            className="input input-bordered w-full"
-          />
-        </div>
-
-        <button type="submit" className="btn btn-primary w-full">Update Batch</button>
-      </form>
-
-    
-      <ToastContainer />
-    </div>
+      {/* <ToastContainer
+        position="top-center"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        style={{ width: '300px', height: 'auto', margin: '3px' }}
+      /> */}
+    </form>
   );
 };
 
-export default UpdateBatch;
+export default UpdateRoutine;
+

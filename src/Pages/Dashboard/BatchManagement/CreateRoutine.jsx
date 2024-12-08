@@ -198,7 +198,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         </div>
       )}
 
-      <ToastContainer
+      {/* <ToastContainer
         position="top-center"
         autoClose={2000}
         hideProgressBar={false}
@@ -209,7 +209,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         draggable
         pauseOnHover
         style={{ width: '300px', height: 'auto', margin: '3px' }}
-      />
+      /> */}
     </form>
   );
 };
