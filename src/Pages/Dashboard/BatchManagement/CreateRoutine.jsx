@@ -49,7 +49,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     // Preventing selecting the same day for more than one input field
     if (field === "day" && isDuplicateDay(value, index)) {
       toast.error("Already has class on this day.");
-      return; 
+      return;
     }
 
     // Validate end time is not earlier than start time
@@ -57,35 +57,37 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       const startTime = updatedSchedule[index].startTime;
       if (value < startTime) {
         toast.error("End time must be after the start time.");
-        return; 
+        return;
       }
     }
 
     setSchedule(updatedSchedule);
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const scheduleData = {
       batchId: batchId,
       schedule: schedule,
     };
-  
+
     try {
       const response = await axiosSecure.post("/routine", scheduleData);
-  
+
       if (response.status === 201) {
         e.target.reset();
         toast.success("Routine saved successfully!");
-        closeModal(); 
+        closeModal();
+        fetchRoutines(); // Re-fetch routines if needed
       } else {
         toast.error("Failed to create routine");
       }
     } catch (error) {
       console.error("Error details:", error.response?.data || error.message);
+      toast.error("Error creating routine");
     }
   };
-
 
   // Days for dropdown selection
   const daysOfWeek = [
@@ -108,7 +110,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   return (
     <form className="text-black p-5" onSubmit={handleSubmit}>
       <h3 className="text-center font-semibold text-black text-xl">
-        Create Routine 
+        Create Routine
       </h3>
 
       {/* Number of days selection */}
@@ -192,7 +194,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       {/* Loader and Toast */}
       {loading && (
         <div className="flex justify-center mt-4">
-         <span className="loading loading-ring loading-lg"></span> {/* You can replace this with a real loader component */}
+          <span className="loading loading-ring loading-lg"></span> {/* You can replace this with a real loader component */}
         </div>
       )}
 

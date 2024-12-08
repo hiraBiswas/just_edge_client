@@ -48,13 +48,26 @@ useEffect(() => {
       setCourseList(response.data);
     } catch (error) {
       console.error("Error fetching courses:", error);
+      if (error.code === 'ERR_NETWORK') {
+        Swal.fire({
+          icon: 'error',
+          title: 'Network Error',
+          text: 'Please check your internet connection.',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error fetching courses',
+          text: error.message,
+        });
+      }
     } finally {
-      setLoading(false);  // Ensure that loading is set to false after data is fetched or failed
+      setLoading(false);
     }
   };
-  setLoading(true);  // Set loading to true when data is being fetched
   fetchCourses();
-}, [axiosSecure]);
+}, []);
+
 
 // Fetch users and students data
 const { data: users = [] } = useQuery({

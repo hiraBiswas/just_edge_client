@@ -20,6 +20,15 @@ const BatchDetails = () => {
   const dayOrder = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
   // Fetch data
+  const fetchRoutines = async () => {
+    try {
+      const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
+      setRoutine(routineResponse.data || null); // Update routine state
+    } catch (error) {
+      console.error("Error fetching routine:", error);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (batch && users.length > 0 && routine) return;  // Prevent refetch if data already exists
@@ -53,8 +62,7 @@ const BatchDetails = () => {
     };
   
     fetchData();
-  }, [batchId, axiosSecure]);  // Ensure axiosSecure is stable
-  
+  }, [batchId, axiosSecure]);
 
   if (loading) {
     return (
@@ -222,7 +230,10 @@ const BatchDetails = () => {
           </button>
           
           {/* CreateRoutine Component */}
-          <CreateRoutine batchId={batchId} closeModal={() => document.getElementById("create_routine_modal").close()} />
+          <CreateRoutine batchId={batchId} closeModal={() => {
+            document.getElementById("create_routine_modal").close();
+            fetchRoutines();  // Refresh routine after closing modal
+          }} />
         </div>
       </dialog>
 
