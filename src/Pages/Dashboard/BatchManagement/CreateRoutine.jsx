@@ -11,7 +11,10 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   );
   const [loading, setLoading] = useState(false); // Loading state for routine creation
   const axiosSecure = useAxiosSecure();
-
+  console.log(batchId); // Check this value
+  if (typeof batchId === "string") {
+    console.log("It's a string");
+  }
   // Fetch batch data
   useEffect(() => {
     const fetchBatchData = async () => {
@@ -66,29 +69,29 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    const scheduleData = {
-      batchId: batchId,
-      schedule: schedule,
-    };
+    const scheduleData = { batchId, schedule };
 
     try {
       const response = await axiosSecure.post("/routine", scheduleData);
 
-      if (response.status === 201) {
-        e.target.reset();
+      if (response.status === 201 || response.status === 200) {
         toast.success("Routine saved successfully!");
         closeModal();
-        fetchRoutines(); // Re-fetch routines if needed
+        fetchRoutines(); // Ensure this function is called after saving the routine
       } else {
-        toast.error("Failed to create routine");
+        toast.error("Failed to create routine. Please try again.");
       }
     } catch (error) {
-      console.error("Error details:", error.response?.data || error.message);
       toast.error("Error creating routine");
+    } finally {
+      setLoading(false);
     }
   };
 
+  
+  
   // Days for dropdown selection
   const daysOfWeek = [
     "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
@@ -185,18 +188,19 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         </div>
       ))}
 
-      <div className="flex justify-center">
-        <button type="submit" className="btn bg-blue-950 text-white" disabled={loading}>
-          {loading ? "Saving..." : "Save Routine"}
-        </button>
-      </div>
+<div className="flex justify-center">
+  <button type="submit" className="btn bg-blue-950 text-white" disabled={loading}>
+    {loading ? (
+      <>Saving <span className="loading loading-dots loading-md"></span></>
+    ) : (
+      "Save Routine"
+    )}
+  </button>
+</div>
 
-      {/* Loader and Toast */}
-      {loading && (
-        <div className="flex justify-center mt-4">
-          <span className="loading loading-ring loading-lg"></span> {/* You can replace this with a real loader component */}
-        </div>
-      )}
+
+
+
 
       {/* <ToastContainer
         position="top-center"

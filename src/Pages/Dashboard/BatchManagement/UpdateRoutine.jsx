@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
-import useAxiosSecure from "../../../hooks/useAxiosSecure"; // Import custom hook for secure axios instance
-import { toast, ToastContainer } from "react-toastify";
+import useAxiosSecure from "../../../hooks/useAxiosSecure";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   const [schedule, setSchedule] = useState([]);
-  const [loading, setLoading] = useState(false); // Local loader for the update button
+  const [loadingFetch, setLoadingFetch] = useState(false); // Loader for fetching routine
+  const [loadingSubmit, setLoadingSubmit] = useState(false); // Loader for submitting update
   const [error, setError] = useState(null);
   const axiosSecure = useAxiosSecure();
 
   useEffect(() => {
     const fetchRoutine = async () => {
-      setLoading(true);
+      setLoadingFetch(true);
       setError(null);
       try {
         const response = await axiosSecure.get(`/routine/${batchId}`);
@@ -19,7 +20,7 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       } catch (err) {
         setError(err.message);
       } finally {
-        setLoading(false);
+        setLoadingFetch(false);
       }
     };
 
@@ -40,26 +41,37 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     const updatedRoutineData = { schedule };
 
     try {
-      setLoading(true); // Show loading spinner on the form submit
+      setLoadingSubmit(true); // Show loader on submit button
       const response = await axiosSecure.patch(`/routine/${batchId}`, updatedRoutineData);
 
       if (response.status === 200) {
         toast.success("Routine updated successfully!");
         closeModal(); // Close modal
-        fetchRoutines(); // Refresh routine data after update
+        fetchRoutines(); // Refresh routine data
       } else {
         toast.error("Failed to update routine");
       }
     } catch (error) {
       toast.error("Error updating routine");
     } finally {
-      setLoading(false);
+      setLoadingSubmit(false);
     }
   };
 
   const daysOfWeek = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-  if (error) return <div className="text-center text-red-500">Error: {error}</div>;
+  // Show loader over the entire modal when fetching data
+  if (loadingFetch) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <span className="loading loading-ring loading-lg text-white"></span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">Error: {error}</div>;
+  }
 
   return (
     <form className="text-black p-5" onSubmit={handleSubmit}>
@@ -110,28 +122,28 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
           </div>
         </div>
       ))}
+<div className="flex justify-center">
+  <button
+    type="submit"
+    className={`btn flex items-center gap-2 bg-blue-950 text-white ${
+      loadingSubmit ? "cursor-not-allowed opacity-70" : ""
+    }`}
+    onClick={!loadingSubmit ? handleSubmit : null}
+  >
+    {loadingSubmit ? (
+      <>
+        <span>Updating</span>
+        <span className="loading loading-ball loading-md"></span>
+      </>
+    ) : (
+      "Update Routine"
+    )}
+  </button>
+</div>
 
-      <div className="flex justify-center">
-        <button type="submit" className="btn bg-blue-950 text-white" disabled={loading}>
-          {loading ? "Updating..." : "Update Routine"}
-        </button>
-      </div>
 
-      {/* <ToastContainer
-        position="top-center"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ width: '300px', height: 'auto', margin: '3px' }}
-      /> */}
     </form>
   );
 };
 
 export default UpdateRoutine;
-

@@ -23,12 +23,20 @@ const BatchDetails = () => {
   const fetchRoutines = async () => {
     try {
       const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
-      setRoutine(routineResponse.data || null);
+      console.log(routineResponse.data);  // Log response to ensure it's correct
+      if (routineResponse.data && routineResponse.data.schedule) {
+        setRoutine(routineResponse.data);  // Set state with the routine data
+      } else {
+        console.error('Routine data not found');
+        setRoutine(null);
+      }
     } catch (error) {
-      console.error("Error fetching routine:", error);
+      console.error('Error fetching routine:', error);
       setRoutine(null);
     }
+    
   };
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -225,10 +233,14 @@ const BatchDetails = () => {
           </button>
           
           {/* CreateRoutine Component */}
-          <CreateRoutine batchId={batchId} closeModal={() => {
-            document.getElementById("create_routine_modal").close();
-            fetchRoutines();  // Refresh routine after closing modal
-          }} />
+          <CreateRoutine
+            batchId={batchId}
+            closeModal={() => {
+              document.getElementById("create_routine_modal").close();
+              fetchRoutines(); // Refresh routine after creating
+            }}
+            fetchRoutines={fetchRoutines} // Pass down fetchRoutines
+          />
         </div>
       </dialog>
 
