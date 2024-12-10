@@ -4,9 +4,9 @@ import { toast } from "react-hot-toast"; // Importing toast from react-hot-toast
 import { Toaster } from "react-hot-toast"; // Import Toaster to show the toasts
 import { toast as parentToast } from "react-toastify"; 
 
-
 const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   const [schedule, setSchedule] = useState([]);
+  const [initialSchedule, setInitialSchedule] = useState([]); // Store the initial schedule
   const [loadingFetch, setLoadingFetch] = useState(false); // Loader for fetching routine
   const [loadingSubmit, setLoadingSubmit] = useState(false); // Loader for submitting update
   const [error, setError] = useState(null);
@@ -19,6 +19,7 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       try {
         const response = await axiosSecure.get(`/routine/${batchId}`);
         setSchedule(response.data.schedule || []);
+        setInitialSchedule(response.data.schedule || []); // Store the initial schedule
       } catch (err) {
         setError(err.message);
       } finally {
@@ -39,48 +40,59 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   // Handle individual field change with validation
   const handleChange = (index, field, value) => {
     const updatedSchedule = [...schedule];
-    updatedSchedule[index][field] = value;
+    const previousValue = updatedSchedule[index][field]; // Store the previous value
 
-    // Duplicate day check
+    // If the day is being changed, check for duplicates
     if (field === "day" && isDuplicateDay(value, index)) {
       toast.error("Already has class on this day.");
-      return;
+      return; // Prevent update if there's a duplicate day
     }
 
-    // Check end time after start time
-    if (field === "endTime" && updatedSchedule[index].startTime) {
-      const startTime = updatedSchedule[index].startTime;
-      if (value < startTime) {
-        toast.error("End time must be after the start time.");
-        return;
-      }
+    // Check if end time is after start time
+    if (field === "endTime" && updatedSchedule[index].startTime && value < updatedSchedule[index].startTime) {
+      toast.error("End time must be after the start time.");
+      return; // Prevent update if end time is not after start time
     }
 
-    setSchedule(updatedSchedule);
+    // If validation fails, do not update the state
+    updatedSchedule[index][field] = value;
+    setSchedule(updatedSchedule); // Update the state only if no validation failed
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    const updatedRoutineData = { schedule };
 
-    try {
-      setLoadingSubmit(true); // Show loader on submit button
-      const response = await axiosSecure.patch(`/routine/${batchId}`, updatedRoutineData);
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-      if (response.status === 200) {
-        parentToast.success("Routine created successfully!");
-        closeModal(); // Close modal
-        fetchRoutines(); // Refresh routine data
-      } else {
-        toast.error("Failed to update routine");
-      }
-    } catch (error) {
-      toast.error("Error updating routine");
-    } finally {
-      setLoadingSubmit(false);
+  const isNoChange = JSON.stringify(schedule) === JSON.stringify(initialSchedule);
+  if (isNoChange) {
+    // Show toast and log to console if no changes are made
+    toast.error("No changes were made.");
+    console.log("No changes were made to the routine.");
+    return; // Prevent form submission
+  }
+
+  const updatedRoutineData = { schedule };
+
+  try {
+    setLoadingSubmit(true); // Show loader on submit button
+    const response = await axiosSecure.patch(`/routine/${batchId}`, updatedRoutineData);
+
+    if (response.status === 200) {
+      toast.success("Routine updated successfully!");  // Success message
+      closeModal(); // Close modal
+      fetchRoutines(); // Refresh routine data
+    } else {
+      toast.error("Failed to update routine");
     }
-  };
+  } catch (error) {
+    toast.error("Error updating routine");
+  } finally {
+    setLoadingSubmit(false);
+  }
+};
+
+  
 
   const daysOfWeek = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
@@ -158,9 +170,7 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       <div className="flex justify-center">
         <button
           type="submit"
-          className={`btn flex items-center gap-2 bg-blue-950 text-white ${
-            loadingSubmit ? "cursor-not-allowed opacity-70" : ""
-          }`}
+          className={`btn flex items-center gap-2 bg-blue-950 text-white ${loadingSubmit ? "cursor-not-allowed opacity-70" : ""}`}
           onClick={!loadingSubmit ? handleSubmit : null}
         >
           {loadingSubmit ? (
