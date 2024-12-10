@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-hot-toast"; // Importing toast from react-hot-toast
+import { Toaster } from "react-hot-toast"; // Import Toaster to show the toasts
+import { toast as parentToast } from "react-toastify"; 
+
 
 const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   const [schedule, setSchedule] = useState([]);
@@ -29,9 +31,31 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     }
   }, [batchId, axiosSecure]);
 
+  // Check for duplicate days
+  const isDuplicateDay = (day, index) => {
+    return schedule.some((entry, i) => entry.day === day && i !== index);
+  };
+
+  // Handle individual field change with validation
   const handleChange = (index, field, value) => {
     const updatedSchedule = [...schedule];
     updatedSchedule[index][field] = value;
+
+    // Duplicate day check
+    if (field === "day" && isDuplicateDay(value, index)) {
+      toast.error("Already has class on this day.");
+      return;
+    }
+
+    // Check end time after start time
+    if (field === "endTime" && updatedSchedule[index].startTime) {
+      const startTime = updatedSchedule[index].startTime;
+      if (value < startTime) {
+        toast.error("End time must be after the start time.");
+        return;
+      }
+    }
+
     setSchedule(updatedSchedule);
   };
 
@@ -45,7 +69,7 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       const response = await axiosSecure.patch(`/routine/${batchId}`, updatedRoutineData);
 
       if (response.status === 200) {
-        toast.success("Routine updated successfully!");
+        parentToast.success("Routine created successfully!");
         closeModal(); // Close modal
         fetchRoutines(); // Refresh routine data
       } else {
@@ -81,7 +105,9 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         <div key={index} className="mb-4">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label htmlFor={`day-${index}`} className="block text-sm font-medium">Day {index + 1}</label>
+              <label htmlFor={`day-${index}`} className="block text-sm font-medium">
+                Day {index + 1}
+              </label>
               <select
                 id={`day-${index}`}
                 value={daySchedule.day}
@@ -91,13 +117,17 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
               >
                 <option value="">Select a day</option>
                 {daysOfWeek.map((day) => (
-                  <option key={day} value={day}>{day}</option>
+                  <option key={day} value={day}>
+                    {day}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label htmlFor={`startTime-${index}`} className="block text-sm font-medium">Start Time</label>
+              <label htmlFor={`startTime-${index}`} className="block text-sm font-medium">
+                Start Time
+              </label>
               <input
                 type="time"
                 id={`startTime-${index}`}
@@ -109,7 +139,9 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
             </div>
 
             <div>
-              <label htmlFor={`endTime-${index}`} className="block text-sm font-medium">End Time</label>
+              <label htmlFor={`endTime-${index}`} className="block text-sm font-medium">
+                End Time
+              </label>
               <input
                 type="time"
                 id={`endTime-${index}`}
@@ -122,26 +154,28 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
           </div>
         </div>
       ))}
-<div className="flex justify-center">
-  <button
-    type="submit"
-    className={`btn flex items-center gap-2 bg-blue-950 text-white ${
-      loadingSubmit ? "cursor-not-allowed opacity-70" : ""
-    }`}
-    onClick={!loadingSubmit ? handleSubmit : null}
-  >
-    {loadingSubmit ? (
-      <>
-        <span>Updating</span>
-        <span className="loading loading-ball loading-md"></span>
-      </>
-    ) : (
-      "Update Routine"
-    )}
-  </button>
-</div>
 
+      <div className="flex justify-center">
+        <button
+          type="submit"
+          className={`btn flex items-center gap-2 bg-blue-950 text-white ${
+            loadingSubmit ? "cursor-not-allowed opacity-70" : ""
+          }`}
+          onClick={!loadingSubmit ? handleSubmit : null}
+        >
+          {loadingSubmit ? (
+            <>
+              <span>Updating</span>
+              <span className="loading loading-ball loading-md"></span>
+            </>
+          ) : (
+            "Update Routine"
+          )}
+        </button>
+      </div>
 
+      {/* Add the Toaster here to render the toast messages */}
+      <Toaster position="top-center" reverseOrder={false} />
     </form>
   );
 };

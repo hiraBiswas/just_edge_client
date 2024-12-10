@@ -14,9 +14,9 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
   // Fetch batch details when the component mounts or when batchId changes
   useEffect(() => {
     if (batchId) {
-      fetchBatchDetails(batchId);
+        fetchRoutine();
     }
-  }, [batchId]);
+}, [batchId, refreshTrigger]); 
 
   const fetchBatchDetails = async (id) => {
     setLoading(true);

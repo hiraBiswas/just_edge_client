@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import useAxiosSecure from "../../../hooks/useAxiosSecure"; // Import custom hook for secure axios instance
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import useAxiosSecure from "../../../hooks/useAxiosSecure";
+import { toast as parentToast } from "react-toastify"; // Parent toast for success message
+import { Toaster, toast } from "react-hot-toast"; // Modal toast for validation messages
 
 const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   const [batchName, setBatchName] = useState("");
@@ -9,12 +9,9 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   const [schedule, setSchedule] = useState(
     Array.from({ length: numDays }, () => ({ day: "", startTime: "", endTime: "" }))
   );
-  const [loading, setLoading] = useState(false); // Loading state for routine creation
+  const [loading, setLoading] = useState(false);
   const axiosSecure = useAxiosSecure();
-  console.log(batchId); // Check this value
-  if (typeof batchId === "string") {
-    console.log("It's a string");
-  }
+
   // Fetch batch data
   useEffect(() => {
     const fetchBatchData = async () => {
@@ -35,27 +32,25 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     const value = parseInt(event.target.value, 10);
     setNumDays(value);
     setSchedule(
-      Array.from({ length: value }, () => ({ day: "", startTime: "", endTime: "" })) // Reset the schedule
+      Array.from({ length: value }, () => ({ day: "", startTime: "", endTime: "" }))
     );
   };
 
-  // Function to check if the same day is selected in multiple fields
+  // Check for duplicate days
   const isDuplicateDay = (day, index) => {
     return schedule.some((entry, i) => entry.day === day && i !== index);
   };
 
-  // Individual input change
+  // Handle individual field change
   const handleChange = (index, field, value) => {
     const updatedSchedule = [...schedule];
     updatedSchedule[index][field] = value;
 
-    // Preventing selecting the same day for more than one input field
     if (field === "day" && isDuplicateDay(value, index)) {
       toast.error("Already has class on this day.");
       return;
     }
 
-    // Validate end time is not earlier than start time
     if (field === "endTime" && updatedSchedule[index].startTime) {
       const startTime = updatedSchedule[index].startTime;
       if (value < startTime) {
@@ -77,9 +72,9 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       const response = await axiosSecure.post("/routine", scheduleData);
 
       if (response.status === 201 || response.status === 200) {
-        toast.success("Routine saved successfully!");
-        closeModal();
-        fetchRoutines(); // Ensure this function is called after saving the routine
+        parentToast.success("Routine created successfully!");
+        closeModal(); // Close the modal
+        fetchRoutines(); // Refresh routines
       } else {
         toast.error("Failed to create routine. Please try again.");
       }
@@ -90,23 +85,27 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     }
   };
 
-  
-  
-  // Days for dropdown selection
   const daysOfWeek = [
-    "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
+    "Saturday",
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
   ];
 
-  // Reset form state when the modal is closed
   const resetForm = () => {
     setBatchName("");
     setNumDays(3);
-    setSchedule(Array.from({ length: 3 }, () => ({ day: "", startTime: "", endTime: "" })));
+    setSchedule(
+      Array.from({ length: 3 }, () => ({ day: "", startTime: "", endTime: "" }))
+    );
   };
 
   useEffect(() => {
     return () => {
-      resetForm(); // Clean up form data when modal is closed
+      resetForm(); // Clean up when modal is closed
     };
   }, []);
 
@@ -116,7 +115,6 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         Create Routine
       </h3>
 
-      {/* Number of days selection */}
       <div className="mb-4 mt-4 flex items-center gap-3">
         <label htmlFor="numDays" className="block text-sm font-medium">
           Number of Days:
@@ -133,7 +131,6 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         </select>
       </div>
 
-      {/* Dynamically Render Input Fields for Each Day */}
       {schedule.map((daySchedule, index) => (
         <div key={index} className="mb-4">
           <div className="grid grid-cols-3 gap-4">
@@ -188,32 +185,17 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         </div>
       ))}
 
-<div className="flex justify-center">
-  <button type="submit" className="btn bg-blue-950 text-white" disabled={loading}>
-    {loading ? (
-      <>Saving <span className="loading loading-dots loading-md"></span></>
-    ) : (
-      "Save Routine"
-    )}
-  </button>
-</div>
+      <div className="flex justify-center">
+        <button type="submit" className="btn bg-blue-950 text-white" disabled={loading}>
+          {loading ? (
+            <>Saving <span className="loading loading-dots loading-md"></span></>
+          ) : (
+            "Save Routine"
+          )}
+        </button>
+      </div>
 
-
-
-
-
-      {/* <ToastContainer
-        position="top-center"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ width: '300px', height: 'auto', margin: '3px' }}
-      /> */}
+      <Toaster position="top-center" reverseOrder={false} />
     </form>
   );
 };
