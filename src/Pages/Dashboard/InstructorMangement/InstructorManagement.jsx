@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,6 +10,11 @@ import { Link } from "react-router-dom";
 import { FaEye, FaRegFileArchive } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { FaPlus } from "react-icons/fa6";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import app from "../../../Firebase/firebase.config";
+
+
+
 
 const InstructorManagement = () => {
   const { register, handleSubmit, reset } = useForm();
@@ -19,12 +24,12 @@ const InstructorManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const axiosPublic = useAxiosPublic();
   const axiosSecure = useAxiosSecure();
-
   const [users, setUsers] = useState([]);
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+
 
   // Fetch instructors and users
   const fetchInstructors = async () => {
@@ -66,57 +71,114 @@ const InstructorManagement = () => {
       return combined;
     }, [instructors, users]);
 
-  // Handle new instructor form submission
-  const onSubmit = async (data) => {
-    const { name, email, contact } = data;
-    const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
 
+const getToken = async () => {
+  const auth = getAuth(app);  // Get the auth instance using the initialized app
+  const currentUser = auth.currentUser;  // Check the current authenticated user
+
+
+  if (currentUser) {
     try {
-      setIsLoading(true);
-      const userPayload = { name, email, image, type: "instructor" };
-      const userResponse = await axiosPublic.post("/users", userPayload);
+      const idToken = await currentUser.getIdToken(true); // Force refresh of the token
+      console.log("Firebase ID Token:", idToken);
+      return idToken;
+    } catch (error) {
+      console.error("Error getting Firebase ID token:", error);
+      toast.error("Network issue. Please check your connection.");
+    }
+  } else {
+    console.log("No user is logged in");
+    toast.error("User is not authenticated.");
+    return null;
+  }
+};
 
-      if (userResponse.data.insertedId) {
-        const instructorPayload = {
+
+    const onSubmit = async (data) => {
+      const { name, email, contact } = data;
+      const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
+      const password = "123456"; // Default password for instructors
+      const type = "instructor";
+    
+      try {
+        setIsLoading(true);
+        toast.info("Starting instructor registration process...");
+// Step 1: Get Firebase ID token
+const idToken = await getToken();  // Get the token using getToken function
+
+if (!idToken) {
+  toast.error("User is not authenticated.");
+  return;
+}
+    // Step 2: Create user in Firebase via backend
+    const createUserResponse = await axiosSecure.post(
+      "/createUser",
+      { email, password, displayName: name, type },
+      {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      }
+    );
+    
+    const { uid } = createUserResponse.data;  // Assume backend returns the Firebase UID
+    toast.success("User created successfully in Firebase");
+    
+        // Step 2: Save user details to collections
+        const userPayload = {
+          uid,
+          name,
+          email,
+          image,
+          type,
+          createdAt: new Date(),
+        };
+    
+        const userResponse = await axiosSecure.post(
+          "/users",
+          { ...userPayload },
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+    
+        // Save instructor details
+        const newInstructor = {
           userId: userResponse.data.insertedId,
           contact,
-          password: "123456",
-          isDeleted: false,
         };
-
-        const instructorResponse = await axiosPublic.post("/instructors", instructorPayload);
-
-        if (instructorResponse.data.insertedId) {
-          // Add the new instructor to state
-          const newInstructor = {
-            _id: userResponse.data.insertedId,
-            name,
-            email,
-            image,
-            contact,
-          };
-
-          setInstructors((prevInstructors) => [newInstructor, ...prevInstructors]);
-
-          toast.success("Instructor registered successfully");
-          reset();
-          setIsModalOpen(false);
-
-          // Refetch instructors after adding a new one
-          fetchInstructors();
-        } else {
-          throw new Error("Failed to save instructor data.");
-        }
-      } else {
-        throw new Error("Failed to save user data.");
+    
+        await axiosSecure.post(
+          "/instructors",
+          newInstructor,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+    
+        // Update UI
+        setInstructors((prevInstructors) => [
+          { ...newInstructor, ...userPayload },
+          ...prevInstructors,
+        ]);
+    
+        toast.success("Instructor registered successfully");
+        reset();
+        setIsModalOpen(false);
+        await fetchInstructors(); // Refresh instructor list
+      } catch (error) {
+        console.error("Error during user registration:", error);
+        toast.error("Registration failed. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      toast.error(`Error: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+    };
+    
+    
 
 
   // Paginate the combined data

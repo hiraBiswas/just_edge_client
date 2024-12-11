@@ -5,7 +5,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
-  updateProfile
+  updateProfile , getIdToken
 } from "firebase/auth";
 import app from "../Firebase/firebase.config";
 import useAxiosPublic from "../hooks/useAxiosPublic";
