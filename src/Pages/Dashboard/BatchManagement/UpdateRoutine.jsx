@@ -61,36 +61,31 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
 
 
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
 
-  const isNoChange = JSON.stringify(schedule) === JSON.stringify(initialSchedule);
-  if (isNoChange) {
-    // Show toast and log to console if no changes are made
-    toast.error("No changes were made.");
-    console.log("No changes were made to the routine.");
-    return; // Prevent form submission
-  }
-
-  const updatedRoutineData = { schedule };
-
-  try {
-    setLoadingSubmit(true); // Show loader on submit button
-    const response = await axiosSecure.patch(`/routine/${batchId}`, updatedRoutineData);
-
-    if (response.status === 200) {
-      toast.success("Routine updated successfully!");  // Success message
-      closeModal(); // Close modal
-      fetchRoutines(); // Refresh routine data
-    } else {
-      toast.error("Failed to update routine");
+  
+    const updatedRoutineData = { schedule };
+  
+    try {
+      setLoadingSubmit(true); // Show loading spinner
+      const response = await axiosSecure.patch(`/routine/${batchId}`, updatedRoutineData);
+  
+      if (response.status === 200) {
+        parentToast.success("Routine updated successfully!");
+        closeModal(); // Close the modal
+        fetchRoutines(); // Refresh the routines
+      } else {
+        toast.error("Failed to update routine.");
+      }
+    } catch (error) {
+      toast.error("Error updating routine.");
+    } finally {
+      setLoadingSubmit(false); // Hide loading spinner
     }
-  } catch (error) {
-    toast.error("Error updating routine");
-  } finally {
-    setLoadingSubmit(false);
-  }
-};
+  };
+  
 
   
 

@@ -72,116 +72,217 @@ const InstructorManagement = () => {
     }, [instructors, users]);
 
 
-const getToken = async () => {
-  const auth = getAuth(app);  // Get the auth instance using the initialized app
-  const currentUser = auth.currentUser;  // Check the current authenticated user
-
-
-  if (currentUser) {
-    try {
-      const idToken = await currentUser.getIdToken(true); // Force refresh of the token
-      console.log("Firebase ID Token:", idToken);
-      return idToken;
-    } catch (error) {
-      console.error("Error getting Firebase ID token:", error);
-      toast.error("Network issue. Please check your connection.");
-    }
-  } else {
-    console.log("No user is logged in");
-    toast.error("User is not authenticated.");
-    return null;
-  }
-};
-
-
-    const onSubmit = async (data) => {
-      const { name, email, contact } = data;
-      const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
-      const password = "123456"; // Default password for instructors
-      const type = "instructor";
+    const getToken = async () => {
+      const auth = getAuth();
+      console.log(auth);
+      const currentUser = auth.currentUser;
+    
+      if (!currentUser) {
+        console.error("Current user is null");
+        return null;
+      }
     
       try {
-        setIsLoading(true);
-        toast.info("Starting instructor registration process...");
-// Step 1: Get Firebase ID token
-const idToken = await getToken();  // Get the token using getToken function
-
-if (!idToken) {
-  toast.error("User is not authenticated.");
-  return;
-}
-    // Step 2: Create user in Firebase via backend
-    const createUserResponse = await axiosSecure.post(
-      "/createUser",
-      { email, password, displayName: name, type },
-      {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      }
-    );
+        // Detailed logging
+        console.log("Current User Details:", {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          emailVerified: currentUser.emailVerified
+        });
     
-    const { uid } = createUserResponse.data;  // Assume backend returns the Firebase UID
-    toast.success("User created successfully in Firebase");
+        // Force token refresh with extended timeout
+        const idToken = await currentUser.getIdToken(true);
+        
+        console.log("Token successfully retrieved:", {
+          tokenLength: idToken.length,
+          firstChars: idToken.substring(0, 10)
+        });
     
-        // Step 2: Save user details to collections
-        const userPayload = {
-          uid,
-          name,
-          email,
-          image,
-          type,
-          createdAt: new Date(),
-        };
-    
-        const userResponse = await axiosSecure.post(
-          "/users",
-          { ...userPayload },
-          {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-          }
-        );
-    
-        // Save instructor details
-        const newInstructor = {
-          userId: userResponse.data.insertedId,
-          contact,
-        };
-    
-        await axiosSecure.post(
-          "/instructors",
-          newInstructor,
-          {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-          }
-        );
-    
-        // Update UI
-        setInstructors((prevInstructors) => [
-          { ...newInstructor, ...userPayload },
-          ...prevInstructors,
-        ]);
-    
-        toast.success("Instructor registered successfully");
-        reset();
-        setIsModalOpen(false);
-        await fetchInstructors(); // Refresh instructor list
+        return idToken;
       } catch (error) {
-        console.error("Error during user registration:", error);
-        toast.error("Registration failed. Please try again.");
-      } finally {
-        setIsLoading(false);
+        console.error("Comprehensive Token Retrieval Error:", {
+          name: error.name,
+          message: error.message,
+          code: error.code
+        });
+    
+        // Specific error handling
+        if (error.code === 'auth/network-request-failed') {
+          // Handle network errors
+          console.log("Network error occurred. Check internet connection.");
+        }
+    
+        return null;
       }
     };
+
+    getToken();
+    const debugAuthentication = async () => {
+      const auth = getAuth();
+      
+      try {
+        // Check current user
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          console.error("No current user found");
+          return;
+        }
+    
+        // Detailed user information
+        console.log("User Debug Info:", {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          emailVerified: currentUser.emailVerified,
+          providerData: currentUser.providerData
+        });
+    
+        // Token generation attempt
+        const token = await currentUser.getIdToken(true);
+        console.log("Token generated successfully");
+    
+      } catch (error) {
+        console.error("Authentication Debug Error:", error);
+      }
+    };
+    
+
+//     const onSubmit = async (data) => {
+//       const { name, email, contact } = data;
+//       const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
+//       const password = "123456"; // Default password for instructors
+//       const type = "instructor";
+    
+//       try {
+//         setIsLoading(true);
+//         toast.info("Starting instructor registration process...");
+// // Step 1: Get Firebase ID token
+// const idToken = await getToken();  // Get the token using getToken function
+
+// if (!idToken) {
+//   toast.error("Token retrieval failed. Please check your internet connection.");
+//   return;
+// }
+//     // Step 2: Create user in Firebase via backend
+//     const createUserResponse = await axiosSecure.post(
+//       "/createUser",
+//       { email, password, displayName: name, type },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${idToken}`,
+//         },
+//       }
+//     );
+    
+//     const { uid } = createUserResponse.data;  // Assume backend returns the Firebase UID
+//     toast.success("User created successfully in Firebase");
+    
+//         // Step 2: Save user details to collections
+//         const userPayload = {
+//           uid,
+//           name,
+//           email,
+//           image,
+//           type,
+//           createdAt: new Date(),
+//         };
+    
+//         const userResponse = await axiosSecure.post(
+//           "/users",
+//           { ...userPayload },
+//           {
+//             headers: {
+//               Authorization: `Bearer ${idToken}`,
+//             },
+//           }
+//         );
+    
+//         // Save instructor details
+//         const newInstructor = {
+//           userId: userResponse.data.insertedId,
+//           contact,
+//         };
+    
+//         await axiosSecure.post(
+//           "/instructors",
+//           newInstructor,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${idToken}`,
+//             },
+//           }
+//         );
+    
+//         // Update UI
+//         setInstructors((prevInstructors) => [
+//           { ...newInstructor, ...userPayload },
+//           ...prevInstructors,
+//         ]);
+    
+//         toast.success("Instructor registered successfully");
+//         reset();
+//         setIsModalOpen(false);
+//         await fetchInstructors(); // Refresh instructor list
+//       } catch (error) {
+//         console.error("Error during user registration:", error);
+//         toast.error("Registration failed. Please try again.");
+//       } finally {
+//         setIsLoading(false);
+//       }
+//     };
     
     
 
 
   // Paginate the combined data
+  
+  
+  const onSubmit = async (data) => {
+    const { name, email, contact } = data;
+    const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
+    const password = "123456"; // Default password for instructors
+    const type = "instructor";
+    
+    try {
+      setIsLoading(true);
+      toast.info("Starting instructor registration process...");
+      
+      // Step 1: Get Firebase ID token
+      const idToken = await getToken();  // Get the token using getToken function
+      console.log("Sending token:", idToken); 
+      if (!idToken) {
+        toast.error("Token retrieval failed. Please check your internet connection.");
+        return;
+      }
+  
+      // Step 2: Create user in Firebase via backend
+      const createUserResponse = await axiosSecure.post(
+        "/createUser",
+        { email, password, displayName: name, type },
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+  
+      const { uid } = createUserResponse.data;  // Assume backend returns the Firebase UID
+      toast.success("User created successfully in Firebase");
+  
+      // Optional: Log the created user
+      console.log("User created in Firebase:", { uid, email, name });
+      
+      reset();
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error during user registration:", error);
+      toast.error("Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+   
+  
+  
   const totalPages = Math.ceil(combinedData.length / itemsPerPage);
   const currentItems = combinedData
     .filter((instructor) =>
