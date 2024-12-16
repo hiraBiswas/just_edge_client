@@ -1,112 +1,111 @@
 import { createContext, useState, useEffect } from "react";
-import {
-  createUserWithEmailAndPassword,
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile , getIdToken
-} from "firebase/auth";
-import app from "../Firebase/firebase.config";
 import useAxiosPublic from "../hooks/useAxiosPublic";
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Context
 export const AuthContext = createContext(null);
 
 const AuthProvider = ({ children }) => {
-  const auth = getAuth(app);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const axiosPublic = useAxiosPublic();
+  const [user, setUser] = useState(null); // Manage user data in state
+  const [loading, setLoading] = useState(true); // Loading state
+  const axiosPublic = useAxiosPublic(); // Axios instance for public requests
 
-  // Create User with email and password
-  const createUser = async (name, image, type, email, password) => {
+  // Login user function
+  const loginUser = async (email, password) => {
     try {
       setLoading(true);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      await updateUserProfile(name, image); // Update user profile after creation
-      return user;
-    } catch (error) {
-      console.error("Error creating user:", error);
-      throw error; // Re-throw the error to propagate it further
-    } finally {
-      setLoading(false);
-    }
-  };
+      const response = await axiosPublic.post("/login", {
+        email,
+        password,
+      });
+  
+      // Check the exact structure of your response
+      if (response.data.token) {
+        const { token, user } = response.data;
+  
+        // Store token in localStorage
+        localStorage.setItem('access-token', token);
+  
+        // Optionally, store user info in localStorage as well if needed
+        localStorage.setItem('user', JSON.stringify(user));
+  
+        // Set user data in state
+        setUser(user);
 
-  // Sign in the user
-  const signIn = async (email, password) => {
-    setLoading(true);
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
-    } catch (error) {
-      console.error("Authentication Error:", error);
-      throw error; // Re-throw the error to propagate it further
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Log out the user
-  const logOut = async () => {
-    setLoading(true);
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Log out Error:", error);
-      throw error; // Re-throw the error to propagate it further
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update user profile
-  const updateUserProfile = (name, photo) => {
-    return updateProfile(auth.currentUser, {
-      displayName: name,
-      photoURL: photo
-    });
-  };
-
-  // Monitor authentication state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, currentUser => {
-      setUser(currentUser);
-      if (currentUser) {
-        console.log("Current User:", currentUser);
-        // Send user email to get a JWT token and store it in local storage
-        const userInfo = { email: currentUser.email };
-        axiosPublic.post("/jwt", userInfo).then(res => {
-          if (res.data.token) {
-            localStorage.setItem("access-token", res.data.token);
-            setLoading(false);
-          }
-        });
+        toast.success('Login Successful');
       } else {
-        // Clear token from localStorage if no user
-        localStorage.removeItem("access-token");
-        setLoading(false);
+        toast.error(response.data.message || 'Login failed');
       }
-    });
-    return () => unsubscribe();
-  }, [axiosPublic]);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Login failed';
+      toast.error(errorMessage);
+      console.error("Login Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
-  // Auth context value
+  // Logout user function
+  const logOut = async () => {
+    try {
+      setLoading(true);
+
+      // Clear localStorage
+      localStorage.removeItem('access-token');
+      
+      // Clear user state
+      setUser(null);
+
+      // Log user state after logout
+      console.log('User after logout:', null);
+
+      // Show logout toast
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error("Logout Error:", error);
+      toast.error('Logout failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check authentication on initial load (i.e., if token exists)
+  useEffect(() => {
+    const token = localStorage.getItem('access-token');
+    const storedUser = localStorage.getItem('user');
+
+    if (token && storedUser) {
+      // If token and user data are available in localStorage, set state
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+
+      // Log the user state after loading
+      console.log('User after useEffect (on page load):', parsedUser);
+    } else {
+      // If not authenticated, clear state and redirect (if necessary)
+      setUser(null);
+      console.log('No token found, user is logged out.');
+    }
+
+    setLoading(false);
+  }, []);
+
+  // Context value to be provided
   const authInfo = {
     user,
     loading,
-    createUser,
-    signIn,
+    loginUser,
     logOut,
-    updateUserProfile
   };
 
-  return <AuthContext.Provider value={authInfo}>{children}
-   <ToastContainer />
-   </AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={authInfo}>
+      {children}
+      <ToastContainer />
+    </AuthContext.Provider>
+  );
 };
 
 export default AuthProvider;

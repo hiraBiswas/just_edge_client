@@ -1,10 +1,9 @@
 import React, { useContext } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { AuthContext } from '../../Providers/AuthProvider';
-import './navbar.css'
+import './navbar.css';
 
 const Navbar = () => {
-  
   const { user, logOut } = useContext(AuthContext);
 
   const links = (
@@ -45,18 +44,19 @@ const Navbar = () => {
       {/* Removed Centered Links */}
       <div className="navbar-end px-5 flex items-center gap-3">
         <ul className="hidden lg:flex menu-horizontal px-1 gap-3">
-          {links} 
+          {links}
         </ul>
-        
+
         {/* User Profile and Login Button */}
         {user ? (
           <div className="dropdown dropdown-end relative z-50 flex items-center">
             <label tabIndex={0} className="btn btn-ghost btn-circle avatar mr-2">
               <div className="w-10 rounded-full">
-                <img src={user.photoURL} alt="Profile" />
+                {/* Display the user's profile image */}
+                <img src={user.image || "default-profile.png"} alt="Profile" />
               </div>
             </label>
-            <h2 className="text-lg font-semibold text-black mr-4">{user.displayName}</h2>
+            <h2 className="text-lg font-semibold text-black mr-4">{user.name}</h2>
             <ul tabIndex={0} className="mt-32 p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-52">
               <li className='text-black'>
                 <Link to="/dashboard" className="justify-between">

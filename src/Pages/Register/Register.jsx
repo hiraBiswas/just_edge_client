@@ -1,30 +1,29 @@
-import React, { useState, useEffect, useContext } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { AuthContext } from "../../Providers/AuthProvider";
-import { getAuth, updateProfile } from "firebase/auth";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useForm } from "react-hook-form";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 
+
+
 const Register = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
   const [courses, setCourses] = useState([]); // State to store courses
-  const location = useLocation();
   const navigate = useNavigate();
-  const auth = getAuth();
-  const { createUser } = useContext(AuthContext);
   const axiosPublic = useAxiosPublic();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+
 
   // Fetch courses from the database
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const response = await axiosPublic.get("/courses");
-        setCourses(response.data); // Assuming response.data contains an array of courses
+        setCourses(response.data);
       } catch (error) {
         console.error("Error fetching courses:", error);
         toast.error("Failed to load courses");
@@ -33,6 +32,7 @@ const Register = () => {
 
     fetchCourses();
   }, [axiosPublic]);
+
 
   const onSubmit = async (data) => {
     try {
@@ -45,11 +45,8 @@ const Register = () => {
         department,
         session,
         institution,
-        prefCourse, // This will hold the selected courseId
+        prefCourse,
       } = data;
-
-      const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
-      const type = "student";
 
       // Password validation
       if (password.length < 6) {
@@ -69,19 +66,16 @@ const Register = () => {
         return;
       }
 
-      // Firebase authentication
-      await createUser(name, image, type, email, password);
-      await updateProfile(auth.currentUser, {
-        displayName: name,
-        photoURL: image,
-      });
+      const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
+      const type = "student";
 
-      // Save common data to users collection
+      // Register user in the users collection
       const userResponse = await axiosPublic.post("/users", {
         name,
         email,
+        password,
         image,
-        type,
+        type
       });
 
       if (userResponse.data.insertedId) {
@@ -92,15 +86,14 @@ const Register = () => {
           session,
           institution,
           prefCourse,
-          isDeleted: false, 
         });
 
-        console.log(studentResponse);
-        
         if (studentResponse.data.insertedId) {
-          toast.success("Registered Successfully");
+          // toast.success("Registered successfully");
           reset();
-          navigate("/");
+          navigate("/login"); // Redirect to home/dashboard
+        } else {
+          toast.error("Error saving student data.");
         }
       }
     } catch (error) {
@@ -108,14 +101,15 @@ const Register = () => {
       toast.error(`Error during form submission: ${error.message}`);
     }
   };
-
+  
+  
 
   return (
     <div className="container mx-auto">
-      <div className="text-center mt-8 lg:mt-36">
+      <div className="text-center mt-8 lg:mt-28">
         <div className="flex flex-col justify-center items-center mx-auto gap-4">
-          <div className="shadow-lg rounded-lg p-6 bg-white">
-            <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl">
+          <div className="shadow-lg rounded-lg p-6 bg-white w-2/5">
+            <form onSubmit={handleSubmit(onSubmit)} className="">
               <div className="grid grid-cols-2 gap-2">
                 <div className="form-control">
                   <label className="label">
@@ -132,7 +126,7 @@ const Register = () => {
                     required
                   />
                 </div>
-                <div className="form-control ">
+                <div className="form-control">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
                       Contact *
@@ -147,7 +141,7 @@ const Register = () => {
                     required
                   />
                 </div>
-                <div className="form-control ">
+                <div className="form-control">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
                       Email *
@@ -192,7 +186,7 @@ const Register = () => {
                     required
                   />
                 </div>
-                <div className="form-control ">
+                <div className="form-control">
                   <label className="label">
                     <span className="label-text text-md font-medium lg:text-lg">
                       Session *
