@@ -5,7 +5,7 @@ import { Toaster, toast } from "react-hot-toast"; // Modal toast for validation 
 
 const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   const [batchName, setBatchName] = useState("");
-  const [numDays, setNumDays] = useState(3);
+  const [numDays, setNumDays] = useState(2);
   const [schedule, setSchedule] = useState(
     Array.from({ length: numDays }, () => ({ day: "", startTime: "", endTime: "" }))
   );
@@ -99,7 +99,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     setBatchName("");
     setNumDays(3);
     setSchedule(
-      Array.from({ length: 3 }, () => ({ day: "", startTime: "", endTime: "" }))
+      Array.from({ length: 2 }, () => ({ day: "", startTime: "", endTime: "" }))
     );
   };
 
@@ -125,9 +125,10 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
           onChange={handleDaysChange}
           className="mt-1 px-4 py-2 border border-gray-300 rounded"
         >
+          <option value="2">2 Days</option>
           <option value="3">3 Days</option>
           <option value="4">4 Days</option>
-          <option value="5">5 Days</option>
+          
         </select>
       </div>
 

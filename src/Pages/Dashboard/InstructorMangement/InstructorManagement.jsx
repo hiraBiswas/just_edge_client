@@ -10,11 +10,7 @@ import { Link } from "react-router-dom";
 import { FaEye, FaRegFileArchive } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { FaPlus } from "react-icons/fa6";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import app from "../../../Firebase/firebase.config";
-
-
-
+import { RxCross2 } from "react-icons/rx"; 
 
 const InstructorManagement = () => {
   const { register, handleSubmit, reset } = useForm();
@@ -28,8 +24,7 @@ const InstructorManagement = () => {
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
-
+  const itemsPerPage = 6;
 
   // Fetch instructors and users
   const fetchInstructors = async () => {
@@ -47,242 +42,78 @@ const InstructorManagement = () => {
   };
 
   useEffect(() => {
-    fetchInstructors(); // Fetch instructors on initial load
+    fetchInstructors();
   }, [axiosSecure]);
 
+  // Combine users and instructors data
+  const combinedData = React.useMemo(() => {
+    const combined = instructors
+      .map((instructor) => {
+        const userInfo = users.find((user) => user._id === instructor.userId);
+        if (!userInfo) return null;
 
-    // Combine users and instructors data
-    const combinedData = React.useMemo(() => {
-      const combined = instructors
-        .map((instructor) => {
-          const userInfo = users.find((user) => user._id === instructor.userId);
-          if (!userInfo) return null;
-  
-          return {
-            _id: userInfo._id,
-            name: userInfo.name,
-            email: userInfo.email,
-            image: userInfo.image,
-            contact: instructor.contact,
-          };
-        })
-        .filter(Boolean);
-  
-      return combined;
-    }, [instructors, users]);
+        return {
+          _id: userInfo._id,
+          name: userInfo.name,
+          email: userInfo.email,
+          image: userInfo.image,
+          contact: instructor.contact,
+        };
+      })
+      .filter(Boolean);
 
+    return combined;
+  }, [instructors, users]);
 
-    const getToken = async () => {
-      const auth = getAuth();
-      console.log(auth);
-      const currentUser = auth.currentUser;
-    
-      if (!currentUser) {
-        console.error("Current user is null");
-        return null;
-      }
-    
-      try {
-        // Detailed logging
-        console.log("Current User Details:", {
-          uid: currentUser.uid,
-          email: currentUser.email,
-          emailVerified: currentUser.emailVerified
-        });
-    
-        // Force token refresh with extended timeout
-        const idToken = await currentUser.getIdToken(true);
-        
-        console.log("Token successfully retrieved:", {
-          tokenLength: idToken.length,
-          firstChars: idToken.substring(0, 10)
-        });
-    
-        return idToken;
-      } catch (error) {
-        console.error("Comprehensive Token Retrieval Error:", {
-          name: error.name,
-          message: error.message,
-          code: error.code
-        });
-    
-        // Specific error handling
-        if (error.code === 'auth/network-request-failed') {
-          // Handle network errors
-          console.log("Network error occurred. Check internet connection.");
-        }
-    
-        return null;
-      }
-    };
-
-    getToken();
-    const debugAuthentication = async () => {
-      const auth = getAuth();
-      
-      try {
-        // Check current user
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-          console.error("No current user found");
-          return;
-        }
-    
-        // Detailed user information
-        console.log("User Debug Info:", {
-          uid: currentUser.uid,
-          email: currentUser.email,
-          emailVerified: currentUser.emailVerified,
-          providerData: currentUser.providerData
-        });
-    
-        // Token generation attempt
-        const token = await currentUser.getIdToken(true);
-        console.log("Token generated successfully");
-    
-      } catch (error) {
-        console.error("Authentication Debug Error:", error);
-      }
-    };
-    
-
-//     const onSubmit = async (data) => {
-//       const { name, email, contact } = data;
-//       const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
-//       const password = "123456"; // Default password for instructors
-//       const type = "instructor";
-    
-//       try {
-//         setIsLoading(true);
-//         toast.info("Starting instructor registration process...");
-// // Step 1: Get Firebase ID token
-// const idToken = await getToken();  // Get the token using getToken function
-
-// if (!idToken) {
-//   toast.error("Token retrieval failed. Please check your internet connection.");
-//   return;
-// }
-//     // Step 2: Create user in Firebase via backend
-//     const createUserResponse = await axiosSecure.post(
-//       "/createUser",
-//       { email, password, displayName: name, type },
-//       {
-//         headers: {
-//           Authorization: `Bearer ${idToken}`,
-//         },
-//       }
-//     );
-    
-//     const { uid } = createUserResponse.data;  // Assume backend returns the Firebase UID
-//     toast.success("User created successfully in Firebase");
-    
-//         // Step 2: Save user details to collections
-//         const userPayload = {
-//           uid,
-//           name,
-//           email,
-//           image,
-//           type,
-//           createdAt: new Date(),
-//         };
-    
-//         const userResponse = await axiosSecure.post(
-//           "/users",
-//           { ...userPayload },
-//           {
-//             headers: {
-//               Authorization: `Bearer ${idToken}`,
-//             },
-//           }
-//         );
-    
-//         // Save instructor details
-//         const newInstructor = {
-//           userId: userResponse.data.insertedId,
-//           contact,
-//         };
-    
-//         await axiosSecure.post(
-//           "/instructors",
-//           newInstructor,
-//           {
-//             headers: {
-//               Authorization: `Bearer ${idToken}`,
-//             },
-//           }
-//         );
-    
-//         // Update UI
-//         setInstructors((prevInstructors) => [
-//           { ...newInstructor, ...userPayload },
-//           ...prevInstructors,
-//         ]);
-    
-//         toast.success("Instructor registered successfully");
-//         reset();
-//         setIsModalOpen(false);
-//         await fetchInstructors(); // Refresh instructor list
-//       } catch (error) {
-//         console.error("Error during user registration:", error);
-//         toast.error("Registration failed. Please try again.");
-//       } finally {
-//         setIsLoading(false);
-//       }
-//     };
-    
-    
-
-
-  // Paginate the combined data
-  
-  
   const onSubmit = async (data) => {
     const { name, email, contact } = data;
     const image = "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
-    const password = "123456"; // Default password for instructors
+    const password = "123456"; 
     const type = "instructor";
     
     try {
-      setIsLoading(true);
-      toast.info("Starting instructor registration process...");
-      
-      // Step 1: Get Firebase ID token
-      const idToken = await getToken();  // Get the token using getToken function
-      console.log("Sending token:", idToken); 
-      if (!idToken) {
-        toast.error("Token retrieval failed. Please check your internet connection.");
-        return;
-      }
+      setIsLoading(true); // Start loading state
   
-      // Step 2: Create user in Firebase via backend
-      const createUserResponse = await axiosSecure.post(
-        "/createUser",
-        { email, password, displayName: name, type },
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
+      // Create user
+      const createUserResponse = await axiosSecure.post("/users", {
+        email,
+        password,
+        name,
+        image,
+        type,
+      });
+      
+      // Check if user is created
+      if (createUserResponse.data.insertedId) {
+        const userId = createUserResponse.data.insertedId;
+  
+        // Create instructor
+        const createInstructorResponse = await axiosSecure.post("/instructors", {
+          userId, 
+          contact,
+          isDeleted: false,  
+        });
+  
+        if (createInstructorResponse.status === 201) {
+          // Re-fetch the list of instructors after successful creation
+          await fetchInstructors(); // Ensure you have the fetchInstructors function defined
+          document.getElementById('my_modal_5').close(); // Close the modal
+          reset(); 
+        } else {
+          toast.error("Failed to register instructor in instructor collection.");
         }
-      );
-  
-      const { uid } = createUserResponse.data;  // Assume backend returns the Firebase UID
-      toast.success("User created successfully in Firebase");
-  
-      // Optional: Log the created user
-      console.log("User created in Firebase:", { uid, email, name });
-      
-      reset();
-      setIsModalOpen(false);
+      } else {
+        toast.error(createUserResponse.data.message || "User registration failed.");
+      }
     } catch (error) {
-      console.error("Error during user registration:", error);
-      toast.error("Registration failed. Please try again.");
+      console.error("Unexpected error during registration:", error);
+      toast.error("An unexpected error occurred");
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Stop loading state
     }
   };
-   
   
-  
+
   const totalPages = Math.ceil(combinedData.length / itemsPerPage);
   const currentItems = combinedData
     .filter((instructor) =>
@@ -308,7 +139,7 @@ const InstructorManagement = () => {
           <div>
             <button
               className="btn btn-outline text-bg-950"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => document.getElementById('my_modal_5').showModal()} // Open the modal
             >
               <FaPlus /> Add New Instructor
             </button>
@@ -316,121 +147,104 @@ const InstructorManagement = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-4 w-2/5 h-4/5 relative">
-            <div className="flex justify-center mb-6">
-              <h2 className="text-xl font-semibold mt-6 text-center">
-            Add New Instructor
-              </h2>
+      {/* Modal */}
+      <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+        <div className="modal-box">
+          <h2 className="text-xl font-semibold text-center mb-5">Add New Instructor</h2>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6 ">
+            <div className="flex items-center gap-4">
+              <label className="label w-1/3">
+                <span className="label-text">Name *</span>
+              </label>
+              <input
+                {...register("name", { required: true })}
+                type="text"
+                placeholder="Enter name"
+                className="input input-bordered w-2/3"
+                required
+              />
             </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6">
-              <div className="flex items-center gap-4">
-                <label className="label w-1/3">
-                  <span className="label-text">Name *</span>
-                </label>
+            <div className="flex items-center gap-4">
+              <label className="label w-1/3">
+                <span className="label-text">Email *</span>
+              </label>
+              <input
+                {...register("email", { required: true })}
+                type="email"
+                placeholder="Enter email"
+                className="input input-bordered w-2/3"
+                required
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="label w-1/3">
+                <span className="label-text">Contact *</span>
+              </label>
+              <input
+                {...register("contact", { required: true })}
+                type="text"
+                placeholder="Enter contact number"
+                className="input input-bordered w-2/3"
+                required
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="label w-1/3">
+                <span className="label-text">Password</span>
+              </label>
+              <div className="relative w-2/3">
                 <input
-                  {...register("name", { required: true })}
-                  type="text"
-                  placeholder="Enter name"
-                  className="input input-bordered w-2/3"
-                  required
+                  type={showPassword ? "text" : "password"}
+                  value="123456"
+                  readOnly
+                  className="input input-bordered w-full bg-gray-100 cursor-not-allowed"
                 />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="label w-1/3">
-                  <span className="label-text">Email *</span>
-                </label>
-                <input
-                  {...register("email", { required: true })}
-                  type="email"
-                  placeholder="Enter email"
-                  className="input input-bordered w-2/3"
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="label w-1/3">
-                  <span className="label-text">Contact *</span>
-                </label>
-                <input
-                  {...register("contact", { required: true })}
-                  type="text"
-                  placeholder="Enter contact number"
-                  className="input input-bordered w-2/3"
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="label w-1/3">
-                  <span className="label-text">Password</span>
-                </label>
-                <div className="relative w-2/3">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value="123456"
-                    readOnly
-                    className="input input-bordered w-full bg-gray-100 cursor-not-allowed"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-2 flex items-center text-gray-500"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                  >
-                    {showPassword ? <IoEyeSharp size={20} /> : <FaEyeSlash size={20} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="absolute bottom-4 right-4 flex gap-4 mt-4 px-6">
-                <button className="btn bg-blue-950 text-white w-auto" disabled={isLoading}>
-                  {isLoading ? <span className="loading loading-ring loading-lg"></span> : "Register Instructor"}
-                </button>
                 <button
                   type="button"
-                  className="btn bg-gray-500 text-white w-auto"
-                  onClick={() => setIsModalOpen(false)}
+                  className="absolute inset-y-0 right-2 flex items-center text-gray-500"
+                  onClick={() => setShowPassword((prev) => !prev)}
                 >
-                  Cancel
+                  {showPassword ? <IoEyeSharp size={20} /> : <FaEyeSlash size={20} />}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-grow overflow-x-auto">
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="animate-pulse w-full mt-8 mx-auto">
-              <table className="table w-[1000px] mx-auto">
-                <thead className="bg-gray-200">
-                  <tr className="text-lg font-medium">
-                    <th>SI</th>
-                    <th>Profile</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Contact</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...Array(itemsPerPage)].map((_, index) => (
-                    <tr key={index}>
-                      <td colSpan="6">
-                        <div className="h-8 bg-gray-100 rounded-lg"></div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
-          ) : (
-            <table className="table w-[1000px] mt-8">
-              <thead className="bg-blue-950 text-white">
-                <tr className="text-lg font-medium">
-                  <th>#</th>
+
+            <div className="flex gap-4 mt-4 justify-center">
+  <button
+    type="submit"
+    className={`btn flex justify-center items-center gap-2 bg-blue-950 text-white ${isLoading ? "cursor-not-allowed opacity-70" : ""}`}
+    disabled={isLoading}
+  >
+    {isLoading ? (
+      <>
+        <span>Registering</span>
+        <span className="loading loading-ball loading-md"></span>
+      </>
+    ) : (
+      "Register Instructor"
+    )}
+  </button>
+  <button
+    className="absolute top-2 right-2 text-xl"
+    onClick={() => document.getElementById('my_modal_5').close()} // Close the modal
+  >
+    <RxCross2 />
+  </button>
+</div>
+
+
+          </form>
+        </div>
+      </dialog>
+
+      {/* Table */}
+      <div className="flex-grow overflow-x-auto">
+        {loading ? (
+          <div className="animate-pulse w-full mt-8 mx-auto">
+            <table className="table w-[1100px] mx-auto">
+              <thead className="bg-gray-200">
+                <tr className="text-lg  font-medium">
+                  <th>SI</th>
                   <th>Profile</th>
                   <th>Name</th>
                   <th>Email</th>
@@ -438,44 +252,54 @@ const InstructorManagement = () => {
                   <th>Action</th>
                 </tr>
               </thead>
-              <tbody>
-                {currentItems.map((instructor, index) => (
-                  <tr
-                    key={instructor._id}
-                    className={instructor.isDeleted ? "opacity-50" : "h-5"}
-                    style={{ height: "20px" }}
-                  >
-                    <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
-                    <td>
-                      <img
-                        src={instructor.image || "https://via.placeholder.com/150"}
-                        alt={instructor.name || "Anonymous"}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    </td>
-                    <td>{instructor.name}</td>
-                    <td>{instructor.email}</td>
-                    <td>{instructor.contact || "N/A"}</td>
-                    <td className="flex items-center justify-center gap-4">
-                      <Link to={`/dashboard/instructorDetails/${instructor._id}`}>
-                        <FaEye className="text-blue-950 cursor-pointer hover:scale-105" />
-                      </Link>
-                      <Link to={`/dashboard/instructorUpdate/${instructor._id}`}>
-                        <MdEdit className="text-green-600 cursor-pointer hover:scale-105" />
-                      </Link>
-                      <FaRegFileArchive
-                        className="text-red-600 cursor-pointer hover:scale-105"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        ) : (
+          <table className="table w-[1000px] mx-auto mt-8">
+            <thead className="bg-blue-950">
+              <tr className="text-lg text-white font-medium">
+                <th>SI</th>
+                <th>Profile</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Contact</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentItems.map((instructor, index) => (
+                <tr key={instructor._id}>
+                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                  <td>
+                    <img
+                      src={instructor.image || "https://via.placeholder.com/150"}
+                      alt={instructor.name}
+                      className="w-12 h-12 rounded-full"
+                    />
+                  </td>
+                  <td>{instructor.name}</td>
+                  <td>{instructor.email}</td>
+                  <td>{instructor.contact}</td>
+                  <td>
+                    <button
+                      className="btn btn-outline btn-warning btn-xs mr-2"
+                      onClick={() => console.log("Edit")}
+                    >
+                      <MdEdit size={18} />
+                    </button>
+                    <button className="btn btn-outline btn-error btn-xs">
+                      <FaRegFileArchive size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      <div className="flex justify-end join my-4 px-8 py-4 mt-auto">
+      {/* Pagination */}
+      <div className="flex justify-end join my-4">
         <button
           className="join-item btn"
           disabled={currentPage === 1}
@@ -484,6 +308,7 @@ const InstructorManagement = () => {
           Previous
         </button>
         <button className="join-item btn">{`Page ${currentPage}`}</button>
+
         <button
           className="join-item btn"
           disabled={currentPage === totalPages}
@@ -492,8 +317,6 @@ const InstructorManagement = () => {
           Next
         </button>
       </div>
-
-      <ToastContainer />
     </div>
   );
 };
