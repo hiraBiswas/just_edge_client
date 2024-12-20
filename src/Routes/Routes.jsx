@@ -22,6 +22,8 @@ import CourseUpdate from "../Pages/Dashboard/CourseManagement/CourseUpdate";
 import BatchManagement from "../Pages/Dashboard/BatchManagement/BatchManagement";
 import BatchDetails from "../Pages/Dashboard/BatchManagement/BatchDetails";
 import InstructorManagement from "../Pages/Dashboard/InstructorMangement/InstructorManagement";
+import InstructorRoutine from "../Pages/Dashboard/InstructorDashboard/InstructorRoutine/InstructorRoutine";
+import InstructorRoute from "./InstructorRoute";
 
 export const router = createBrowserRouter([
   {
@@ -98,6 +100,10 @@ export const router = createBrowserRouter([
         {
             path: 'instructorManagement',
             element: <AdminRoute><InstructorManagement></InstructorManagement></AdminRoute>
+        },
+        {
+            path: 'instructorRoutine',
+            element: <InstructorRoute><InstructorRoutine></InstructorRoutine></InstructorRoute>
         },
       ]
   }

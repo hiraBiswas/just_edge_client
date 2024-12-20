@@ -2,23 +2,19 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../Providers/AuthProvider";
 import useAdmin from "../hooks/useAdmin";
+import useInstructor from "../hooks/useInstructor"; 
 import { AiFillHome } from "react-icons/ai";
-import { FaBorderAll } from "react-icons/fa";
-import { FaTruckMoving } from "react-icons/fa";
-import './dashboard.css'
 import { MdSpaceDashboard } from "react-icons/md";
 import { IoIosLogOut } from "react-icons/io";
-import { PiUsersFill } from "react-icons/pi";
-import { MdOutlineAddCircleOutline } from "react-icons/md";
-import { MdEdit } from "react-icons/md";
-import { TbBrandBooking } from "react-icons/tb";
 import { MdPending } from "react-icons/md";
 import { IoMdCheckmarkCircle } from "react-icons/io";
 import { VscCombine } from "react-icons/vsc";
 import { MdAssignmentInd } from "react-icons/md";
+import './dashboard.css'
 
 const Dashboard = () => {
-  const [isAdmin, isAdminLoading] = useAdmin();  // Destructure isAdmin and isAdminLoading
+  const [isAdmin, isAdminLoading] = useAdmin();  
+  const [isInstructor, isInstructorLoading] = useInstructor(); 
   const { user, logOut } = useContext(AuthContext);
 
   const handleSignOut = () => {
@@ -31,11 +27,10 @@ const Dashboard = () => {
       });
   };
 
-  if (isAdminLoading) {
-    // Show loading spinner while admin status is being checked
+  if (isAdminLoading || isInstructorLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <span className="loading loading-ring loading-lg"></span> {/* Loader */}
+        <span className="loading loading-ring loading-lg"></span> 
       </div>
     );
   }
@@ -58,6 +53,8 @@ const Dashboard = () => {
             <Link to="/">
               <h3 className="text-2xl font-bold text-white pb-5">JUST_EDGE</h3>
             </Link>
+
+            {/* Admin routes */}
             {isAdmin ? (
               <>
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-1">
@@ -87,7 +84,22 @@ const Dashboard = () => {
                   </NavLink>
                 </li>
               </>
+            ) : isInstructor ? (
+              // Instructor-related routes
+              <>
+                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
+                  <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" end to="/dashboard">
+                    <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" /> Dashboard
+                  </NavLink>
+                </li>
+                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
+                  <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/instructorRoutine">
+                    <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" /> Routine
+                  </NavLink>
+                </li>
+              </>
             ) : (
+              // Default routes for normal users
               <>
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
                   <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/allRequest">
@@ -106,6 +118,7 @@ const Dashboard = () => {
                 </li>
               </>
             )}
+
             <hr />
             <Link className="hover:text-sky-200 flex flex-row gap-3 items-center mt-4 pb-2" to="/">
               <AiFillHome className="text-xl text-white hover:text-amber-500" />
@@ -121,7 +134,6 @@ const Dashboard = () => {
           </ul>
         </div>
       </div>
-      {/* Main content */}
     </div>
   );
 };
