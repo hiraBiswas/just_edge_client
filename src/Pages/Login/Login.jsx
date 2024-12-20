@@ -16,20 +16,23 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+ 
+
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     try {
       await loginUser(email, password); // Use the loginUser from context
-
+  
       // After successful login, redirect to the desired page
       const redirectPath = location.state?.from || '/';
       navigate(redirectPath);
     } catch (error) {
-      // Handle errors from loginUser (e.g., wrong credentials)
-      toast.error("Login failed. Please check your credentials.");
+      // Display the error message from loginUser
+      toast.error(error.message);
     }
   };
+  
 
   return (
     <div>
@@ -85,7 +88,7 @@ const Login = () => {
             <div>
               <p className="p-8 pt-0 text-md font-medium lg:text-lg">
                 New to the website? 
-                <NavLink to="/register" className="text-lg font-bold bg-grad-button lg:text-xl">Sign Up</NavLink> here.
+                <NavLink to="/register" className="text-lg font-bold bg-grad-button lg:text-xl"> Sign Up</NavLink> here.
               </p>
             </div>
           </div>

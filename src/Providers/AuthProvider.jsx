@@ -2,6 +2,8 @@ import { createContext, useState, useEffect } from "react";
 import useAxiosPublic from "../hooks/useAxiosPublic";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from "react-router-dom";
+
 
 // Context
 export const AuthContext = createContext(null);
@@ -11,7 +13,7 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true); // Loading state
   const axiosPublic = useAxiosPublic(); // Axios instance for public requests
 
-  // Login user function
+
   const loginUser = async (email, password) => {
     try {
       setLoading(true);
@@ -20,49 +22,41 @@ const AuthProvider = ({ children }) => {
         password,
       });
   
-      // Check the exact structure of your response
       if (response.data.token) {
         const { token, user } = response.data;
   
-        // Store token in localStorage
-        localStorage.setItem('access-token', token);
+        // Store token and user data in localStorage
+        localStorage.setItem("access-token", token);
+        localStorage.setItem("user", JSON.stringify(user));
   
-        // Optionally, store user info in localStorage as well if needed
-        localStorage.setItem('user', JSON.stringify(user));
-  
-        // Set user data in state
         setUser(user);
-
-        toast.success('Login Successful');
+        toast.success("Login successful!");
       } else {
-        toast.error(response.data.message || 'Login failed');
+        throw new Error(response.data.message || "Login failed");
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
-      toast.error(errorMessage);
-      console.error("Login Error:", error);
+      const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials.";
+      throw new Error(errorMessage); // Throw the error so the calling function can handle it
     } finally {
       setLoading(false);
     }
   };
   
+  
+  
 
   // Logout user function
   const logOut = async () => {
+   
+  
     try {
       setLoading(true);
-
+  
       // Clear localStorage
       localStorage.removeItem('access-token');
-      
-      // Clear user state
       setUser(null);
-
-      // Log user state after logout
-      console.log('User after logout:', null);
-
-      // Show logout toast
-      toast.success('Logged out successfully');
+     
+  
     } catch (error) {
       console.error("Logout Error:", error);
       toast.error('Logout failed');

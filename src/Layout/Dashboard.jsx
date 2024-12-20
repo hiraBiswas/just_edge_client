@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../Providers/AuthProvider";
 import useAdmin from "../hooks/useAdmin";
@@ -12,10 +12,14 @@ import { VscCombine } from "react-icons/vsc";
 import { MdAssignmentInd } from "react-icons/md";
 import './dashboard.css'
 
+
+
 const Dashboard = () => {
   const [isAdmin, isAdminLoading] = useAdmin();  
   const [isInstructor, isInstructorLoading] = useInstructor(); 
   const { user, logOut } = useContext(AuthContext);
+  
+
 
   const handleSignOut = () => {
     logOut()
@@ -126,10 +130,18 @@ const Dashboard = () => {
             </Link>
 
             <Link className="flex items-center gap-3">
-              <IoIosLogOut className="text-xl text-white hover:text-sky-200" />
-              <button onClick={handleSignOut} className="text-white font-semibold hover:text-sky-200">
-                Logout
-              </button>
+            <div className="flex items-center gap-3">
+  <IoIosLogOut className="text-xl text-white hover:text-sky-200" />
+  <button
+    onClick={(e) => {
+      e.preventDefault(); // Prevent any default link behavior
+      handleSignOut();
+    }}
+    className="text-white font-semibold hover:text-sky-200"
+  >
+    Logout
+  </button>
+</div>
             </Link>
           </ul>
         </div>

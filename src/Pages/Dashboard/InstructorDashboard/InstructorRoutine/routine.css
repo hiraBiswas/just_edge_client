@@ -1,0 +1,10 @@
+/* Add a border after each full batch row */
+.batch-row:last-child {
+    border-bottom: 2px solid #000; /* Add your desired border color */
+  }
+  
+  /* Optional: Add spacing between rows */
+  .table tr {
+    border-bottom: 1px solid #ddd;
+  }
+  
