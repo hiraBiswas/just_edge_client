@@ -91,10 +91,10 @@ const InstructorManagement = () => {
             <button className="btn px-5 bg-blue-950 text-white">Search</button>
           </div>
           <div>
-          <Link to="/dashboard/approveInstructor">  <button
+          <Link to="/dashboard/pendingInstructor">  <button
               className="btn btn-outline text-bg-950"
             >
-              <FaPlus /> Approve Instructor
+              View Pending Instructor
             </button></Link>
           </div>
         </div>
@@ -147,12 +147,12 @@ const InstructorManagement = () => {
                   <td>{instructor.contact}</td>
                   <td>
                     <button
-                      className="btn btn-outline btn-warning btn-xs mr-2"
+                      className="btn btn-xs mr-2"
                       onClick={() => console.log("Edit")}
                     >
                       <MdEdit size={18} />
                     </button>
-                    <button className="btn btn-outline btn-error btn-xs">
+                    <button className="btn btn-xs">
                       <FaRegFileArchive size={18} />
                     </button>
                   </td>

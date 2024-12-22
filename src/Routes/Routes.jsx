@@ -21,10 +21,10 @@ import CourseDetails from "../Pages/Dashboard/CourseManagement/CourseDetails";
 import CourseUpdate from "../Pages/Dashboard/CourseManagement/CourseUpdate";
 import BatchManagement from "../Pages/Dashboard/BatchManagement/BatchManagement";
 import BatchDetails from "../Pages/Dashboard/BatchManagement/BatchDetails";
-import InstructorManagement from "../Pages/Dashboard/InstructorMangement/InstructorManagement";
+import InstructorManagement from "../Pages/Dashboard/InstructorManagement/InstructorManagement";
 import InstructorRoutine from "../Pages/Dashboard/InstructorDashboard/InstructorRoutine/InstructorRoutine";
 import InstructorRoute from "./InstructorRoute";
-import ApproveInstructor from "../Pages/Dashboard/InstructorMangement/ApproveInstructor";
+import PendingInstructor from "../Pages/Dashboard/InstructorManagement/PendingInstructor";
 
 export const router = createBrowserRouter([
   {
@@ -103,8 +103,8 @@ export const router = createBrowserRouter([
             element: <AdminRoute><InstructorManagement></InstructorManagement></AdminRoute>
         },
         {
-            path: 'approveInstructor',
-            element: <AdminRoute><ApproveInstructor></ApproveInstructor></AdminRoute>
+            path: 'pendingInstructor',
+            element: <AdminRoute><PendingInstructor></PendingInstructor></AdminRoute>
         },
         {
             path: 'instructorRoutine',
