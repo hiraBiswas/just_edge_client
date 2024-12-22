@@ -24,6 +24,7 @@ import BatchDetails from "../Pages/Dashboard/BatchManagement/BatchDetails";
 import InstructorManagement from "../Pages/Dashboard/InstructorMangement/InstructorManagement";
 import InstructorRoutine from "../Pages/Dashboard/InstructorDashboard/InstructorRoutine/InstructorRoutine";
 import InstructorRoute from "./InstructorRoute";
+import ApproveInstructor from "../Pages/Dashboard/InstructorMangement/ApproveInstructor";
 
 export const router = createBrowserRouter([
   {
@@ -100,6 +101,10 @@ export const router = createBrowserRouter([
         {
             path: 'instructorManagement',
             element: <AdminRoute><InstructorManagement></InstructorManagement></AdminRoute>
+        },
+        {
+            path: 'approveInstructor',
+            element: <AdminRoute><ApproveInstructor></ApproveInstructor></AdminRoute>
         },
         {
             path: 'instructorRoutine',
