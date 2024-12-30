@@ -25,6 +25,8 @@ import InstructorManagement from "../Pages/Dashboard/InstructorManagement/Instru
 import InstructorRoutine from "../Pages/Dashboard/InstructorDashboard/InstructorRoutine/InstructorRoutine";
 import InstructorRoute from "./InstructorRoute";
 import PendingInstructor from "../Pages/Dashboard/InstructorManagement/PendingInstructor";
+import UpdateProfile from "../Pages/Dashboard/StudentDashboard/UpdateProfile/UpdateProfile";
+import OnlineProfile from "../Pages/Dashboard/StudentDashboard/OnlineProfile/OnlineProfile";
 
 export const router = createBrowserRouter([
   {
@@ -109,6 +111,16 @@ export const router = createBrowserRouter([
         {
             path: 'instructorRoutine',
             element: <InstructorRoute><InstructorRoutine></InstructorRoutine></InstructorRoute>
+        },
+
+        {
+            path: 'updateProfile',
+            element: <UpdateProfile></UpdateProfile>
+        },
+
+        {
+            path: 'onlineProfile',
+            element: <OnlineProfile></OnlineProfile>
         },
       ]
   }

@@ -10,6 +10,8 @@ import { MdPending } from "react-icons/md";
 import { IoMdCheckmarkCircle } from "react-icons/io";
 import { VscCombine } from "react-icons/vsc";
 import { MdAssignmentInd } from "react-icons/md";
+import { ImProfile } from "react-icons/im";
+import { AiOutlineProfile } from "react-icons/ai";
 import './dashboard.css'
 
 
@@ -106,13 +108,13 @@ const Dashboard = () => {
               // Default routes for normal users
               <>
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
-                  <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/allRequest">
-                    <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" /> All Request
+                  <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/updateProfile">
+                    <ImProfile className="text-xl text-white hover:text-amber-500" /> Update Profile
                   </NavLink>
                 </li>
                 <li className="hover:text-sky-200 flex flex-row py-2">
-                  <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/approvedRequest">
-                    <IoMdCheckmarkCircle className="text-xl text-white hover:text-amber-500" /> Approved Request
+                  <NavLink className="hover:text-sky-200 flex justify-center items-center gap-3" to="/dashboard/onlineProfile">
+                    <AiOutlineProfile className="text-xl text-white hover:text-amber-500" /> Online Profile
                   </NavLink>
                 </li>
                 <li className="hover:text-sky-200 flex flex-row py-2 pb-3">

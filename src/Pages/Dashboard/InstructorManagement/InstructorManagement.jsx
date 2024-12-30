@@ -45,25 +45,30 @@ const InstructorManagement = () => {
     fetchInstructors();
   }, [axiosSecure]);
 
-  // Combine users and instructors data
-  const combinedData = React.useMemo(() => {
-    const combined = instructors
-      .map((instructor) => {
-        const userInfo = users.find((user) => user._id === instructor.userId);
-        if (!userInfo) return null;
+// Combine users and instructors data
+const combinedData = React.useMemo(() => {
+  const filteredInstructors = instructors.filter(
+    (instructor) => !instructor.isDeleted && instructor.status === "Approved"
+  );
 
-        return {
-          _id: userInfo._id,
-          name: userInfo.name,
-          email: userInfo.email,
-          image: userInfo.image,
-          contact: instructor.contact,
-        };
-      })
-      .filter(Boolean);
+  const combined = filteredInstructors
+    .map((instructor) => {
+      const userInfo = users.find((user) => user._id === instructor.userId);
+      if (!userInfo) return null;
 
-    return combined;
-  }, [instructors, users]);
+      return {
+        _id: userInfo._id,
+        name: userInfo.name,
+        email: userInfo.email,
+        image: userInfo.image,
+        contact: instructor.contact,
+      };
+    })
+    .filter(Boolean);
+
+  return combined;
+}, [instructors, users]);
+
 
 
   
