@@ -103,47 +103,62 @@ useEffect(() => {
 
   
 
-  const handleAssignInstructor = async (batchId, instructorId) => {
-    try {
-      // POST the instructor assignment
-      const response = await axiosSecure.post("/instructors-batches", {
-        instructorId,
-        batchId,
-      });
-  
-      if (response.status === 201) {
-        // Get the instructor's name from the instructor map
-        const instructorName = instructorMap[instructorId] || "Unknown";
-  
-        toast.success("Instructor assigned successfully!");
-  
-        // Update the batches state immediately with the instructor's name
-        setBatches((prevBatches) => {
-          return prevBatches.map((batch) =>
-            batch._id === batchId
-              ? {
-                  ...batch,
-                  instructors: [...batch.instructors, instructorName], // Add the name directly
-                }
-              : batch
-          );
-        });
-  
-        // Reset the selected instructor for the current batch
-        setInstructorSelection((prev) => ({
-          ...prev,
-          [batchId]: "", // Reset the instructor selection after assignment
-        }));
-      }
-    } catch (error) {
-      if (error.response && error.response.status === 409) {
-        toast.error(error.response.data.message || "Instructor already assigned.");
-      } else {
-        toast.error("Error assigning instructor.");
-      }
+const handleAssignInstructor = async (batchId, userId) => {
+  try {
+    // Fetch the list of instructors from the server
+    const { data: instructors } = await axiosSecure.get("/instructors");
+
+    // Match the userId with the fetched instructors
+    const matchedInstructor = instructors.find(
+      (instructor) => instructor.userId === userId
+    );
+
+    if (!matchedInstructor) {
+      toast.error("Instructor not found!");
+      return;
     }
-  };
-  
+
+    const instructorId = matchedInstructor._id; // Get the corresponding instructorId
+    console.log("Matched Instructor ID:", instructorId);
+
+    // POST the instructor assignment
+    const response = await axiosSecure.post("/instructors-batches", {
+      instructorId,
+      batchId,
+    });
+
+    if (response.status === 201) {
+      const instructorName = instructorMap[userId] || "Unknown";
+
+      toast.success("Instructor assigned successfully!");
+
+      // Update the batches state immediately with the instructor's name
+      setBatches((prevBatches) => {
+        return prevBatches.map((batch) =>
+          batch._id === batchId
+            ? {
+                ...batch,
+                instructors: [...batch.instructors, instructorName], // Add the name directly
+              }
+            : batch
+        );
+      });
+
+      // Reset the selected instructor for the current batch
+      setInstructorSelection((prev) => ({
+        ...prev,
+        [batchId]: "", // Reset the instructor selection after assignment
+      }));
+    }
+  } catch (error) {
+    if (error.response && error.response.status === 409) {
+      toast.error(error.response.data.message || "Instructor already assigned.");
+    } else {
+      toast.error("Error assigning instructor.");
+    }
+  }
+};
+
   
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);

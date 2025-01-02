@@ -27,6 +27,7 @@ import InstructorRoute from "./InstructorRoute";
 import PendingInstructor from "../Pages/Dashboard/InstructorManagement/PendingInstructor";
 import UpdateProfile from "../Pages/Dashboard/StudentDashboard/UpdateProfile/UpdateProfile";
 import OnlineProfile from "../Pages/Dashboard/StudentDashboard/OnlineProfile/OnlineProfile";
+import Classes from "../Pages/Dashboard/InstructorDashboard/Classes/Classes";
 
 export const router = createBrowserRouter([
   {
@@ -111,6 +112,11 @@ export const router = createBrowserRouter([
         {
             path: 'instructorRoutine',
             element: <InstructorRoute><InstructorRoutine></InstructorRoutine></InstructorRoute>
+        },
+
+        {
+            path: 'classes',
+            element: <InstructorRoute><Classes></Classes></InstructorRoute>
         },
 
         {

@@ -20,8 +20,8 @@ const InstructorRoutine = () => {
   const [error, setError] = useState(null);
   const axiosSecure = useAxiosSecure(); // Use axiosSecure for API calls
 
-  // Fetch instructor's classes schedule and batches data
-  useEffect(() => {
+  // Fetch instructor's ID and then schedule and batches data
+  useEffect(() => { 
     if (!user || !user._id) {
       setError("Instructor ID not found");
       setLoading(false);
@@ -30,8 +30,21 @@ const InstructorRoutine = () => {
 
     const fetchData = async () => {
       try {
-        // Fetch instructor's schedule
-        const scheduleResponse = await axiosSecure.get(`/instructors/${user._id}/classes`);
+        // Fetch all instructors and find the matching instructor
+        const instructorsResponse = await axiosSecure.get('/instructors');
+        const instructors = instructorsResponse.data;
+
+        // Match instructor by userId
+        const instructor = instructors.find(inst => inst.userId === user._id);
+
+        if (!instructor) {
+          setError("Instructor not found");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch instructor's schedule using their _id
+        const scheduleResponse = await axiosSecure.get(`/instructors/${instructor._id}/classes`);
         const scheduleData = scheduleResponse.data;
 
         if (scheduleData.success) {
@@ -41,7 +54,7 @@ const InstructorRoutine = () => {
         }
 
         // Fetch batches to map batchId to batchName
-        const batchesResponse = await axiosSecure.get(`/batches`);
+        const batchesResponse = await axiosSecure.get('/batches');
         if (batchesResponse.data) {
           setBatches(batchesResponse.data); // Set the batches in state
         }
@@ -53,13 +66,15 @@ const InstructorRoutine = () => {
     };
 
     fetchData();
-  }, [user, axiosSecure]); // Re-run the effect if the user context changes
-
-  // Show loading state
+  }, [user, axiosSecure]); 
+  
   if (loading) {
-    return <div  className='flex justify-center items-center'><span className="loading loading-ring loading-lg"></span> </div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <span className="loading loading-ring loading-lg"></span>
+      </div>
+    );
   }
-
   // Show error state
   if (error) {
     return <div>Error: {error}</div>;
