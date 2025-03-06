@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useState, useMemo } from "react";
 import { AuthContext } from "../../../../Providers/AuthProvider";
 import useAxiosSecure from "../../../../hooks/useAxiosSecure";
+import { FaPlus } from "react-icons/fa6";
+import { MdDelete } from "react-icons/md";
 
 const Classes = () => {
   const { user } = useContext(AuthContext);
@@ -13,6 +15,10 @@ const Classes = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [instructorId, setInstructorId] = useState("");
   const [timeTracker, setTimeTracker] = useState({});
+  const [filteredBatchId, setFilteredBatchId] = useState("");
+   const itemsPerPage = 8;
+    const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user || !user._id) {
@@ -22,6 +28,7 @@ const Classes = () => {
 
     const fetchInstructorsAndData = async () => {
       try {
+           setLoading(true); 
         // Fetch instructors and find the current user
         const instructorsResponse = await axiosSecure.get(`/instructors`);
         const instructors = instructorsResponse.data;
@@ -48,6 +55,9 @@ const Classes = () => {
       } catch (err) {
         setError(err.message);
       }
+      finally {
+        setLoading(false); // Stop loading
+      }
     };
 
     fetchInstructorsAndData();
@@ -65,30 +75,33 @@ const Classes = () => {
 
   const fetchClasses = async () => {
     try {
-      console.log("Starting fetchClasses...");
-  
+      setLoading(true); 
+
       // Step 1: Make the API call
       const response = await axiosSecure.get(`/classes`);
       console.log("API Response:", response);
-  
+
       // Step 2: Extract classes data
       const allClasses = response.data || [];
       console.log("All Classes:", allClasses);
-  
+
       // Step 3: Log uniqueBatchIds to ensure they are correct
       console.log("Unique Batch IDs:", uniqueBatchIds);
-  
+
       // Step 4: Filter classes based on uniqueBatchIds
       const filteredClasses = allClasses.filter((classItem) =>
         uniqueBatchIds.includes(classItem.batchId)
       );
       console.log("Filtered Classes:", filteredClasses);
-  
+
       // Step 5: Update state
       setClassesData(filteredClasses);
     } catch (err) {
       console.error("Error fetching classes:", err.message);
       setError(err.message);
+    }
+    finally {
+      setLoading(false); // Stop loading
     }
   };
 
@@ -100,60 +113,13 @@ const Classes = () => {
       console.log("No uniqueBatchIds found, fetchClasses will not be called.");
     }
   }, [uniqueBatchIds, axiosSecure]);
-  
-  
-  
-  // const handleToggleChange = (classId) => {
-  //   const currentTime = new Date().toLocaleTimeString();
-  
-  //   // Update timeTracker state
-  //   setTimeTracker((prev) => {
-  //     const updated = { ...prev };
-  //     if (!updated[classId]?.startTime) {
-  //       // Set startTime on the first click
-  //       updated[classId] = { startTime: currentTime };
-  //     } else if (!updated[classId]?.endTime) {
-  //       // Set endTime on the second click
-  //       updated[classId].endTime = currentTime;
-  //     }
-  //     return updated;
-  //   });
-  
-  //   // Extract updated tracker after state update
-  //   setTimeout(async () => {
-  //     const updatedTracker = {
-  //       ...timeTracker,
-  //       [classId]: {
-  //         ...(timeTracker[classId] || {}),
-  //         ...(timeTracker[classId]?.startTime
-  //           ? { endTime: currentTime }
-  //           : { startTime: currentTime }),
-  //       },
-  //     };
-  
-  //     const updateData = {
-  //       startTime: updatedTracker[classId]?.startTime,
-  //       endTime: updatedTracker[classId]?.endTime,
-  //     };
-  
-  //     // Send PATCH request only if both startTime and endTime are present
-  //     if (updateData.startTime && updateData.endTime) {
-  //       try {
-  //         const response = await axiosSecure.patch(`/classes/${classId}`, updateData);
-  //         console.log("Updated successfully:", response.data);
-  
-  //         // Refetch classes after successful PATCH
-  //         fetchClasses();
-  //       } catch (err) {
-  //         console.error("Error updating class:", err.message);
-  //       }
-  //     } else {
-  //       console.log("Incomplete data: PATCH request not sent");
-  //     }
-  //   }, 0);
-  // };
-  
-  
+
+  const filteredClasses = useMemo(() => {
+    if (!filteredBatchId) return classesData;
+    return classesData.filter(
+      (classItem) => classItem.batchId === filteredBatchId
+    );
+  }, [filteredBatchId, classesData]);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -183,113 +149,103 @@ const Classes = () => {
     }
   };
 
-
-  // const handleToggleChange = (classId) => {
-  //   const currentTime = new Date().toLocaleTimeString();
-  
-  //   setTimeTracker((prev) => {
-  //     const updated = { ...prev };
-  //     if (!updated[classId]?.startTime) {
-  //       // Set startTime if it doesn't exist
-  //       updated[classId] = { startTime: currentTime };
-  //     } else if (!updated[classId]?.endTime) {
-  //       // Set endTime if startTime already exists
-  //       updated[classId].endTime = currentTime;
-  //     }
-  //     return updated;
-  //   });
-  
-  //   // Send the updated data to the database
-  //   const updatedTracker = {
-  //     ...timeTracker,
-  //     [classId]: {
-  //       ...(timeTracker[classId] || {}),
-  //       ...(timeTracker[classId]?.startTime
-  //         ? { endTime: currentTime }
-  //         : { startTime: currentTime }),
-  //     },
-  //   };
-  
-  //   const updateData = {
-  //     startTime: updatedTracker[classId]?.startTime,
-  //     endTime: updatedTracker[classId]?.endTime,
-  //   };
-  
-  //   // Only send the PATCH request if data is complete
-  //   setTimeout(async () => {
-  //     try {
-  //       const response = await axiosSecure.patch(`/classes/${classId}`, updateData);
-  //       console.log("Successfully updated class:", response.data);
-  
-  //       // Refetch classes to ensure the latest data is shown
-  //       fetchClasses();
-  //     } catch (err) {
-  //       console.error("Error updating class:", err.message);
-  //     }
-  //   }, 0);
-  // };
-  
-
   const handleToggleChange = (classId) => {
     const currentTime = new Date().toLocaleTimeString();
-  
-    // Optimistically update timeTracker state
+
+    // Optimistic update for immediate UI feedback
     setTimeTracker((prev) => {
       const updated = { ...prev };
-      if (!updated[classId]?.startTime) {
+      if (!updated[classId]) {
         updated[classId] = { startTime: currentTime };
-      } else if (!updated[classId]?.endTime) {
+        // Update classesData immediately for startTime
+        setClassesData((prevClasses) =>
+          prevClasses.map((classItem) =>
+            classItem._id === classId
+              ? { ...classItem, startTime: currentTime }
+              : classItem
+          )
+        );
+      } else {
         updated[classId].endTime = currentTime;
+        // Update classesData immediately for endTime
+        setClassesData((prevClasses) =>
+          prevClasses.map((classItem) =>
+            classItem._id === classId
+              ? { ...classItem, endTime: currentTime }
+              : classItem
+          )
+        );
       }
       return updated;
     });
-  
-    // Prepare the data for the PATCH request
+
+    // Backend update
     const updateData = {
       startTime: timeTracker[classId]?.startTime || currentTime,
       endTime: timeTracker[classId]?.endTime || currentTime,
     };
-  
-    // Send the PATCH request to update the times
-    setTimeout(async () => {
-      try {
-        const response = await axiosSecure.patch(`/classes/${classId}`, updateData);
-        console.log("Successfully updated class:", response.data);
-  
-        // After successful update, update the classesData state
-        setClassesData((prevClasses) =>
-          prevClasses.map((classItem) =>
-            classItem._id === classId
-              ? {
-                  ...classItem,
-                  startTime: updateData.startTime,
-                  endTime: updateData.endTime,
-                }
-              : classItem
-          )
-        );
-      } catch (err) {
-        console.error("Error updating class:", err.message);
-      }
-    }, 0);
+
+    axiosSecure
+      .patch(`/classes/${classId}`, updateData)
+      .then((response) =>
+        console.log("Successfully updated class:", response.data)
+      )
+      .catch((err) => console.error("Error updating class:", err.message));
   };
-   
+
+  const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
+const currentClasses = filteredClasses.slice(
+  (currentPage - 1) * itemsPerPage,
+  currentPage * itemsPerPage
+);
+
+const handlePageChange = (newPage) => {
+  setCurrentPage(newPage);
+};
 
   return (
-    <div>
-      <button
-        className="btn"
-        onClick={() => document.getElementById("my_modal_5").showModal()}
-      >
-        Add Class
-      </button>
+    <div className="w-[1100px] relative mt-6  min-h-screen">
+      <div className="flex justify-between">
+      <div className="mb-4">
+          <select
+            id="batchFilter"
+            className="select select-bordered w-full max-w-xs"
+            value={filteredBatchId}
+            onChange={(e) => setFilteredBatchId(e.target.value)}
+          >
+            <option value="">All Batches</option>
+            {batches
+              .filter((batch) => uniqueBatchIds.includes(batch._id))
+              .map((batch) => (
+                <option key={batch._id} value={batch._id}>
+                  {batch.batchName}
+                </option>
+              ))}
+          </select>
+        </div>
+
+
+        <button
+          className="btn btn-outline b-2 border-blue-950 hover:bg-blue-950 hover:text-white"
+          onClick={() => document.getElementById("my_modal_5").showModal()}
+        >
+         <FaPlus />  Add Class
+        </button>
+
+   
+      </div>
 
       <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
-          <h3 className="font-bold text-center text-xl mb-4">Add a New Class</h3>
+          <h3 className="font-bold text-center text-xl mb-4">
+            Add a New Class
+          </h3>
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
-              <label htmlFor="batchSelection" className="block text-sm font-medium mb-2">
+              <label
+                htmlFor="batchSelection"
+                className="block text-sm font-medium mb-2"
+              >
                 Select Batch
               </label>
               <select
@@ -313,7 +269,10 @@ const Classes = () => {
             </div>
 
             <div>
-              <label htmlFor="classDate" className="block text-sm font-medium mb-2">
+              <label
+                htmlFor="classDate"
+                className="block text-sm font-medium mb-2"
+              >
                 Class Date
               </label>
               <input
@@ -344,9 +303,37 @@ const Classes = () => {
       </dialog>
 
       <div className="overflow-x-auto">
+      {loading ? (
+          <div className="animate-pulse w-full mt-8 mx-auto">
+            <table className="table w-[1000px] mx-auto">
+              <thead className="bg-gray-200">
+                <tr>
+                <th>Index</th>
+              <th>Batch Name</th>
+              <th>Instructor</th>
+              <th>Date</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(itemsPerPage)].map((_, index) => (
+                  <tr key={index}>
+                    <td colSpan="7">
+                      <div className="h-8 bg-gray-100 rounded-lg"></div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : 
+   (
         <table className="table table-zebra w-full">
-          <thead>
+          <thead className="bg-blue-950 text-white text-md rounded-md">
             <tr>
+              <th>Index</th>
               <th>Batch Name</th>
               <th>Instructor</th>
               <th>Date</th>
@@ -355,30 +342,56 @@ const Classes = () => {
               <th>Action</th>
             </tr>
           </thead>
+
           <tbody>
-            {classesData.map((classItem, index) => {
+            {filteredClasses.map((classItem, index) => {
               const batch = batches.find((b) => b._id === classItem.batchId);
               return (
                 <tr key={index}>
+                  <td>{index + 1}</td>
                   <td>{batch ? batch.batchName : "Unknown Batch"}</td>
                   <td>{classItem.instructorName || "Unknown Instructor"}</td>
                   <td>{classItem.date}</td>
                   <td>{classItem.startTime}</td>
                   <td>{classItem.endTime}</td>
-                  <td>
+                  <td className="flex items-center justify-between gap-2">
                     <input
                       type="checkbox"
-                      value="synthwave"
-                      className="toggle theme-controller"
-                      checked={!!timeTracker[classItem._id]?.startTime}
+                      className="toggle bg-blue-950 theme-controller "
+                      checked={!!classItem.startTime}
+                      disabled={!!classItem.startTime && !!classItem.endTime}
                       onChange={() => handleToggleChange(classItem._id)}
                     />
+                   
+                   <MdDelete className="text- text-blue-950 text-xl" />
+
                   </td>
+               
                 </tr>
               );
             })}
           </tbody>
         </table>
+          )}
+      </div>
+
+      <div className="flex justify-end join absolute bottom-4 right-0 my-4">
+        <button
+          className="join-item btn"
+          disabled={currentPage === 1}
+          onClick={() => handlePageChange(currentPage - 1)}
+        >
+          Previous
+        </button>
+        <button className="join-item btn">{`Page ${currentPage}`}</button>
+
+        <button
+          className="join-item btn"
+          disabled={currentPage === totalPages}
+          onClick={() => handlePageChange(currentPage + 1)}
+        >
+          Next
+        </button>
       </div>
     </div>
   );

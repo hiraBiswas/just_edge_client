@@ -28,6 +28,7 @@ import PendingInstructor from "../Pages/Dashboard/InstructorManagement/PendingIn
 import UpdateProfile from "../Pages/Dashboard/StudentDashboard/UpdateProfile/UpdateProfile";
 import OnlineProfile from "../Pages/Dashboard/StudentDashboard/OnlineProfile/OnlineProfile";
 import Classes from "../Pages/Dashboard/InstructorDashboard/Classes/Classes";
+import UploadResult from "../Pages/Dashboard/Result/UploadResult";
 
 export const router = createBrowserRouter([
   {
@@ -117,6 +118,11 @@ export const router = createBrowserRouter([
         {
             path: 'classes',
             element: <InstructorRoute><Classes></Classes></InstructorRoute>
+        },
+
+        {
+            path: 'uploadResult',
+            element: <InstructorRoute><UploadResult></UploadResult></InstructorRoute>
         },
 
         {
