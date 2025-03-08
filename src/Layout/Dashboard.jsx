@@ -147,10 +147,10 @@ const Dashboard = () => {
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
                   <NavLink
                     className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/uploadResult"
+                    to="/dashboard/result"
                   >
                     <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
-                  Upload Result
+                  Result
                   </NavLink>
                 </li>
               </>

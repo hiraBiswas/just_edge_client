@@ -29,6 +29,7 @@ import UpdateProfile from "../Pages/Dashboard/StudentDashboard/UpdateProfile/Upd
 import OnlineProfile from "../Pages/Dashboard/StudentDashboard/OnlineProfile/OnlineProfile";
 import Classes from "../Pages/Dashboard/InstructorDashboard/Classes/Classes";
 import UploadResult from "../Pages/Dashboard/Result/UploadResult";
+import ResultTable from "../Pages/Dashboard/Result/ResultTable";
 
 export const router = createBrowserRouter([
   {
@@ -121,8 +122,8 @@ export const router = createBrowserRouter([
         },
 
         {
-            path: 'uploadResult',
-            element: <InstructorRoute><UploadResult></UploadResult></InstructorRoute>
+            path: 'result',
+            element: <InstructorRoute><ResultTable></ResultTable></InstructorRoute>
         },
 
         {
