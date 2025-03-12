@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import useInstructor from "../../../hooks/useInstructor";
 import { FaUpLong } from "react-icons/fa6";
+import { toast, Toaster } from "react-hot-toast";
 
 const UploadResult = () => {
     const axiosSecure = useAxiosSecure();
+    const queryClient = useQueryClient(); // Use queryClient to refetch data
     const [batchId, setBatchId] = useState("");
-    const [students, setStudents] = useState([]); // Store students dynamically
-    const [selectedStudent, setSelectedStudent] = useState(""); // Ensure no student is preselected
+    const [students, setStudents] = useState([]);
+    const [selectedStudent, setSelectedStudent] = useState("");
     const [selectedExam, setSelectedExam] = useState("");
     const [file, setFile] = useState(null);
     const [results, setResults] = useState([]);
     const [isInstructor] = useInstructor();
     const [activeTab, setActiveTab] = useState("excel");
+    const [loading, setLoading] = useState(false); // Loader state
 
     // Fetch Batches
     const { data: batches = [] } = useQuery({
@@ -39,15 +42,16 @@ const UploadResult = () => {
         fetchStudents();
     }, [batchId, axiosSecure]);
 
-    // Exam types (hardcoded or can be fetched from API)
     const examTypes = [
         { id: "1", type: "Mid Term" },
-        { id: "2", type: "Final Exam" },
+        { id: "2", type: "Final Project" },
+        { id: "3", type: "Assignment" },
+        { id: "4", type: "Attendance" },
     ];
 
     const handleBatchChange = (e) => {
         setBatchId(e.target.value);
-        setSelectedStudent(""); // Reset student when batch changes
+        setSelectedStudent("");
     };
 
     const handleFileChange = (e) => {
@@ -70,44 +74,47 @@ const UploadResult = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!batchId || results.length === 0) {
-            alert("Please select a batch and upload a valid file.");
+            toast.error("Please select a batch and upload a valid file.");
             return;
         }
 
-        const payload = { batchId, results };
-
+        setLoading(true);
         try {
-            await axiosSecure.post("/results/upload", payload);
-            alert("Results uploaded successfully!");
+            await axiosSecure.post("/results/upload", { batchId, results });
+            toast.success("Results uploaded successfully!");
+            queryClient.invalidateQueries(["results"]); // Refresh table data
+            closeModal();
         } catch (error) {
-            alert("Failed to upload results.");
+            toast.error("Failed to upload results.");
         }
+        setLoading(false);
     };
 
     const handleManualSubmit = async (e) => {
         e.preventDefault();
-    
+        setLoading(true);
+
         const resultData = {
             studentID: e.target.studentId.value,
             examType: e.target.examType.value,
-            marks: parseInt(e.target.marks.value), // Ensure number format
+            marks: parseInt(e.target.marks.value),
         };
-    
-        const payload = {
-            batchId,
-            results: [resultData], // Send as array to match bulk format
-        };
-    
+
         try {
-            await axiosSecure.post("/results/upload", payload);
-            alert("Result uploaded successfully!");
+            await axiosSecure.post("/results/upload", { batchId, results: [resultData] });
+            toast.success("Result uploaded successfully!");
+            queryClient.invalidateQueries(["results"]); // Refresh table data
+            closeModal();
         } catch (error) {
-            alert(error.response?.data?.message || "Failed to upload result.");
+            toast.error(error.response?.data?.message || "Failed to upload result.");
         }
+        setLoading(false);
     };
-    
+
+    const closeModal = () => {
+        document.getElementById("upload_modal").close();
+    };
 
     return (
         <div className="">
@@ -155,8 +162,8 @@ const UploadResult = () => {
                                 <label className="block mb-1">Upload File:</label>
                                 <input type="file" onChange={handleFileChange} className="file-input file-input-md w-full" />
                             </div>
-                            <button type="submit" className="btn bg-blue-950 text-white w-full">
-                                Upload
+                            <button type="submit" className="btn bg-blue-950 text-white w-full" disabled={loading}>
+                                {loading ? "Uploading..." : "Upload"}
                             </button>
                         </form>
                     ) : (
@@ -216,10 +223,13 @@ const UploadResult = () => {
                                 <input type="number" name="marks" className="input input-bordered w-64" />
                             </div>
 
-                            <button type="submit" className="btn bg-blue-950 text-white w-full">Upload</button>
+                            <button type="submit" className="btn bg-blue-950 text-white w-full" disabled={loading}>
+                                {loading ? "Uploading..." : "Upload"}
+                            </button>
                         </form>
                     )}
                 </div>
+                <Toaster position="top-center" reverseOrder={false} />
             </dialog>
 
         </div>
