@@ -158,90 +158,66 @@ const ResultTable = () => {
                   <th className="px-4 py-2 text-center">Assignment</th>
                   <th className="px-4 py-2 text-center">Mid Term</th>
                   <th className="px-4 py-2 text-center">Final Project</th>
+                  <th className="px-4 py-2 text-center">Final Exam</th>
                   <th className="px-4 py-2 text-center">Attendance</th>
                   <th className="px-4 py-2 text-center">Total</th>
                   <th className="px-4 py-2 text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {students.map((student, index) => {
-                  const studentResults = allResults.find(
-                    (result) => result.studentID == student.studentID
-                  );
+  {students.map((student, index) => {
+    const studentResults = allResults.find(
+      (result) => result.studentID === student.studentID
+    );
 
-                  const assignmentMarks = studentResults
-                    ? studentResults.exams.find(
-                        (exam) => exam.examType === "Assignment"
-                      )?.marks || "-"
-                    : "-";
+    const assignmentMarks = studentResults?.Assignment ?? "-";  // Display "-" if null
+    const midTermMarks = studentResults?.Mid_Term ?? "-";
+    const finalProjectMarks = studentResults?.Final_Project ?? "-";
+    const finalExamMarks = studentResults?.Final_Exam ?? "-";
+    const attendanceMarks = studentResults?.Attendance ?? "-";
 
-                  const midTermMarks = studentResults
-                    ? studentResults.exams.find(
-                        (exam) => exam.examType === "Mid Term"
-                      )?.marks || "-"
-                    : "-";
+    const total =
+      (assignmentMarks !== "-" ? Number(assignmentMarks) : 0) +
+      (midTermMarks !== "-" ? Number(midTermMarks) : 0) +
+      (finalProjectMarks !== "-" ? Number(finalProjectMarks) : 0) +
+      (finalExamMarks !== "-" ? Number(finalExamMarks) : 0) +
+      (attendanceMarks !== "-" ? Number(attendanceMarks) : 0);
+      
+    return (
+      <tr
+        key={student.studentID}
+        className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+      >
+        <td className="px-4 py-2 border">{index + 1}</td>
+        <td className="px-4 py-2 border">{student.name}</td>
+        <td className="px-4 py-2 border">{student.studentID}</td>
+        <td className="px-4 py-2 border text-center">{assignmentMarks}</td>
+        <td className="px-4 py-2 border text-center">{midTermMarks}</td>
+        <td className="px-4 py-2 border text-center">{finalProjectMarks}</td>
+        <td className="px-4 py-2 border text-center">{finalExamMarks}</td>
+        <td className="px-4 py-2 border text-center">{attendanceMarks}</td>
+        <td className="px-4 py-2 border text-center font-medium">
+          {total !== "-" ? total : "N/A"}
+        </td>
+        <td className="px-4 py-2 border flex gap-2 text-center">
+          <button
+            className="bg-blue-950 text-white px-2 py-1 rounded text-sm mr-1"
+            onClick={() => openEditModal(studentResults)}
+          >
+            Edit
+          </button>
+          <button
+            className="bg-red-500 text-white px-2 py-1 rounded text-sm"
+            onClick={() => handleDeleteStudent(studentResults?._id)}
+          >
+            Delete
+          </button>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
 
-                  const finalProjectMarks = studentResults
-                    ? studentResults.exams.find(
-                        (exam) => exam.examType === "Final Project"
-                      )?.marks || "-"
-                    : "-";
-
-                  const attendanceMarks = studentResults
-                    ? studentResults.exams.find(
-                        (exam) => exam.examType === "Attendance"
-                      )?.marks || "-"
-                    : "-";
-
-                  const total =
-                    (assignmentMarks !== "-" ? Number(assignmentMarks) : 0) +
-                    (midTermMarks !== "-" ? Number(midTermMarks) : 0) +
-                    (finalProjectMarks !== "-"
-                      ? Number(finalProjectMarks)
-                      : 0) +
-                    (attendanceMarks !== "-" ? Number(attendanceMarks) : 0);
-
-                  return (
-                    <tr
-                      key={student.studentID}
-                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                    >
-                      <td className="px-4 py-2 border">{index + 1}</td>
-                      <td className="px-4 py-2 border">{student.name}</td>
-                      <td className="px-4 py-2 border">{student.studentID}</td>
-                      <td className="px-4 py-2 border text-center">
-                        {assignmentMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center">
-                        {midTermMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center">
-                        {finalProjectMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center">
-                        {attendanceMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center font-medium">
-                        {total !== "-" ? total : "N/A"}
-                      </td>
-                      <td className="px-4 py-2 border text-center">
-                        <button
-                          className="bg-blue-950 text-white px-2 py-1 rounded text-sm mr-1"
-                          onClick={() => openEditModal(studentResults)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="bg-red-500 text-white px-2 py-1 rounded text-sm"
-                          onClick={() => handleDeleteStudent(studentResults._id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
             </table>
           </div>
         )}

@@ -46,7 +46,9 @@ const UploadResult = () => {
         { id: "1", type: "Mid Term" },
         { id: "2", type: "Final Project" },
         { id: "3", type: "Assignment" },
-        { id: "4", type: "Attendance" },
+        { id: "4", type: "Final Exam" },
+
+        { id: "5", type: "Attendance" },
     ];
 
     const handleBatchChange = (e) => {
@@ -57,7 +59,7 @@ const UploadResult = () => {
     const handleFileChange = (e) => {
         const uploadedFile = e.target.files[0];
         setFile(uploadedFile);
-
+    
         if (uploadedFile) {
             const reader = new FileReader();
             reader.readAsBinaryString(uploadedFile);
@@ -67,10 +69,22 @@ const UploadResult = () => {
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(sheet);
-                setResults(jsonData);
+    
+                // Convert Excel Data to Match MongoDB Format
+                const formattedResults = jsonData.map(row => ({
+                    studentID: String(row["studentID"]),  // Ensure studentID is a string
+                    Mid_Term: row["Mid_Term"] !== undefined ? row["Mid_Term"] : null,  // If empty, set null
+                    Final_Project: row["Final_Project"] !== undefined ? row["Final_Project"] : null,
+                    Assignment: row["Assignment"] !== undefined ? row["Assignment"] : null,
+                    Final_Exam: row["Final_Exam"] !== undefined ? row["Final_Exam"] : null,
+                    Attendance: row["Attendance"] !== undefined ? row["Attendance"] : null
+                }));
+    
+                setResults(formattedResults);
             };
         }
     };
+    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -94,23 +108,47 @@ const UploadResult = () => {
     const handleManualSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
-        const resultData = {
-            studentID: e.target.studentId.value,
-            examType: e.target.examType.value,
-            marks: parseInt(e.target.marks.value),
-        };
-
+    
+        if (!batchId || selectedStudent === "") {
+            toast.error("Please select a batch and student.");
+            setLoading(false);
+            return;
+        }
+    
+        const formData = new FormData(e.target);
+    
+        // Collect all exam types dynamically
+        const results = examTypes.map(exam => {
+            const marks = formData.get(exam.type);
+            return {
+                studentID: selectedStudent,
+                examType: exam.type.replace(/\s+/g, "_"), // Convert spaces to underscores
+                marks: parseInt(marks) || 0 // Ensure it's a number
+            };
+        });
+    
         try {
-            await axiosSecure.post("/results/upload", { batchId, results: [resultData] });
+            console.log("Sending data:", { batchId, results }); // Debug log
+    
+            const response = await axiosSecure.post("/results/upload", {
+                batchId, // Ensure correct variable usage
+                results
+            }, {
+                headers: { "Content-Type": "application/json" }
+            });
+    
             toast.success("Result uploaded successfully!");
-            queryClient.invalidateQueries(["results"]); // Refresh table data
+            queryClient.invalidateQueries(["results"]);
             closeModal();
         } catch (error) {
+            console.error("Upload Error:", error.response?.data);
             toast.error(error.response?.data?.message || "Failed to upload result.");
         }
         setLoading(false);
     };
+    
+    
+    
 
     const closeModal = () => {
         document.getElementById("upload_modal").close();
@@ -170,8 +208,8 @@ const UploadResult = () => {
                         <form onSubmit={handleManualSubmit}>
                             {/* Batch Selection */}
                             <div className="my-2 flex justify-between gap-4 items-center">
-                                <label className="block">Select Batch:</label>
-                                <select value={batchId} onChange={handleBatchChange} className="select select-bordered w-64">
+                                <label className="block text-md">Select Batch:</label>
+                                <select value={batchId} onChange={handleBatchChange} className="select select-md select-bordered w-64">
                                     <option value="" disabled>Select a batch</option>
                                     {batches.map((batch) => (
                                         <option key={batch._id} value={batch._id}>
@@ -182,10 +220,10 @@ const UploadResult = () => {
                             </div>
 
                             <div className="my-2 flex justify-between gap-4 items-center ">
-                                <label className="block">Select Student ID:</label>
+                                <label className="block text-md">Select Student ID:</label>
                                 <select 
                                     name="studentId" 
-                                    className="select select-bordered w-64"
+                                    className="select select-md select-bordered w-64"
                                     value={selectedStudent}
                                     onChange={(e) => setSelectedStudent(e.target.value)}
                                 >
@@ -199,29 +237,21 @@ const UploadResult = () => {
                             </div>
 
                             {/* Exam Type Selection */}
-                            <div className="my-2 flex justify-between gap-4 items-center ">
-                                <label className="block">Select Exam Type:</label>
-                                <select 
-                                    name="examType" 
-                                    className="select select-bordered w-64"
-                                    value={selectedExam}
-                                    onChange={(e) => setSelectedExam(e.target.value)}
-                                >
-                                    <option value="" disabled>Select exam type</option>
-                                    {examTypes.map((exam) => (
-                                        <option key={exam.id} value={exam.type}>
-                                            {exam.type}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                           
+                                {examTypes.map((exam) => (
+    <div key={exam.id} className="my-2 flex justify-between gap-4 items-center">
+        <label className="block text-md">{exam.type} Marks:</label>
+        <input 
+            type="number" 
+            name={exam.type} 
+            className="input input-md input-bordered w-64" 
+            placeholder={`Enter ${exam.type} Marks`}
+        />
+    </div>
+))}
 
 
-                            {/* Marks Input */}
-                            <div className="my-2 flex justify-between gap-4 items-center">
-                                <label className="block">Marks:</label>
-                                <input type="number" name="marks" className="input input-bordered w-64" />
-                            </div>
+
 
                             <button type="submit" className="btn bg-blue-950 text-white w-full" disabled={loading}>
                                 {loading ? "Uploading..." : "Upload"}
