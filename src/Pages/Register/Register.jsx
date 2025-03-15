@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useForm } from "react-hook-form";
@@ -15,7 +15,7 @@ const Register = () => {
     handleSubmit,
     reset,
     formState: { errors },
-    watch, 
+    watch,
   } = useForm();
   const [courses, setCourses] = useState([]); // State to store courses
   const [userType, setUserType] = useState("student"); // State to toggle between Student and Instructor forms
@@ -59,9 +59,6 @@ const Register = () => {
     }
     return true;
   };
-  
-
- 
 
   const handleStudentSubmit = async (data) => {
     const {
@@ -75,19 +72,19 @@ const Register = () => {
       institution,
       prefCourse,
     } = data;
-  
+
     const image =
       "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
     const type = "student";
-  
+
     try {
       setIsLoading(true);
-  
+
       // Password validation
       if (!validatePassword(password, confirmPassword)) {
         return;
       }
-  
+
       // Register user
       const userResponse = await axiosPublic.post("/users", {
         name,
@@ -96,9 +93,9 @@ const Register = () => {
         image,
         type,
       });
-  
+
       console.log(userResponse);
-  
+
       if (userResponse.data.insertedId) {
         const studentResponse = await axiosPublic.post("/students", {
           userId: userResponse.data.insertedId,
@@ -108,9 +105,9 @@ const Register = () => {
           institution,
           prefCourse,
         });
-  
+
         console.log(studentResponse);
-  
+
         if (studentResponse.data.insertedId) {
           reset();
           navigate("/login");
@@ -126,21 +123,21 @@ const Register = () => {
       setIsLoading(false);
     }
   };
-  
+
   const handleInstructorSubmit = async (data) => {
     const { name, email, contact, password, confirmPassword } = data;
     const image =
       "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
     const type = "instructor";
-  
+
     try {
       setIsLoading(true);
-  
+
       // Password validation
       if (!validatePassword(password, confirmPassword)) {
         return;
       }
-  
+
       // Log request payload for debugging
       console.log({
         name,
@@ -149,7 +146,7 @@ const Register = () => {
         image,
         type,
       });
-  
+
       // Register user
       const userResponse = await axiosPublic.post("/users", {
         name,
@@ -158,7 +155,7 @@ const Register = () => {
         image,
         type,
       });
-  
+
       if (userResponse.data.insertedId) {
         const instructorResponse = await axiosPublic.post("/instructors", {
           userId: userResponse.data.insertedId,
@@ -166,7 +163,7 @@ const Register = () => {
           status: "Pending",
           isDeleted: false,
         });
-  
+
         if (instructorResponse.status === 201) {
           reset();
           navigate("/login");
@@ -176,17 +173,20 @@ const Register = () => {
         }
       }
     } catch (error) {
-      console.error("Error during instructor registration:", error.response?.data || error.message);
-      toast.error(`Error during instructor registration: ${error.response?.data?.message || error.message}`);
+      console.error(
+        "Error during instructor registration:",
+        error.response?.data || error.message
+      );
+      toast.error(
+        `Error during instructor registration: ${
+          error.response?.data?.message || error.message
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
-  
-  
-  
-  
+
   const onSubmit = (data) => {
     if (userType === "student") {
       handleStudentSubmit(data);
@@ -194,40 +194,41 @@ const Register = () => {
       handleInstructorSubmit(data);
     }
   };
-  
 
   return (
     <div className="container mx-auto">
       <div className="text-center mt-8 lg:mt-28">
         <div className="flex flex-col justify-center items-center mx-auto gap-4">
           <div className="shadow-lg rounded-lg p-6 bg-white w-2/5">
-          <div className="mb-4">
-  <h2 className="text-center font-semibold text-2xl mb-2">Sign Up <br /> <span className="text-lg font-medium">as</span></h2>
-  <div className="flex justify-center gap-4">
-    <label className="flex items-center">
-      <input
-        type="radio"
-        name="userType"
-        value="student"
-        className="radio radio-xs"
-        checked={userType === "student"}
-        onChange={() => setUserType("student")}
-      />
-      <span className="ml-2 text-sm">Student</span>
-    </label>
-    <label className="flex items-center">
-      <input
-        type="radio"
-        name="userType"
-        value="instructor"
-        className="radio radio-xs"
-        checked={userType === "instructor"}
-        onChange={() => setUserType("instructor")}
-      />
-      <span className="ml-2 text-sm">Instructor</span>
-    </label>
-  </div>
-</div>
+            <div className="mb-4">
+              <h2 className="text-center font-semibold text-2xl mb-2">
+                Sign Up <br /> <span className="text-lg font-medium">as</span>
+              </h2>
+              <div className="flex justify-center gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="student"
+                    className="radio radio-xs"
+                    checked={userType === "student"}
+                    onChange={() => setUserType("student")}
+                  />
+                  <span className="ml-2 text-sm">Student</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="instructor"
+                    className="radio radio-xs"
+                    checked={userType === "instructor"}
+                    onChange={() => setUserType("instructor")}
+                  />
+                  <span className="ml-2 text-sm">Instructor</span>
+                </label>
+              </div>
+            </div>
 
             {userType === "student" ? (
               <form onSubmit={handleSubmit(onSubmit)} className="">
@@ -418,124 +419,137 @@ const Register = () => {
                     Register
                   </button>
                 </div>
+                <p className="p-8 pt-0 text-md font-medium mt-2 lg:text-lg">
+                              Already have account?
+                              <NavLink to="/login" className="text-lg font-bold bg-grad-button lg:text-xl"> Sign In</NavLink> here.
+                            </p>
               </form>
             ) : (
               <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-4 px-6"
-            >
-              <div className="flex items-center gap-4">
-                <label className="label w-1/3">
-                  <span className="label-text">Name *</span>
-                </label>
-                <input
-                  {...register("name", { required: true })}
-                  type="text"
-                  placeholder="Enter name"
-                  className="input input-bordered w-2/3 input-sm"
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="label w-1/3">
-                  <span className="label-text">Email *</span>
-                </label>
-                <input
-                  {...register("email", { required: true })}
-                  type="email"
-                  placeholder="Enter email"
-                  className="input input-bordered w-2/3 input-sm"
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="label w-1/3">
-                  <span className="label-text">Contact *</span>
-                </label>
-                <input
-                  {...register("contact", { required: true })}
-                  type="text"
-                  placeholder="Enter contact number"
-                  className="input input-bordered w-2/3 input-sm"
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="label w-1/3">
-                  <span className="label-text">Password *</span>
-                </label>
-                <div className="relative w-2/3">
+                onSubmit={handleSubmit(onSubmit)}
+                className="flex flex-col gap-4 px-6"
+              >
+                <div className="flex items-center gap-4">
+                  <label className="label w-1/3">
+                    <span className="label-text">Name *</span>
+                  </label>
                   <input
-                    {...register("password", { required: true })}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter password"
-                    className="input input-bordered w-full input-sm"
+                    {...register("name", { required: true })}
+                    type="text"
+                    placeholder="Enter name"
+                    className="input input-bordered w-2/3 input-sm"
                     required
                   />
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="label w-1/3">
+                    <span className="label-text">Email *</span>
+                  </label>
+                  <input
+                    {...register("email", { required: true })}
+                    type="email"
+                    placeholder="Enter email"
+                    className="input input-bordered w-2/3 input-sm"
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="label w-1/3">
+                    <span className="label-text">Contact *</span>
+                  </label>
+                  <input
+                    {...register("contact", { required: true })}
+                    type="text"
+                    placeholder="Enter contact number"
+                    className="input input-bordered w-2/3 input-sm"
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="label w-1/3">
+                    <span className="label-text">Password *</span>
+                  </label>
+                  <div className="relative w-2/3">
+                    <input
+                      {...register("password", { required: true })}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter password"
+                      className="input input-bordered w-full input-sm"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-2 flex items-center text-gray-500"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      {showPassword ? (
+                        <IoEyeSharp size={20} />
+                      ) : (
+                        <FaEyeSlash size={20} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="label w-1/3">
+                    <span className="label-text">Confirm Password *</span>
+                  </label>
+                  <div className="relative w-2/3">
+                    <input
+                      {...register("confirmPassword", {
+                        required: "Confirm password is required",
+                        validate: (value) =>
+                          value === watch("password") ||
+                          "Passwords do not match", // Use watch to compare
+                      })}
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm password"
+                      className="input input-bordered w-full input-sm"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-2 flex items-center text-gray-500"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    >
+                      {showConfirmPassword ? (
+                        <IoEyeSharp size={20} />
+                      ) : (
+                        <FaEyeSlash size={20} />
+                      )}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <span className="text-red-500 text-sm mt-1">
+                      {errors.confirmPassword.message}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-4 mt-4 justify-center">
                   <button
-                    type="button"
-                    className="absolute inset-y-0 right-2 flex items-center text-gray-500"
-                    onClick={() => setShowPassword((prev) => !prev)}
+                    type="submit"
+                    className={`btn flex justify-center w-full items-center gap-2 bg-blue-950 text-white ${
+                      isLoading ? "cursor-not-allowed opacity-70" : ""
+                    }`}
+                    disabled={isLoading}
                   >
-                    {showPassword ? (
-                      <IoEyeSharp size={20} />
+                    {isLoading ? (
+                      <>
+                        <span>Registering</span>
+                        <span className="loading loading-ball loading-md"></span>
+                      </>
                     ) : (
-                      <FaEyeSlash size={20} />
+                      "Register"
                     )}
                   </button>
                 </div>
-              </div>
-              <div className="flex items-center gap-4">
-  <label className="label w-1/3">
-    <span className="label-text">Confirm Password *</span>
-  </label>
-  <div className="relative w-2/3">
-    <input
-      {...register("confirmPassword", {
-        required: "Confirm password is required",
-        validate: (value) =>
-          value === watch("password") || "Passwords do not match", // Use watch to compare
-      })}
-      type={showConfirmPassword ? "text" : "password"}
-      placeholder="Confirm password"
-      className="input input-bordered w-full input-sm"
-    />
-    <button
-      type="button"
-      className="absolute inset-y-0 right-2 flex items-center text-gray-500"
-      onClick={() => setShowConfirmPassword((prev) => !prev)}
-    >
-      {showConfirmPassword ? <IoEyeSharp size={20} /> : <FaEyeSlash size={20} />}
-    </button>
-  </div>
-  {errors.confirmPassword && (
-    <span className="text-red-500 text-sm mt-1">
-      {errors.confirmPassword.message}
-    </span>
-  )}
-</div>
-
-              <div className="flex gap-4 mt-4 justify-center">
-                <button
-                  type="submit"
-                  className={`btn flex justify-center items-center gap-2 bg-blue-950 text-white ${
-                    isLoading ? "cursor-not-allowed opacity-70" : ""
-                  }`}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <span>Registering</span>
-                      <span className="loading loading-ball loading-md"></span>
-                    </>
-                  ) : (
-                    "Register Instructor"
-                  )}
-                </button>
-              </div>
-            </form>
-            
+                <p className="p-8 pt-0 text-md font-medium lg:text-lg">
+                              Already have account?
+                              <NavLink to="/login" className="text-lg font-bold bg-grad-button lg:text-xl"> Sign In</NavLink> here.
+                            </p>
+              </form>
             )}
+            
           </div>
         </div>
       </div>

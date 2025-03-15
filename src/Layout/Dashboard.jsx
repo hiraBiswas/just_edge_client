@@ -108,7 +108,7 @@ const Dashboard = () => {
                     to="/dashboard/courseAssignment"
                   >
                     <MdAssignmentInd className="text-xl text-white hover:text-sky-200" />
-                    Course Assignment
+                    Batch Assignment
                   </NavLink>
                 </li>
               </>

@@ -42,7 +42,9 @@ const Login = () => {
         </div>
         <div className="flex justify-center items-center w-full">
           <div className="card flex-shrink-0 bg-white drop-shadow-2xl rounded-xl shadow-2xl">
+           
             <form onSubmit={handleLogin} className="card-body">
+            <h2 className="text-center font-semibold text-2xl">Sign In <br /><span className="text-lg"> to Your Account</span></h2>
               <div className="form-control">
                 <label className="label">
                   <span className="label-text text-md font-medium lg:text-lg">Email</span>

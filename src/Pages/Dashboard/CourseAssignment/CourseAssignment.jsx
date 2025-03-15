@@ -414,8 +414,8 @@ const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
       {loading ? (
   <div className="overflow-x-auto">
     <table className="table w-full">
-      <thead className="bg-blue-950 text-white">
-        <tr className="text-white">
+      <thead className="bg-blue-950 text-left text-white">
+        <tr className="text-white text-left">
           <th>
             <input
               type="checkbox"
@@ -423,9 +423,9 @@ const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
               onChange={handleSelectAll}
             />
           </th>
-          <th className="text-lg font-semibold text-white">#</th>
-          <th className="text-lg font-semibold text-white">Image</th>
-          <th className="text-lg font-semibold text-white">Name</th>
+          <th className="text-lg font-semibold text-white text-left">#</th>
+          <th className="text-lg font-semibold text-white text-left">Image</th>
+          <th className="text-lg font-semibold text-white text-left">Name</th>
           <th className="text-lg font-semibold text-white">Student ID</th>
           <th className="text-lg font-semibold text-white">Session</th>
           <th className="text-lg font-semibold text-white">Preferred Course</th>

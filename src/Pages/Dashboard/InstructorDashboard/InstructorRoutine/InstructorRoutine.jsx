@@ -105,7 +105,8 @@ const InstructorRoutine = () => {
   });
 
   return (
-    <div className="overflow-x-auto mt-20">
+    <div className="overflow-x-auto w-[1100px] mt-20">
+      <h2 className='text-xl font-bold mb-4'>Assigned Course Schedule</h2>
       <table className="table-auto w-full border-collapse border border-gray-200">
         {/* Head */}
         <thead>

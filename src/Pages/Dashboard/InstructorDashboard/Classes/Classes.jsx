@@ -287,7 +287,7 @@ const handlePageChange = (newPage) => {
             </div>
 
             <div className="modal-action">
-              <button className="btn" type="submit">
+              <button className="btn bg-blue-950 text-white" type="submit">
                 Add Class
               </button>
               <button
