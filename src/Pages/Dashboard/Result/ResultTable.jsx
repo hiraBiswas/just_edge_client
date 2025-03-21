@@ -509,7 +509,7 @@ const ResultTable = () => {
         !studentsLoading &&
         !resultsLoading && (
           <div className="overflow-x-auto bg-white p-4 rounded shadow">
-            <div>
+            <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold mb-4">
                 Results for Batch: {selectedBatchName}
               </h3>
@@ -524,9 +524,11 @@ const ResultTable = () => {
                 }
                 fileName={`Batch_${selectedBatchName}_Results.pdf`}
               >
-                {({ loading }) =>
-                  loading ? "Loading PDF..." : "Download Results as PDF"
-                }
+                {({ loading }) => (
+                  <button className="px-4 py-2 bg-blue-950 text-white rounded-md hover:bg-blue-700 transition duration-300">
+                    {loading ? "Generating PDF..." : "Generate PDF"}
+                  </button>
+                )}
               </PDFDownloadLink>
             </div>
             <table className="min-w-full border-collapse border">
