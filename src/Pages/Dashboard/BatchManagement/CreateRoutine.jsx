@@ -211,10 +211,25 @@ const handleChange = async (index, field, value) => {
     }
 
     try {
-      const scheduleData = { batchId, schedule };
-      const response = await axiosSecure.post("/routine", scheduleData);
+      // Modify the submission to create individual routine entries
+      const routineEntries = schedule.map(entry => ({
+        batchId,
+        day: entry.day,
+        startTime: entry.startTime,
+        endTime: entry.endTime
+      }));
 
-      if (response.status === 201 || response.status === 200) {
+      // Send multiple entries to be saved individually
+      const responses = await Promise.all(
+        routineEntries.map(entry => axiosSecure.post("/routine", entry))
+      );
+
+      // Check if all entries were successfully created
+      const allSuccessful = responses.every(
+        response => response.status === 201 || response.status === 200
+      );
+
+      if (allSuccessful) {
         parentToast.success("Routine created successfully!");
         closeModal();
         fetchRoutines();
@@ -228,6 +243,7 @@ const handleChange = async (index, field, value) => {
       setLoading(false);
     }
   };
+
 
   const daysOfWeek = [
     "Saturday",
@@ -250,6 +266,8 @@ const handleChange = async (index, field, value) => {
   useEffect(() => {
     return () => resetForm();
   }, []);
+
+  
 
   return (
     <form className="text-black p-5" onSubmit={handleSubmit}>

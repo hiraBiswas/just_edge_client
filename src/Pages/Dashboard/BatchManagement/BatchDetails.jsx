@@ -14,9 +14,10 @@ const BatchDetails = () => {
   const [batch, setBatch] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [routine, setRoutine] = useState(null);
+  const [routines, setRoutines] = useState(null);
   const [instructors, setInstructors] = useState([]);
   const [instructorBatches, setInstructorBatches] = useState([]);
+  const [routineLoading, setRoutineLoading] = useState(false);
   const axiosSecure = useAxiosSecure();
 
   // Custom order for days starting from Saturday
@@ -32,20 +33,26 @@ const BatchDetails = () => {
 
   // Fetch data
   const fetchRoutines = async () => {
+    setRoutineLoading(true);
     try {
       const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
       console.log(routineResponse.data);
-      if (routineResponse.data && routineResponse.data.schedule) {
-        setRoutine(routineResponse.data);
+      if (routineResponse.data && Array.isArray(routineResponse.data.schedule)) {
+        setRoutines(routineResponse.data.schedule);
+        toast.success("Routine updated successfully");
       } else {
         console.error("Routine data not found");
-        setRoutine(null);
+        setRoutines([]); // Ensure it's always an array
       }
     } catch (error) {
       console.error("Error fetching routine:", error);
-      setRoutine(null);
+      toast.error("Failed to fetch routine");
+      setRoutines([]); // Ensure it's always an array
+    } finally {
+      setRoutineLoading(false);
     }
   };
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,12 +63,12 @@ const BatchDetails = () => {
           batchResponse,
           routineResponse,
           instructorsResponse,
-          instructorsBatchesResponse
+          instructorsBatchesResponse,
         ] = await Promise.all([
           axiosSecure.get("/students"),
           axiosSecure.get("/users"),
           axiosSecure.get(`/batches/${batchId}`),
-          axiosSecure.get(`/routine/${batchId}`).catch(() => ({ data: null })),
+          axiosSecure.get(`/routine`, { params: { batchId } }),
           axiosSecure.get("/instructors"),
           axiosSecure.get("/instructors-batches"),
         ]);
@@ -69,7 +76,7 @@ const BatchDetails = () => {
         setStudents(studentsResponse.data);
         setUsers(usersResponse.data);
         setBatch(batchResponse.data);
-        setRoutine(routineResponse.data);
+        setRoutines(routineResponse.data);
         setInstructorBatches(instructorsBatchesResponse.data);
         setInstructors(instructorsResponse.data);
 
@@ -89,8 +96,10 @@ const BatchDetails = () => {
 
   // Function to get instructor's name based on instructorId
   const getInstructorNames = (instructorId) => {
-    const instructor = instructors.find((instructor) => instructor._id === instructorId);
-    
+    const instructor = instructors.find(
+      (instructor) => instructor._id === instructorId
+    );
+
     if (instructor) {
       const user = users.find((user) => user._id === instructor.userId);
       return user ? user.name : "Unknown Instructor";
@@ -137,18 +146,11 @@ const BatchDetails = () => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Sort the routine schedule based on the custom day order
-  const sortedSchedule = routine && routine.schedule
-    ? routine.schedule.sort((a, b) => {
-        return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
-      })
-    : [];
-
   // Function to handle instructor removal from the batch
   const handleDeleteInstructor = async (instructorBatchId) => {
     try {
       await axiosSecure.delete(`/instructors-batches/${instructorBatchId}`);
-      
+
       const updatedInstructorBatches = instructorBatches.filter(
         (batch) => batch._id !== instructorBatchId
       );
@@ -160,6 +162,35 @@ const BatchDetails = () => {
       toast.error("Failed to remove instructor from batch");
     }
   };
+
+  const handleRoutineUpdate = (updatedRoutines) => {
+    if (!Array.isArray(updatedRoutines)) {
+      console.error("Updated routines is not an array:", updatedRoutines);
+      return;
+    }
+  
+    const organizedRoutines = updatedRoutines.reduce((acc, routine) => {
+      acc[routine.day] = routine;
+      return acc;
+    }, {});
+  
+    setRoutines(Object.values(organizedRoutines));
+    toast.success("Routine updated successfully");
+  };
+  
+
+  const sortedRoutines = Array.isArray(routines)
+  ? Object.values(
+      routines.reduce((acc, routine) => {
+        if (routine.day && !acc[routine.day]) {
+          acc[routine.day] = routine;
+        }
+        return acc;
+      }, {})
+    ).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
+  : [];
+
+
 
   return (
     <div className="w-[1100px] mx-auto p-6">
@@ -190,11 +221,13 @@ const BatchDetails = () => {
       </div>
 
       {/* Section for Routine Display and Options */}
+
       <section className="mb-6">
         <div className="flex justify-between items-center">
-          <h3 className="text-md font-semibold ">Current Routine</h3>
-          {/* Update Routine Button or Create Routine Button */}
-          {routine ? (
+          <h3 className="text-md font-semibold">Current Routine</h3>
+          {routineLoading ? (
+            <span className="loading loading-spinner loading-sm"></span>
+          ) : sortedRoutines.length > 0 ? (
             <button
               onClick={() =>
                 document.getElementById("update_routine_modal").showModal()
@@ -214,7 +247,12 @@ const BatchDetails = () => {
             </button>
           )}
         </div>
-        {routine && routine.schedule ? (
+
+        {routineLoading ? (
+          <div className="flex justify-center items-center my-4">
+            <span className="loading loading-spinner loading-lg"></span>
+          </div>
+        ) : sortedRoutines.length > 0 ? (
           <div className="rounded-lg mt-2">
             <table className="table-auto w-full border-collapse border border-gray-200">
               <thead>
@@ -224,16 +262,19 @@ const BatchDetails = () => {
                 </tr>
               </thead>
               <tbody>
-                {sortedSchedule.map((item, index) => (
-                  <tr key={index}>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {item.day}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {formatTime(item.startTime)} - {formatTime(item.endTime)}
-                    </td>
-                  </tr>
-                ))}
+               
+                  {sortedRoutines.map((item, index) => (
+                    <tr key={index}>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {item.day}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {formatTime(item.startTime)} -{" "}
+                        {formatTime(item.endTime)}
+                      </td>
+                    </tr>
+                  ))}
+
               </tbody>
             </table>
           </div>
@@ -251,21 +292,29 @@ const BatchDetails = () => {
           <table className="table-auto w-full border-collapse border border-gray-200 mb-4">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-2">Instructor Name</th>
+                <th className="border border-gray-300 px-4 py-2">
+                  Instructor Name
+                </th>
                 <th className="border border-gray-300 px-4 py-2">Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredInstructorBatches.map((instructorBatch) => {
-                const instructorName = getInstructorNames(instructorBatch.instructorId);
+                const instructorName = getInstructorNames(
+                  instructorBatch.instructorId
+                );
                 return (
                   <tr key={instructorBatch._id}>
-                    <td className="border border-gray-300 px-4 py-2">{instructorName}</td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {instructorName}
+                    </td>
                     <td className="border border-gray-300 px-4 py-2">
                       <div className="flex justify-center">
                         <button
                           className="bg-red-500 text-white btn btn-sm rounded"
-                          onClick={() => handleDeleteInstructor(instructorBatch._id)}
+                          onClick={() =>
+                            handleDeleteInstructor(instructorBatch._id)
+                          }
                         >
                           Delete
                         </button>
@@ -351,6 +400,7 @@ const BatchDetails = () => {
           </button>
 
           {/* CreateRoutine Component */}
+
           <CreateRoutine
             batchId={batchId}
             closeModal={() => {
@@ -381,12 +431,16 @@ const BatchDetails = () => {
 
           {/* UpdateRoutine Component */}
           <UpdateRoutine
-            batchId={batchId}
-            closeModal={() =>
-              document.getElementById("update_routine_modal").close()
-            }
-            fetchRoutines={fetchRoutines}
-          />
+  batchId={batchId}
+  closeModal={() => {
+    document.getElementById("update_routine_modal").close();
+  }}
+  onRoutineUpdate={(updatedRoutines) => {
+    handleRoutineUpdate(updatedRoutines);
+    fetchRoutines(); // Ensure fresh data is fetched after routine update
+  }}
+/>
+
         </div>
       </dialog>
 

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { toast } from "react-hot-toast"; // Importing toast from react-hot-toast
-import { Toaster } from "react-hot-toast"; // Import Toaster to show the toasts
-import { toast as parentToast } from "react-toastify";
+import { toast } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 
-const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
-  const [schedule, setSchedule] = useState([]); // The schedule list
-  const [loadingFetch, setLoadingFetch] = useState(false); // Loader for fetching routine
-  const [loadingSubmit, setLoadingSubmit] = useState(false); // Loader for submitting update
+const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
+  const [routines, setRoutines] = useState([]); 
+  const [loadingFetch, setLoadingFetch] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [error, setError] = useState(null);
   const axiosSecure = useAxiosSecure();
 
@@ -17,9 +16,11 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       setError(null);
       try {
         const response = await axiosSecure.get(`/routine/${batchId}`);
-        setSchedule(response.data.schedule || []);
+        // Directly set the response data as routines
+        setRoutines(response.data || []);
       } catch (err) {
         setError(err.message);
+        toast.error("Failed to fetch routine data");
       } finally {
         setLoadingFetch(false);
       }
@@ -30,54 +31,83 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     }
   }, [batchId, axiosSecure]);
 
-  // Handle individual field change with validation
+  // Handle individual routine entry change with validation
   const handleChange = (index, field, value) => {
-    const updatedSchedule = [...schedule];
+    const updatedRoutines = [...routines];
 
-    // If the day is being changed, check for duplicates
-    if (field === "day" && updatedSchedule.some((entry, i) => entry.day === value && i !== index)) {
-      toast.error("Already has class on this day.");
+    // Validate day uniqueness
+    if (field === "day" && updatedRoutines.some((entry, i) => entry.day === value && i !== index)) {
+      toast.error("A class already exists on this day.");
       return;
     }
 
-    // Check if end time is after start time
-    if (field === "endTime" && updatedSchedule[index].startTime && value < updatedSchedule[index].startTime) {
+    // Validate end time is after start time
+    if (field === "endTime" && value < updatedRoutines[index].startTime) {
       toast.error("End time must be after the start time.");
       return;
     }
 
-    updatedSchedule[index][field] = value;
-    setSchedule(updatedSchedule);
+    updatedRoutines[index][field] = value;
+    setRoutines(updatedRoutines);
   };
 
-  // Handle adding a new schedule field
-  const handleAddSchedule = () => {
-    setSchedule([...schedule, { day: "", startTime: "", endTime: "" }]);
+  // Add a new routine entry
+  const handleAddRoutine = () => {
+    setRoutines([...routines, { 
+      batchId: batchId,
+      day: "", 
+      startTime: "", 
+      endTime: "",
+      createdAt: new Date().toISOString()
+    }]);
   };
 
-  // Handle deleting a specific schedule row
-  const handleDeleteSchedule = (index) => {
-    const updatedSchedule = schedule.filter((_, i) => i !== index);
-    setSchedule(updatedSchedule);
+  // Delete a routine entry
+  const handleDeleteRoutine = (index) => {
+    const updatedRoutines = routines.filter((_, i) => i !== index);
+    setRoutines(updatedRoutines);
   };
 
+  // Submit updated routine data
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const updatedRoutineData = { schedule };
-
+  
+    // More robust validation
+    const isValid = routines.every(routine => 
+      routine.day && routine.startTime && routine.endTime
+    );
+  
+    if (!isValid) {
+      toast.error("Please fill in all fields for each routine entry.");
+      return;
+    }
+  
     try {
       setLoadingSubmit(true);
-      const response = await axiosSecure.patch(`/routine/${batchId}`, updatedRoutineData);
-
+      
+      // Prepare routines, ensuring all have necessary fields
+      const preparedRoutines = routines.map(routine => ({
+        ...(routine._id ? { _id: routine._id } : {}),
+        batchId: batchId,
+        day: routine.day,
+        startTime: routine.startTime,
+        endTime: routine.endTime,
+        createdAt: routine.createdAt || new Date().toISOString()
+      }));
+  
+      const response = await axiosSecure.put(`/routine/${batchId}`, preparedRoutines);
+  
       if (response.status === 200) {
-        parentToast.success("Routine updated successfully!");
+        // Use the callback to update parent component
+        onRoutineUpdate(preparedRoutines);
+        toast.success("Routine updated successfully!");
         closeModal();
-        fetchRoutines();
       } else {
         toast.error("Failed to update routine.");
       }
     } catch (error) {
       toast.error("Error updating routine.");
+      console.error(error);
     } finally {
       setLoadingSubmit(false);
     }
@@ -99,21 +129,19 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
 
   return (
     <form className="text-black p-5" onSubmit={handleSubmit}>
-      <div className="flex justify-between items-center">
-        <h3 className="text-center font-semibold text-black text-xl">Update Routine</h3>
-        <div className="flex justify-end mb-4">
-          <button
-            type="button"
-            onClick={handleAddSchedule}
-            className="btn btn-outline border-2 border-blue-950 text-black"
-          >
-            Add Another Day
-          </button>
-        </div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-center font-semibold text-black text-xl">Update Batch Routine</h3>
+        <button
+          type="button"
+          onClick={handleAddRoutine}
+          className="btn btn-outline border-2 border-blue-950 text-black"
+        >
+          Add Another Day
+        </button>
       </div>
 
-      {schedule.map((daySchedule, index) => (
-        <div key={index} className="mb-4 flex items-center  gap-4">
+      {routines.map((routine, index) => (
+        <div key={routine._id || index} className="mb-4 flex items-center gap-4">
           <div className="grid grid-cols-3 gap-4 flex-grow">
             <div>
               <label htmlFor={`day-${index}`} className="block text-sm font-medium">
@@ -121,7 +149,7 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
               </label>
               <select
                 id={`day-${index}`}
-                value={daySchedule.day}
+                value={routine.day}
                 onChange={(e) => handleChange(index, "day", e.target.value)}
                 className="mt-1 p-2 border border-gray-300 rounded w-full"
                 required
@@ -142,7 +170,7 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
               <input
                 type="time"
                 id={`startTime-${index}`}
-                value={daySchedule.startTime}
+                value={routine.startTime}
                 onChange={(e) => handleChange(index, "startTime", e.target.value)}
                 className="mt-1 p-2 border border-gray-300 rounded w-full"
                 required
@@ -156,7 +184,7 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
               <input
                 type="time"
                 id={`endTime-${index}`}
-                value={daySchedule.endTime}
+                value={routine.endTime}
                 onChange={(e) => handleChange(index, "endTime", e.target.value)}
                 className="mt-1 p-2 border border-gray-300 rounded w-full"
                 required
@@ -167,7 +195,7 @@ const UpdateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
           {/* Delete button */}
           <button
             type="button"
-            onClick={() => handleDeleteSchedule(index)}
+            onClick={() => handleDeleteRoutine(index)}
             className="text-black font-medium pt-3 hover:text-red-800"
             title="Remove this schedule"
           >
