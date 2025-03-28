@@ -108,7 +108,7 @@ const combinedData = React.useMemo(() => {
 
 
       {/* Table */}
-      <div className="flex-grow overflow-x-auto">
+      <div className="grow overflow-x-auto">
         {loading ? (
           <div className="animate-pulse w-full mt-8 mx-auto">
             <table className="table w-[1100px] mx-auto">

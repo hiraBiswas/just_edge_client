@@ -508,7 +508,7 @@ const ResultTable = () => {
         students.length > 0 &&
         !studentsLoading &&
         !resultsLoading && (
-          <div className="overflow-x-auto bg-white p-4 rounded shadow">
+          <div className="overflow-x-auto bg-white p-4 rounded-sm shadow-sm">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold mb-4">
                 Results for Batch: {selectedBatchName}
@@ -618,13 +618,13 @@ const ResultTable = () => {
                       </td>
                       <td className="px-4 py-2 border flex gap-2 text-center">
                         <button
-                          className="bg-blue-950 text-white px-2 py-1 rounded text-sm mr-1"
+                          className="bg-blue-950 text-white px-2 py-1 rounded-sm text-sm mr-1"
                           onClick={() => openEditModal(studentResults)}
                         >
                           Edit
                         </button>
                         <button
-                          className="bg-red-500 text-white px-2 py-1 rounded text-sm"
+                          className="bg-red-500 text-white px-2 py-1 rounded-sm text-sm"
                           onClick={() =>
                             handleDeleteStudent(studentResults?._id)
                           }
@@ -692,7 +692,7 @@ const ResultTable = () => {
         !studentsLoading &&
         !resultsLoading &&
         students.length === 0 && (
-          <div className="text-center py-20 bg-white p-4 rounded shadow">
+          <div className="text-center py-20 bg-white p-4 rounded-sm shadow-sm">
             No students found for this batch.
           </div>
         )}

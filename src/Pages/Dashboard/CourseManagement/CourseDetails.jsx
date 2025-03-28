@@ -48,8 +48,8 @@ const CourseDetails = () => {
       </div>
 
       {/* Course Details */}
-      <div className="flex rounded shadow-md gap-12 mt-12 p-8">
-        <img src={course.image} alt={course.courseName} className="flex-1 w-full h-80 object-cover rounded mb-4" />
+      <div className="flex rounded-sm shadow-md gap-12 mt-12 p-8">
+        <img src={course.image} alt={course.courseName} className="flex-1 w-full h-80 object-cover rounded-sm mb-4" />
         <div className="flex-1">
           <h1 className="text-2xl font-bold mb-4">{course.courseName}</h1>
           <p className="mb-2"><strong>Level:</strong> {course.level}</p>

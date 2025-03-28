@@ -193,7 +193,7 @@ const handleAssignInstructor = async (batchId, userId) => {
 
   return (
     <div className="flex flex-col mx-auto">
-      <div className="overflow-x-auto mt-8 flex-grow">
+      <div className="overflow-x-auto mt-8 grow">
         <div className="flex justify-between">
           <div className="join">
             <div>

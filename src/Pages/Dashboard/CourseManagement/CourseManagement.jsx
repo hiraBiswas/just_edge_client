@@ -76,7 +76,7 @@ const CourseManagement = () => {
 
   return (
     <div className="flex flex-col h-screen w-[1100px] mx-auto">
-      <div className="overflow-x-auto mt-8 flex-grow">
+      <div className="overflow-x-auto mt-8 grow">
         <div className="flex justify-between items-center w-full mb-4">
           <div className="flex items-center">
             <input

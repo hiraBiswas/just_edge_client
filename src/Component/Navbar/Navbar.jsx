@@ -1,11 +1,13 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { AuthContext } from '../../Providers/AuthProvider';
 import './navbar.css';
 
+
 const Navbar = () => {
   const { user, logOut } = useContext(AuthContext);
 
+  
   const links = (
     <>
       <li className="text-lg lg:text-xl font-semibold mr-3"><NavLink to="/">Home</NavLink></li>
@@ -25,7 +27,8 @@ const Navbar = () => {
   };
 
   return (
-    <div className="navbar bg-base-100 py-5 rounded-3xl drop-shadow-2xl">
+    <div className=''>
+      <div className="navbar bg-base-100 rounded-3xl drop-shadow-2xl">
       <div className="navbar-start px-5">
         <div className="dropdown">
           {/* Mobile Menu Toggle */}
@@ -35,7 +38,7 @@ const Navbar = () => {
             </svg>
           </div>
           {/* Mobile Links */}
-          <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+          <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow-sm bg-base-100 rounded-box w-52">
             {links}
           </ul>
         </div>
@@ -58,7 +61,7 @@ const Navbar = () => {
               </div>
             </label>
             <h2 className="text-lg font-semibold text-black mr-4">{user.name}</h2>
-            <ul tabIndex={0} className="mt-32 p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-52">
+            <ul tabIndex={0} className="mt-32 p-2 shadow-sm menu menu-compact dropdown-content bg-base-100 rounded-box w-52">
               <li className='text-black'>
                 <Link to="/dashboard" className="justify-between">
                   Dashboard
@@ -73,6 +76,9 @@ const Navbar = () => {
           </Link>
         )}
       </div>
+
+  
+    </div>
     </div>
   );
 };

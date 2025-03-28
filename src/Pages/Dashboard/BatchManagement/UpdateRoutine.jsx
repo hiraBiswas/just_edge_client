@@ -142,7 +142,7 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
 
       {routines.map((routine, index) => (
         <div key={routine._id || index} className="mb-4 flex items-center gap-4">
-          <div className="grid grid-cols-3 gap-4 flex-grow">
+          <div className="grid grid-cols-3 gap-4 grow">
             <div>
               <label htmlFor={`day-${index}`} className="block text-sm font-medium">
                 Day {index + 1}
@@ -151,7 +151,7 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
                 id={`day-${index}`}
                 value={routine.day}
                 onChange={(e) => handleChange(index, "day", e.target.value)}
-                className="mt-1 p-2 border border-gray-300 rounded w-full"
+                className="mt-1 p-2 border border-gray-300 rounded-sm w-full"
                 required
               >
                 <option value="">Select a day</option>
@@ -172,7 +172,7 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
                 id={`startTime-${index}`}
                 value={routine.startTime}
                 onChange={(e) => handleChange(index, "startTime", e.target.value)}
-                className="mt-1 p-2 border border-gray-300 rounded w-full"
+                className="mt-1 p-2 border border-gray-300 rounded-sm w-full"
                 required
               />
             </div>
@@ -186,7 +186,7 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
                 id={`endTime-${index}`}
                 value={routine.endTime}
                 onChange={(e) => handleChange(index, "endTime", e.target.value)}
-                className="mt-1 p-2 border border-gray-300 rounded w-full"
+                className="mt-1 p-2 border border-gray-300 rounded-sm w-full"
                 required
               />
             </div>

@@ -311,7 +311,7 @@ const BatchDetails = () => {
                     <td className="border border-gray-300 px-4 py-2">
                       <div className="flex justify-center">
                         <button
-                          className="bg-red-500 text-white btn btn-sm rounded"
+                          className="bg-red-500 text-white btn btn-sm rounded-sm"
                           onClick={() =>
                             handleDeleteInstructor(instructorBatch._id)
                           }

@@ -281,7 +281,7 @@ const handleChange = async (index, field, value) => {
           id="numDays"
           value={numDays}
           onChange={handleDaysChange}
-          className="mt-1 px-4 py-2 border border-gray-300 rounded"
+          className="mt-1 px-4 py-2 border border-gray-300 rounded-sm"
         >
           {[2, 3, 4].map((num) => (
             <option key={num} value={num}>
@@ -302,7 +302,7 @@ const handleChange = async (index, field, value) => {
                 id={`day-${index}`}
                 value={daySchedule.day}
                 onChange={(e) => handleChange(index, "day", e.target.value)}
-                className="mt-1 p-2 border border-gray-300 rounded"
+                className="mt-1 p-2 border border-gray-300 rounded-sm"
                 required
               >
                 <option value="">Select a day</option>
@@ -323,7 +323,7 @@ const handleChange = async (index, field, value) => {
                 id={`startTime-${index}`}
                 value={daySchedule.startTime}
                 onChange={(e) => handleChange(index, "startTime", e.target.value)}
-                className="mt-1 p-2 border border-gray-300 rounded"
+                className="mt-1 p-2 border border-gray-300 rounded-sm"
                 required
               />
             </div>
@@ -337,7 +337,7 @@ const handleChange = async (index, field, value) => {
                 id={`endTime-${index}`}
                 value={daySchedule.endTime}
                 onChange={(e) => handleChange(index, "endTime", e.target.value)}
-                className="mt-1 p-2 border border-gray-300 rounded"
+                className="mt-1 p-2 border border-gray-300 rounded-sm"
                 required
               />
             </div>

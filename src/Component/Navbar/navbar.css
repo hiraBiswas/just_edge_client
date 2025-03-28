@@ -32,7 +32,7 @@
   
   .navbar {
     position: fixed; /* Positioning it over the banner */
-    top: 20px; /* Space from the top */
+    top: 32px; /* Space from the top */
     left: 0;
     right: 0;
     max-width: calc(100% - 40px); /* Ensures 20px padding on both sides */
