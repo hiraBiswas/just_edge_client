@@ -30,6 +30,8 @@ import OnlineProfile from "../Pages/Dashboard/StudentDashboard/OnlineProfile/Onl
 import Classes from "../Pages/Dashboard/InstructorDashboard/Classes/Classes";
 import UploadResult from "../Pages/Dashboard/Result/UploadResult";
 import ResultTable from "../Pages/Dashboard/Result/ResultTable";
+import NoticeManagement from "../Pages/Dashboard/NoticeManagement.jsx/NoticeManagement";
+import Notice from "../Pages/Dashboard/NoticeManagement.jsx/Notice";
 
 export const router = createBrowserRouter([
   {
@@ -57,6 +59,12 @@ export const router = createBrowserRouter([
               path: "/about",
               element: <About />,
           },
+
+          {
+            path: 'notice',
+            element: <Notice />,
+        },
+
           {
               path: '/courseMaterial/:id',
               element: <PrivateRoute><Details /></PrivateRoute>,
@@ -82,8 +90,15 @@ export const router = createBrowserRouter([
           },
           {
               path: 'createCourse',
-              element: <AdminRoute><CreateCourse /></AdminRoute>
+              element: <AdminRoute><CreateCourse/></AdminRoute>
           },
+
+          {
+            path: 'noticeManagement',
+            element: <AdminRoute><NoticeManagement /></AdminRoute>
+        },
+
+    
           {
               path: 'courseDetails/:id',
               element: <AdminRoute><CourseDetails /></AdminRoute>
@@ -135,6 +150,14 @@ export const router = createBrowserRouter([
             path: 'onlineProfile',
             element: <OnlineProfile></OnlineProfile>
         },
+
+        {
+            path: 'onlineProfile',
+            element: <OnlineProfile></OnlineProfile>
+        },
+
+
+
       ]
   }
 ]);

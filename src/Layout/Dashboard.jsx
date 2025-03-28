@@ -111,6 +111,16 @@ const Dashboard = () => {
                     Batch Assignment
                   </NavLink>
                 </li>
+
+                <li className="hover:text-sky-200 flex flex-row py-1">
+                  <NavLink
+                    className="hover:text-sky-200 flex items-center gap-3"
+                    to="/dashboard/noticeManagement"
+                  >
+                    <MdAssignmentInd className="text-xl text-white hover:text-sky-200" />
+                   Notice Management
+                  </NavLink>
+                </li>
               </>
             ) : isInstructor ? (
               // Instructor-related routes

@@ -10,6 +10,7 @@ const Navbar = () => {
     <>
       <li className="text-lg lg:text-xl font-semibold mr-3"><NavLink to="/">Home</NavLink></li>
       <li className="text-lg lg:text-xl font-semibold mr-3"><NavLink to="/about">About</NavLink></li>
+      <li className="text-lg lg:text-xl font-semibold mr-3"><NavLink to="/notice">Notice</NavLink></li>
       <li className="text-lg lg:text-xl font-semibold mr-3"><NavLink to="/contact">Contact</NavLink></li>
     </>
   );
