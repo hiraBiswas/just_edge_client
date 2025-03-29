@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { PlusIcon, TrashIcon, EyeIcon } from "lucide-react";
+import { PlusIcon, TrashIcon, EyeIcon, PencilIcon } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
+
 
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
 const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
@@ -10,6 +11,8 @@ const NoticeManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState(null);
   const [attachments, setAttachments] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingNoticeId, setEditingNoticeId] = useState(null);
   const [newNotice, setNewNotice] = useState({
     title: "",
     description: "",
@@ -168,95 +171,66 @@ const NoticeManagement = () => {
     }));
   };
 
+
+  
+  const handleEditNotice = (notice) => {
+    setNewNotice({
+      title: notice.title || "",
+      description: notice.description || "",
+      tags: notice.tags || [], // Ensure tags is always an array
+      currentTag: "",
+      attachments: notice.attachments || [], // Ensure attachments is always an array
+      deadline: notice.deadline || "",
+    });
+    setEditingNoticeId(notice._id);
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+  
+
+
   const handleSubmitNotice = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
-      // Validation checks
-      if (!newNotice.title) {
-        toast.error("Title is required");
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("🔵 Notice Data Before Upload:", newNotice);
-
-      // Handle single file upload
-      let uploadedAttachment = null;
-      if (newNotice.attachments.length > 0) {
-        const file = newNotice.attachments[0];
-        const formData = new FormData();
-        formData.append("image", file);
-
-        console.log("📤 Uploading file:", file.name);
-
-        try {
-          const imageUploadResponse = await fetch(image_hosting_api, {
-            method: "POST",
-            body: formData,
-          });
-
-          const result = await imageUploadResponse.json();
-          console.log("🟢 File Upload Response:", result);
-
-          if (result.success) {
-            uploadedAttachment = result.data.display_url;
-          } else {
-            toast.error("File upload failed");
-          }
-        } catch (error) {
-          console.error("❌ Network error during file upload:", error);
-          toast.error("Network error during file upload");
-        }
-      }
-
-      // Prepare notice data
       const noticeData = {
-        title: newNotice.title,
-        description: newNotice.description,
-        tags: newNotice.tags,
-        attachment: uploadedAttachment,
-        deadline: newNotice.deadline
-          ? new Date(newNotice.deadline).toISOString()
-          : null,
+        ...newNotice,
         createdAt: new Date().toISOString(),
       };
 
-      console.log("📩 Final Notice Data to Send:", noticeData);
+      const url = isEditing
+        ? `http://localhost:5000/notice/${editingNoticeId}`
+        : "http://localhost:5000/notice";
+      const method = isEditing ? "PATCH" : "POST";
 
-      const response = await fetch("http://localhost:5000/notice", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(noticeData),
       });
 
-      console.log("🔄 Backend Response Status:", response.status);
+      if (!response.ok) throw new Error("Failed to save notice");
 
       const result = await response.json();
-      console.log("🟢 Backend Response Data:", result);
-
-      setNotices((prev) => [noticeData, ...prev]);
-      setNewNotice({
-        title: "",
-        description: "",
-        tags: [],
-        currentTag: "",
-        attachments: [],
-        deadline: "",
-      });
+      setNotices((prev) =>
+        isEditing
+          ? prev.map((notice) =>
+              notice._id === editingNoticeId ? { ...notice, ...noticeData } : notice
+            )
+          : [result, ...prev]
+      );
 
       setIsModalOpen(false);
-      toast.success("Notice created successfully");
+      setIsEditing(false);
+      setNewNotice({ title: "", description: "", tags: [], currentTag: "", attachments: [], deadline: "" });
+      toast.success(isEditing ? "Notice updated successfully" : "Notice created successfully");
     } catch (error) {
-      console.error("❌ Error submitting notice:", error);
       toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
   };
+
 
   // Delete notice
   const handleDeleteNotice = async (noticeId) => {
@@ -300,8 +274,12 @@ const NoticeManagement = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Notice Management</h2>
         <button
-          className="btn btn-primary"
-          onClick={() => setIsModalOpen(true)}
+          className="btn bg-blue-950 text-white"
+          onClick={() => {
+            setIsEditing(false);
+            setNewNotice({ title: "", description: "", tags: [], currentTag: "", attachments: [], deadline: "" });
+            setIsModalOpen(true);
+          }}
           disabled={isLoading}
         >
           <PlusIcon className="mr-2" /> Add Notice
@@ -327,13 +305,16 @@ const NoticeManagement = () => {
                 <td>{notice.title}</td>
                 <td>
                   {notice.tags?.map((tag) => (
-                    <span key={tag} className="badge badge-primary mr-1">
+                    <span key={tag} className="">
                       {tag}
                     </span>
                   ))}
                 </td>
                 <td>
                   <div className="flex space-x-2">
+                  <button className="btn btn-ghost btn-sm" onClick={() => handleEditNotice(notice)}>
+                      <PencilIcon size={16} />
+                    </button>
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={() => {
@@ -360,9 +341,9 @@ const NoticeManagement = () => {
       {isModalOpen && (
         <div className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">Create New Notice</h3>
+            <h3 className="font-bold text-lg mb-4">{isEditing ? "Update Notice" : "Create New Notice"}</h3>
             <form onSubmit={handleSubmitNotice} className="space-y-4">
-              <input
+            <input
                 type="text"
                 placeholder="Notice Title"
                 className="input input-bordered w-full"
@@ -438,7 +419,7 @@ const NoticeManagement = () => {
                 />
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn bg-blue-950 text-white"
                   onClick={handleAddTag}
                 >
                   Add Tag
@@ -473,22 +454,10 @@ const NoticeManagement = () => {
                 }
               />
 
+              
               <div className="modal-action">
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setIsModalOpen(false)}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Creating..." : "Create Notice"}
-                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)} disabled={isLoading}>Cancel</button>
+                <button type="submit" className="btn bg-blue-950 text-white" disabled={isLoading}>{isLoading ? "Saving..." : isEditing ? "Update Notice" : "Create Notice"}</button>
               </div>
             </form>
           </div>
