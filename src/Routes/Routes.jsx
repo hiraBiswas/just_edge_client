@@ -32,6 +32,7 @@ import UploadResult from "../Pages/Dashboard/Result/UploadResult";
 import ResultTable from "../Pages/Dashboard/Result/ResultTable";
 import NoticeManagement from "../Pages/Dashboard/NoticeManagement.jsx/NoticeManagement";
 import Notice from "../Pages/Dashboard/NoticeManagement.jsx/Notice";
+import ClassList from "../Pages/Dashboard/InstructorDashboard/Classes/ClassList";
 
 export const router = createBrowserRouter([
   {
@@ -134,6 +135,11 @@ export const router = createBrowserRouter([
         {
             path: 'classes',
             element: <InstructorRoute><Classes></Classes></InstructorRoute>
+        },
+
+        {
+            path: 'classList',
+            element: <InstructorRoute><ClassList></ClassList></InstructorRoute>
         },
 
         {
