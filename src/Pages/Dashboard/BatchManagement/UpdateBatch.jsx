@@ -10,13 +10,14 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
   const [status, setStatus] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  
-  // Fetch batch details when the component mounts or when batchId changes
+  const [seat, setSeat] = useState(0);
+  const [occupiedSeat, setOccupiedSeat] = useState(0);
+
   useEffect(() => {
     if (batchId) {
-        fetchRoutine();
+      fetchBatchDetails(batchId);
     }
-}, [batchId, refreshTrigger]); 
+  }, [batchId]);
 
   const fetchBatchDetails = async (id) => {
     setLoading(true);
@@ -27,12 +28,13 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
       }
       const data = await response.json();
       setBatchData(data);
-      const [courseName, batchNumber] = data.batchName?.split(" - ") || ["", ""];
-      setBatchName(courseName);
-      setBatchNum(batchNumber);
+      // Set the batch data into state
+      setBatchName(data.batchName); // Set batchName here
       setStatus(data.status);
       setStartDate(data.startDate);
       setEndDate(data.endDate);
+      setSeat(data.seat);
+      setOccupiedSeat(data.occupiedSeat);
     } catch (error) {
       console.error("Error fetching batch details:", error);
       toast.error("Failed to fetch batch details");
@@ -45,23 +47,26 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
     e.preventDefault();
 
     const updatedBatchData = {
-      batchName: `${batchName} - ${batchNum}`,
+      batchName, // Use the batchName directly as entered in the input
       status,
       startDate,
-      endDate
+      endDate,
+      seat,
+      occupiedSeat,
     };
 
     try {
       const response = await fetch(`http://localhost:5000/batches/${batchId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedBatchData)
+        body: JSON.stringify(updatedBatchData),
       });
 
       if (response.ok) {
         toast.success("Batch updated successfully!");
-        onBatchUpdated(updatedBatchData.batchName);
-        resetForm(); // Reset the form after successful update
+        onBatchUpdated(); // Notify parent to refresh data
+        onCloseModal(); // Close the modal
+        resetForm();
       } else {
         toast.error("Failed to update batch.");
       }
@@ -71,10 +76,10 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
     }
   };
 
-  // Reset form fields
+  // Reset form fields after success
   const resetForm = () => {
     setBatchName("");
-    setBatchNum("");
+    setSeat("");
     setStatus("");
     setStartDate("");
     setEndDate("");
@@ -86,62 +91,82 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
   const today = new Date().toISOString().split("T")[0]; // For today's date
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
+    <div className="max-w-2xl mx-auto p-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Batch Name (Editable) */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Course Name:</label>
-          <input type="text" value={batchName} disabled className="input input-bordered w-full" />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Batch Number:</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Batch Name:
+          </label>
           <input
             type="text"
-            value={batchNum}
-            onChange={(e) => setBatchNum(e.target.value)}
+            value={batchName}
+            onChange={(e) => setBatchName(e.target.value)} // Allow the user to update batchName
             className="input input-bordered w-full"
           />
         </div>
 
+        {/* Seat Information (Editable) */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Status:</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Total Seats:
+          </label>
+          <input
+            type="number"
+            value={seat}
+            onChange={(e) => setSeat(e.target.value)} // Allow the user to edit seat number
+            className="input input-bordered w-full"
+          />
+        </div>
+
+        {/* Status */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">
+            Status:
+          </label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             className="input input-bordered w-full"
           >
-            <option value="" disabled>Select Status</option>
-            <option value="Soon to be started">Soon to be started</option>
+            <option value="Soon to be started">Upcoming</option>
             <option value="On going">On going</option>
             <option value="Completed">Completed</option>
           </select>
         </div>
 
+        {/* Start Date */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Start Date:</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Start Date:
+          </label>
           <input
             type="date"
             value={startDate}
             min={today}
             onChange={(e) => setStartDate(e.target.value)}
             className="input input-bordered w-full"
-            required
           />
         </div>
 
+        {/* End Date */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">End Date:</label>
+          <label className="block text-sm font-medium text-gray-700">
+            End Date:
+          </label>
           <input
             type="date"
             value={endDate}
             min={startDate} // Ensure end date is not before start date
             onChange={(e) => setEndDate(e.target.value)}
             className="input input-bordered w-full"
-            required
           />
         </div>
 
-        <button type="submit" className="btn btn-primary w-full">Update Batch</button>
+        {/* Submit Button */}
+        <button type="submit" className="btn btn-primary w-full">
+          Update Batch
+        </button>
       </form>
 
       <ToastContainer />

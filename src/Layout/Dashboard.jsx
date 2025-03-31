@@ -69,7 +69,7 @@ const Dashboard = () => {
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-1">
                   <NavLink
                     className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/adminHome"
+                    to="/dashboard/adminDashboard"
                   >
                     <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" />{" "}
                     Dashboard
@@ -118,7 +118,7 @@ const Dashboard = () => {
                     to="/dashboard/noticeManagement"
                   >
                     <MdAssignmentInd className="text-xl text-white hover:text-sky-200" />
-                   Notice Management
+                    Notice Management
                   </NavLink>
                 </li>
               </>
@@ -150,7 +150,7 @@ const Dashboard = () => {
                     to="/dashboard/classes"
                   >
                     <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
-                   Classes
+                    Classes
                   </NavLink>
                 </li>
 
@@ -160,13 +160,23 @@ const Dashboard = () => {
                     to="/dashboard/result"
                   >
                     <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
-                  Result
+                    Result
                   </NavLink>
                 </li>
               </>
             ) : (
               // Default routes for normal users
               <>
+                <li className="hover:text-sky-200 flex flex-row py-2 pb-3">
+                  <NavLink
+                    className="hover:text-sky-200 flex justify-center items-center gap-3"
+                    to="/dashboard/batchEnrollment"
+                  >
+                    <MdPending className="text-xl text-white hover:text-blue-600" />{" "}
+                    Batch Enrollment
+                  </NavLink>
+                </li>
+
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
                   <NavLink
                     className="hover:text-sky-200 flex justify-center items-center gap-3"

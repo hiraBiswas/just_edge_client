@@ -12,6 +12,7 @@ import { ImCross } from "react-icons/im";
 import { RxCross2 } from "react-icons/rx";
 
 const BatchManagement = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [batches, setBatches] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,10 @@ const BatchManagement = () => {
   const [selectedBatchId, setSelectedBatchId] = useState(null);
   const [instructorSelection, setInstructorSelection] = useState({});
   const axiosSecure = useAxiosSecure();
+
+  const openModal = () => setIsModalOpen(true);
+
+  console.log(selectedBatchId);
 
   // Fetch courses
   useEffect(() => {
@@ -73,93 +78,102 @@ const BatchManagement = () => {
     }, {});
   }, [combinedInstructors]);
 
+  useEffect(() => {
+    const fetchBatches = async () => {
+      try {
+        const response = await axiosSecure.get("/batches");
+        console.log(response.data);
 
-useEffect(() => {
-  const fetchBatches = async () => {
+        // Update batches with instructor names
+        const updatedBatches = response.data.map((batch) => {
+          const instructorNames = batch.instructors || [];
+          return {
+            ...batch,
+            instructors: instructorNames,
+          };
+        });
+
+        setBatches(updatedBatches);
+      } catch (error) {
+        console.error("Error fetching batches:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBatches();
+  }, [axiosSecure]);
+
+  const handleAssignInstructor = async (batchId, userId) => {
+    try {
+      const { data: instructors } = await axiosSecure.get("/instructors");
+      const matchedInstructor = instructors.find(
+        (instructor) => instructor.userId === userId
+      );
+
+      if (!matchedInstructor) {
+        toast.error("Instructor not found!");
+        return;
+      }
+
+      const instructorId = matchedInstructor._id;
+      const response = await axiosSecure.post("/instructors-batches", {
+        instructorId,
+        batchId,
+      });
+
+      if (response.status === 201) {
+        const instructorName = instructorMap[userId] || "Unknown";
+
+        toast.success("Instructor assigned successfully!");
+
+        // Fetch the updated batches data from the backend
+        const updatedBatchesResponse = await axiosSecure.get("/batches");
+        const updatedBatches = updatedBatchesResponse.data.map((batch) => {
+          const instructorNames = batch.instructors || [];
+          return {
+            ...batch,
+            instructors: instructorNames,
+          };
+        });
+
+        setBatches(updatedBatches); // Update the state with the latest batch data
+        setInstructorSelection((prev) => ({
+          ...prev,
+          [batchId]: "", // Reset the instructor selection
+        }));
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 409) {
+        toast.error(
+          error.response.data.message || "Instructor already assigned."
+        );
+      } else {
+        toast.error("Error assigning instructor.");
+      }
+    }
+  };
+
+  const refreshBatches = async () => {
     try {
       const response = await axiosSecure.get("/batches");
-      console.log(response.data); 
-
-      // Update batches with instructor names
-      const updatedBatches = response.data.map(batch => {
-  
-        const instructorNames = batch.instructors || []; 
+      const updatedBatches = response.data.map((batch) => {
+        const instructorNames = batch.instructors || [];
         return {
           ...batch,
           instructors: instructorNames,
         };
       });
-
       setBatches(updatedBatches);
     } catch (error) {
-      console.error("Error fetching batches:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error refreshing batches:", error);
     }
   };
 
-  fetchBatches();
-}, [axiosSecure]);  
-
-  
-
-const handleAssignInstructor = async (batchId, userId) => {
-  try {
-    // Fetch the list of instructors from the server
-    const { data: instructors } = await axiosSecure.get("/instructors");
-
-    // Match the userId with the fetched instructors
-    const matchedInstructor = instructors.find(
-      (instructor) => instructor.userId === userId
-    );
-
-    if (!matchedInstructor) {
-      toast.error("Instructor not found!");
-      return;
-    }
-
-    const instructorId = matchedInstructor._id; // Get the corresponding instructorId
-    console.log("Matched Instructor ID:", instructorId);
-
-    // POST the instructor assignment
-    const response = await axiosSecure.post("/instructors-batches", {
-      instructorId,
-      batchId,
-    });
-
-    if (response.status === 201) {
-      const instructorName = instructorMap[userId] || "Unknown";
-
-      toast.success("Instructor assigned successfully!");
-
-      // Update the batches state immediately with the instructor's name
-      setBatches((prevBatches) => {
-        return prevBatches.map((batch) =>
-          batch._id === batchId
-            ? {
-                ...batch,
-                instructors: [...batch.instructors, instructorName], // Add the name directly
-              }
-            : batch
-        );
-      });
-
-      // Reset the selected instructor for the current batch
-      setInstructorSelection((prev) => ({
-        ...prev,
-        [batchId]: "", // Reset the instructor selection after assignment
-      }));
-    }
-  } catch (error) {
-    if (error.response && error.response.status === 409) {
-      toast.error(error.response.data.message || "Instructor already assigned.");
-    } else {
-      toast.error("Error assigning instructor.");
-    }
-  }
-};
-
-  
+  const closeModal = () => {
+    document.getElementById("my_modal_5").close();
+    setSelectedBatchId(null);
+  };
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -215,7 +229,9 @@ const handleAssignInstructor = async (batchId, userId) => {
               <option value="Completed">Completed</option>
             </select>
             <div className="indicator">
-              <button className="btn join-item bg-blue-950 text-white">Search</button>
+              <button className="btn join-item bg-blue-950 text-white">
+                Search
+              </button>
             </div>
           </div>
 
@@ -228,7 +244,7 @@ const handleAssignInstructor = async (batchId, userId) => {
         </div>
 
         <div className="overflow-x-auto w-[1100px]">
-          {(loading || usersLoading || instructorsLoading) ? (
+          {loading || usersLoading || instructorsLoading ? (
             <div className="animate-pulse w-full mt-8 mx-auto">
               <table className="table w-[1000px] mx-auto">
                 <thead className="bg-gray-200">
@@ -263,53 +279,72 @@ const handleAssignInstructor = async (batchId, userId) => {
                 </tr>
               </thead>
               <tbody>
-                {currentItems.map((batch, index) => (
-                  <tr key={batch._id}>
-                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                    <td>{batch.batchName}</td>
-                    <td>{batch.status}</td>
-                    <td>{batch.instructors.join(", ") || "Unassigned"}</td>
-
-                    <td>
-                      <div className="flex items-center justify-between gap-4">
-                        <select
-                          className="select select-bordered select-sm"
-                          value={instructorSelection[batch._id] || ""}
-                          onChange={(e) => {
-                            const selectedUserId = e.target.value;
-                            setInstructorSelection((prev) => ({
-                              ...prev,
-                              [batch._id]: selectedUserId,
-                            }));
-                            if (selectedUserId) {
-                              handleAssignInstructor(batch._id, selectedUserId);
-                            }
-                          }}
-                        >
-                          <option value="" disabled>
-                            Assign Instructor
-                          </option>
-                          {combinedInstructors.map((instructor) => (
-                            <option key={instructor.userId} value={instructor.userId}>
-                              {instructor.name}
-                            </option>
-                          ))}
-                        </select>
-
-                        <Link to={`/dashboard/batchDetails/${batch._id}`}>
-                          <FaEye className="w-4 h-4" />
-                        </Link>
-
-                        <button onClick={() => setSelectedBatchId(batch._id)}>
-                          <MdEdit className="w-4 h-4" />
-                        </button>
-                        <button>
-                          <FaFileArchive className="w-4 h-4" />
-                        </button>
-                      </div>
+                {currentItems.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="text-center text-gray-500">
+                      No batches available.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  currentItems.map((batch, index) => (
+                    <tr key={batch._id}>
+                      <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                      <td>{batch.batchName}</td>
+                      <td>{batch.status}</td>
+                      <td>{batch.instructors.join(", ") || "Unassigned"}</td>
+
+                      <td>
+                        <div className="flex items-center justify-between gap-4">
+                          <select
+                            className="select select-bordered select-sm"
+                            value={instructorSelection[batch._id] || ""}
+                            onChange={(e) => {
+                              const selectedUserId = e.target.value;
+                              setInstructorSelection((prev) => ({
+                                ...prev,
+                                [batch._id]: selectedUserId,
+                              }));
+                              if (selectedUserId) {
+                                handleAssignInstructor(
+                                  batch._id,
+                                  selectedUserId
+                                );
+                              }
+                            }}
+                          >
+                            <option value="" disabled>
+                              Assign Instructor
+                            </option>
+                            {combinedInstructors.map((instructor) => (
+                              <option
+                                key={instructor.userId}
+                                value={instructor.userId}
+                              >
+                                {instructor.name}
+                              </option>
+                            ))}
+                          </select>
+
+                          <Link to={`/dashboard/batchDetails/${batch._id}`}>
+                            <FaEye className="w-4 h-4" />
+                          </Link>
+
+                          <button
+                            onClick={() => {
+                              setSelectedBatchId(batch._id);
+                              document.getElementById("my_modal_5").showModal();
+                            }}
+                          >
+                            <MdEdit className="w-4 h-4" />
+                          </button>
+                          <button>
+                            <FaFileArchive className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}
@@ -336,25 +371,27 @@ const handleAssignInstructor = async (batchId, userId) => {
       </div>
 
       <div className="modal">
-      <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
-  <div className="modal-box">
-    <div className="absolute top-0 right-6 p-4">
-      <button
-        className="text-2xl font-bold hover:text-3xl hover:scale-110 transition-transform duration-200 cursor-pointer"
-        onClick={() => document.getElementById("my_modal_5").close()}
-      >
-        <RxCross2 />
-      </button>
-    </div>
+        <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+          <div className="modal-box">
+            <div className="absolute top-0 right-6 p-4">
+              <button
+                className="text-2xl font-bold hover:text-3xl hover:scale-110 transition-transform duration-200 cursor-pointer"
+                onClick={() => {
+                  document.getElementById("my_modal_5").close();
+                  setSelectedBatchId(null);
+                }}
+              >
+                <RxCross2 />
+              </button>
+            </div>
 
-    {selectedBatchId ? (
-      <UpdateBatch batchId={selectedBatchId} />
-    ) : (
-      <CreateBatch />
-    )}
-  </div>
-</dialog>
-
+            {selectedBatchId ? (
+              <UpdateBatch batchId={selectedBatchId} />
+            ) : (
+              <CreateBatch />
+            )}
+          </div>
+        </dialog>
       </div>
       <ToastContainer />
     </div>

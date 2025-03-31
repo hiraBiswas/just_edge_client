@@ -9,7 +9,6 @@ import Register from "../Pages/Register/Register";
 import Contact from "../Pages/Contact/Contact";
 import Details from "../Pages/Details/Details";
 import PrivateRoute from "./PrivateRoute";
-import AdminHome from "../Pages/Dashboard/AdminHome/AdminHome";
 import AdminRoute from "../Routes/AdminRoute";
 import AllUser from "../Pages/Dashboard/AllUser/AllUser";
 import Dashboard from "../Layout/Dashboard";
@@ -33,6 +32,12 @@ import ResultTable from "../Pages/Dashboard/Result/ResultTable";
 import NoticeManagement from "../Pages/Dashboard/NoticeManagement.jsx/NoticeManagement";
 import Notice from "../Pages/Dashboard/NoticeManagement.jsx/Notice";
 import ClassList from "../Pages/Dashboard/InstructorDashboard/Classes/ClassList";
+import InstructorDashboard from "../Pages/Dashboard/InstructorDashboard/InstructorHome/InstructorDashboard";
+import StudentDashboard from "../Pages/Dashboard/StudentDashboard/StudentDashboard";
+import DashboardRedirect from "../Pages/Dashboard/DashboarRedirect/DashboarRedirect";
+import BatchEnrollment from "../Pages/Dashboard/StudentDashboard/BatchEnrollment/Batchenrollment";
+import AdminDashboard from "../Pages/Dashboard/AdminHome/AdminDashboard";
+import UpdateBatch from "../Pages/Dashboard/BatchManagement/UpdateBatch";
 
 export const router = createBrowserRouter([
   {
@@ -77,9 +82,15 @@ export const router = createBrowserRouter([
       path: 'dashboard',
       element: <PrivateRoute><Dashboard /></PrivateRoute>,
       children: [
+
+        {
+            index: true, // This will automatically redirect when visiting /dashboard
+            element:<DashboardRedirect></DashboardRedirect>
+        },
+
           {
-              path: 'adminHome',
-              element: <AdminRoute><AdminHome /></AdminRoute>
+              path: 'adminDashboard',
+              element: <AdminRoute><AdminDashboard></AdminDashboard></AdminRoute>
           },
           {
               path: 'courseManagement',
@@ -93,6 +104,7 @@ export const router = createBrowserRouter([
               path: 'createCourse',
               element: <AdminRoute><CreateCourse/></AdminRoute>
           },
+
 
           {
             path: 'noticeManagement',
@@ -119,6 +131,11 @@ export const router = createBrowserRouter([
             path: 'batchManagement',
             element: <AdminRoute><BatchManagement></BatchManagement></AdminRoute>
         },
+
+        {
+            path: 'updateBatch/:id',
+            element: <AdminRoute><UpdateBatch></UpdateBatch></AdminRoute>
+        },
         {
             path: 'instructorManagement',
             element: <AdminRoute><InstructorManagement></InstructorManagement></AdminRoute>
@@ -127,6 +144,12 @@ export const router = createBrowserRouter([
             path: 'pendingInstructor',
             element: <AdminRoute><PendingInstructor></PendingInstructor></AdminRoute>
         },
+
+        {
+            path: 'instructorDashboard',
+            element:<InstructorRoute><InstructorDashboard></InstructorDashboard></InstructorRoute>
+        },
+
         {
             path: 'instructorRoutine',
             element: <InstructorRoute><InstructorRoutine></InstructorRoutine></InstructorRoute>
@@ -146,6 +169,17 @@ export const router = createBrowserRouter([
             path: 'result',
             element: <InstructorRoute><ResultTable></ResultTable></InstructorRoute>
         },
+
+        {
+            path: 'studentDashboard',
+            element: <StudentDashboard></StudentDashboard>
+        },
+
+        {
+            path: 'batchEnrollment',
+            element: <BatchEnrollment></BatchEnrollment>
+        },
+
 
         {
             path: 'updateProfile',
