@@ -516,7 +516,7 @@ const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
                 >
                   <option value="">Select Batch</option>
                   {batchList
-                    .filter((batch) => batch.status === "Soon to be started")
+                    .filter((batch) => batch.status === "Upcoming")
                     .map((batch) => (
                       <option key={batch._id} value={batch.batchName}>
                         {batch.batchName}

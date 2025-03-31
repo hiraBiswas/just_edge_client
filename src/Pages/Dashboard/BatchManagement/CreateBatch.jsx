@@ -30,70 +30,66 @@ const CreateBatch = () => {
     fetchCourses();
   }, []);
 
-  const fetchNextBatchNumber = async () => {
-    setFetchingBatchNumber(true);
-    setError(null); // Clear any previous errors
-
+  const fetchNextBatchNumber = async (courseId) => {
+    if (!courseId) {
+      toast.error("Please select a course first.");
+      return "001"; // Default fallback
+    }
+  
     try {
-      console.log("Requesting next batch number...");
       const response = await fetch(
-        "http://localhost:5000/batches/next-batch-number"
+        `http://localhost:5000/next-batch-number/${courseId}`
       );
-      console.log("Response received:", response.status);
-
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
-
+      
+      if (!response.ok) throw new Error("Failed to fetch batch number");
+      
       const data = await response.json();
-      console.log("Batch number data:", data);
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setBatchNumber(data.nextBatchNumber);
-      return data.nextBatchNumber; // Return the batch number for use in submit
+      return data.nextBatchNumber || "001"; // Fallback to "001" if empty
     } catch (error) {
-      console.error("Error fetching next batch number:", error);
-      setError("Failed to generate batch number. Please try again.");
-      toast.error("Failed to generate batch number. Please try again later.");
-      return null;
-    } finally {
-      setFetchingBatchNumber(false);
+      console.error("Error:", error);
+      toast.error("Using default batch number");
+      return "001"; // Default fallback
     }
   };
+  
 
-  const handleCourseSelect = (e) => {
+  const handleCourseSelect = async (e) => {
     const selectedCourseId = e.target.value;
     setSelectedCourse(selectedCourseId);
-
-    // Find the selected course name from the courses array
+  
+    // Find course name from the selected course
     const course = courses.find((course) => course._id === selectedCourseId);
     if (course) {
       setSelectedCourseName(course.courseName);
     }
+  
+    // Fetch batch number for the selected course
+    const nextBatch = await fetchNextBatchNumber(selectedCourseId);
+    setBatchNumber(nextBatch || "001"); // Default to "001" if fetching fails
   };
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // If we don't have a batch number yet, fetch it first
+  
+    if (!selectedCourse) {
+      toast.error("Please select a course.");
+      return;
+    }
+  
     let currentBatchNumber = batchNumber;
     if (!currentBatchNumber) {
-      currentBatchNumber = await fetchNextBatchNumber();
-      if (!currentBatchNumber) return; // Exit if batch number generation failed
+      currentBatchNumber = await fetchNextBatchNumber(selectedCourse);
+      if (!currentBatchNumber) return;
     }
-
+  
     const formData = new FormData(e.target);
-    const selectedCourseId = formData.get("courseName");
     const seatCount = formData.get("seat");
-
-    // Create batchName by concatenating course name with batch number
+  
     const batchName = `${selectedCourseName} - ${currentBatchNumber}`;
-
+  
     const data = {
-      course_id: selectedCourseId,
+      course_id: selectedCourse,
       batchName: batchName,
       batchNumber: currentBatchNumber,
       startDate: formData.get("startDate"),
@@ -103,7 +99,7 @@ const CreateBatch = () => {
       occupiedSeat: 0,
       status: "Upcoming",
     };
-
+  
     try {
       const response = await fetch("http://localhost:5000/batches", {
         method: "POST",
@@ -112,25 +108,23 @@ const CreateBatch = () => {
         },
         body: JSON.stringify(data),
       });
-
+  
       if (!response.ok) {
         throw new Error("Failed to create batch");
       }
-
-      const result = await response.json();
+  
       toast.success("Batch created successfully!");
       e.target.reset();
       setSelectedCourse("");
       setSelectedCourseName("");
-      setBatchNumber(""); // Clear batch number after successful submission
-
-      console.log("Batch created:", result);
+      setBatchNumber("");
+  
     } catch (error) {
       console.error("Error submitting batch:", error);
-      setError("Failed to create batch. Please try again later.");
-      toast.error("Failed to create batch. Please try again later.");
+      toast.error("Failed to create batch. Please try again.");
     }
   };
+  
 
   const handleStartDateChange = (e) => {
     setStartDate(e.target.value);
