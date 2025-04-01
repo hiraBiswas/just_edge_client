@@ -38,6 +38,7 @@ import DashboardRedirect from "../Pages/Dashboard/DashboarRedirect/DashboarRedir
 import BatchEnrollment from "../Pages/Dashboard/StudentDashboard/BatchEnrollment/Batchenrollment";
 import AdminDashboard from "../Pages/Dashboard/AdminHome/AdminDashboard";
 import UpdateBatch from "../Pages/Dashboard/BatchManagement/UpdateBatch";
+import ChangeRequests from "../Pages/Dashboard/CourseAssignment/ChangeRequests/ChangeRequests";
 
 export const router = createBrowserRouter([
   {
@@ -100,6 +101,13 @@ export const router = createBrowserRouter([
               path: 'courseAssignment',
               element: <AdminRoute><CourseAssignment /></AdminRoute>
           },
+
+          {
+            path: 'changeRequests',
+            element: <AdminRoute><ChangeRequests /></AdminRoute>
+        },
+
+
           {
               path: 'createCourse',
               element: <AdminRoute><CreateCourse/></AdminRoute>

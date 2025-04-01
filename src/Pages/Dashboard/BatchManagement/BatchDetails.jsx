@@ -335,9 +335,9 @@ const BatchDetails = () => {
       {/* Section for Enrolled Students */}
       <section className="mt-5">
         <h2 className="text-md font-semibold mb-2">Enrolled Students:</h2>
-        {batch.enrolledStudentNumber > 0 && (
+        {batch.occupiedSeat > 0 && (
           <p className="mb-2">
-            Total Enrolled Students: {batch.enrolledStudentNumber}
+            Total Enrolled Students: {batch.occupiedSeat}
           </p>
         )}
         {filteredStudents && filteredStudents.length > 0 ? (
