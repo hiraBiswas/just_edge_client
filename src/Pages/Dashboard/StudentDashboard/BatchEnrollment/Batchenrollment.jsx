@@ -13,6 +13,8 @@ const EnrollmentRequests = () => {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [availableBatches, setAvailableBatches] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState("");
+  const [currentCourseId, setCurrentCourseId] = useState("");
+  const [currentPrefCourse, setCurrentPrefCourse] = useState("");
 
   useEffect(() => {
     if (user?._id) {
@@ -20,6 +22,7 @@ const EnrollmentRequests = () => {
         const foundStudent = res.data.find((s) => s.userId === user._id);
         if (foundStudent) {
           setStudentData(foundStudent);
+          setCurrentPrefCourse(foundStudent.prefCourse);
 
           axiosSecure.get("/users").then((userRes) => {
             const foundUser = userRes.data.find((u) => u._id === user._id);
@@ -35,12 +38,13 @@ const EnrollmentRequests = () => {
           axiosSecure.get("/batches").then((batchRes) => {
             setBatches(batchRes.data);
 
-            // Find the current batch's course_id
             const currentBatch = batchRes.data.find(
               (batch) => batch._id === foundStudent.enrolled_batch
             );
 
             if (currentBatch) {
+              setCurrentCourseId(currentBatch.course_id);
+
               const relatedBatches = batchRes.data.filter(
                 (batch) =>
                   batch.course_id === currentBatch.course_id &&
@@ -54,7 +58,6 @@ const EnrollmentRequests = () => {
     }
   }, [user, axiosSecure]);
 
-
   const preferredCourseName =
     courses.find((course) => course._id === studentData?.prefCourse)
       ?.courseName || "N/A";
@@ -62,6 +65,33 @@ const EnrollmentRequests = () => {
   const enrolledBatchName =
     batches.find((batch) => batch._id === studentData?.enrolled_batch)
       ?.batchName || "N/A";
+
+  const handleCourseChangeRequest = () => {
+    if (!selectedCourse) {
+      toast.error("Please select a course");
+      return;
+    }
+
+    const courseRequest = {
+      studentId: studentData._id,
+      requestedCourse: selectedCourse,
+      status: "Pending",
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log(courseRequest);
+
+    axiosSecure
+      .post("/course-change-requests", courseRequest)
+      .then(() => {
+        toast.success("Course change request submitted successfully!");
+        document.getElementById("course_modal").close();
+      })
+      .catch((err) => {
+        console.error("Error submitting course change request:", err);
+        toast.error("Failed to submit course change request");
+      });
+  };
 
   const handleSaveCourse = () => {
     if (!selectedCourse) return;
@@ -71,16 +101,13 @@ const EnrollmentRequests = () => {
       .then(() => {
         setStudentData((prev) => ({ ...prev, prefCourse: selectedCourse }));
         toast.success("Preferred course updated successfully!");
-        document.getElementById("my_modal_3").close(); // Close modal after saving
+        document.getElementById("my_modal_3").close();
       })
       .catch((err) => {
         console.error("Error updating preferred course:", err);
         toast.error("Failed to update preferred course!");
       });
   };
-
-
-
 
   const handleChangeBatch = () => {
     if (!selectedBatch) return;
@@ -108,7 +135,6 @@ const EnrollmentRequests = () => {
       }
     });
   };
-
 
   return (
     <div className="p-6">
@@ -140,17 +166,22 @@ const EnrollmentRequests = () => {
               <td className="border border-gray-300 p-2">
                 {studentData.enrolled_batch ? (
                   <>
-                    <button className="btn btn-primary mr-2">
+                    <button
+                      className="btn btn-primary mr-2"
+                      onClick={() =>
+                        document.getElementById("course_modal").showModal()
+                      }
+                    >
                       Change Course
                     </button>
                     <button
-                  className="btn btn-secondary"
-                  onClick={() =>
-                    document.getElementById("batch_modal").showModal()
-                  }
-                >
-                  Change Batch
-                </button>
+                      className="btn btn-secondary"
+                      onClick={() =>
+                        document.getElementById("batch_modal").showModal()
+                      }
+                    >
+                      Change Batch
+                    </button>
                   </>
                 ) : (
                   <button
@@ -170,7 +201,7 @@ const EnrollmentRequests = () => {
         <p>Loading student data...</p>
       )}
 
-      {/* Modal */}
+      {/* Preferred Course Selection Modal (for unenrolled students) */}
       <dialog id="my_modal_3" className="modal">
         <div className="modal-box">
           <form method="dialog">
@@ -187,11 +218,13 @@ const EnrollmentRequests = () => {
             onChange={(e) => setSelectedCourse(e.target.value)}
           >
             <option value="">Select a course</option>
-            {courses.map((course) => (
-              <option key={course._id} value={course._id}>
-                {course.courseName}
-              </option>
-            ))}
+            {courses
+              .filter((course) => course._id !== currentPrefCourse) // Filter out current preferred course
+              .map((course) => (
+                <option key={course._id} value={course._id}>
+                  {course.courseName}
+                </option>
+              ))}
           </select>
           <div className="flex justify-end">
             <button
@@ -207,8 +240,48 @@ const EnrollmentRequests = () => {
         </div>
       </dialog>
 
-       {/* Change Batch Modal */}
-       <dialog id="batch_modal" className="modal">
+      {/* Course Change Request Modal (for enrolled students) */}
+      <dialog id="course_modal" className="modal">
+        <div className="modal-box">
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+              ✕
+            </button>
+          </form>
+          <h3 className="font-bold text-lg mb-4">Request Course Change</h3>
+          <select
+            className="w-full p-2 border rounded mb-4"
+            value={selectedCourse}
+            onChange={(e) => setSelectedCourse(e.target.value)}
+          >
+            <option value="">Select a course</option>
+            {courses
+              .filter((course) => course._id !== currentCourseId) // Exclude current course
+              .map((course) => (
+                <option key={course._id} value={course._id}>
+                  {course.courseName}
+                </option>
+              ))}
+          </select>
+          <div className="flex justify-end">
+            {/* <button
+              className="btn btn-secondary mr-2"
+              onClick={() => document.getElementById("course_modal").close()}
+            >
+              Cancel
+            </button> */}
+            <button
+              className="btn btn-primary"
+              onClick={handleCourseChangeRequest}
+            >
+              Submit Request
+            </button>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Batch Change Request Modal */}
+      <dialog id="batch_modal" className="modal">
         <div className="modal-box">
           <form method="dialog">
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
@@ -229,12 +302,12 @@ const EnrollmentRequests = () => {
             ))}
           </select>
           <div className="flex justify-end">
-            <button
+            {/* <button
               className="btn btn-secondary mr-2"
               onClick={() => document.getElementById("batch_modal").close()}
             >
               Cancel
-            </button>
+            </button> */}
             <button className="btn btn-primary" onClick={handleChangeBatch}>
               Submit Request
             </button>

@@ -51,8 +51,8 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
       status,
       startDate,
       endDate,
-      seat,
-      occupiedSeat,
+      seat: parseInt(seat), // Convert seat to integer
+    occupiedSeat: parseInt(occupiedSeat)
     };
 
     try {
