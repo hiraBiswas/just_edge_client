@@ -197,11 +197,17 @@ const Register = () => {
 
   return (
     <div className="container mx-auto">
-      <div className="text-center mt-8 lg:mt-28">
+      <div className="text-center mt-8 lg:mt-20">
         <div className="flex flex-col justify-center items-center mx-auto gap-4">
-          <div className="shadow-lg rounded-lg p-6 bg-white w-2/5">
+          <div
+            className="card shrink-0 bg-white rounded-xl shadow-2xl my-8 px-6"
+            style={{
+              width: "40%",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            }}
+          >
             <div className="mb-4">
-              <h2 className="text-center font-semibold text-2xl mb-2">
+              <h2 className="text-center font-semibold text-2xl my-4">
                 Sign Up <br /> <span className="text-lg font-medium">as</span>
               </h2>
               <div className="flex justify-center gap-4">
@@ -234,119 +240,103 @@ const Register = () => {
               <form onSubmit={handleSubmit(onSubmit)} className="">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium ">
-                        Name *
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Name *
+                    </div>
                     <input
                       {...register("name", { required: true })}
                       type="text"
                       placeholder="name"
                       name="name"
-                      className="input input-bordered input-sm"
+                      className="input input-bordered input-sm w-full"
                       required
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium ">
-                        Contact *
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Contact *
+                    </div>
                     <input
                       {...register("contact", { required: true })}
                       type="text"
                       placeholder="contact number"
                       name="contact"
-                      className="input  input-bordered input-sm"
+                      className="input input-bordered input-sm w-full"
                       required
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium">
-                        Email *
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Email *
+                    </div>
                     <input
                       {...register("email", { required: true })}
                       type="email"
                       placeholder="email"
                       name="email"
-                      className="input input-bordered input-sm"
+                      className="input input-bordered input-sm w-full"
                       required
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium">
-                        Student ID *
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Student ID *
+                    </div>
                     <input
                       {...register("studentID", { required: true })}
                       type="text"
                       placeholder="student ID"
                       name="studentID"
-                      className="input input-bordered input-sm"
+                      className="input input-bordered input-sm w-full"
                       required
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium ">
-                        Department *
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Department *
+                    </div>
                     <input
                       {...register("department", { required: true })}
                       type="text"
                       placeholder="department"
                       name="department"
-                      className="input input-bordered input-sm"
+                      className="input input-bordered input-sm w-full"
                       required
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium ">
-                        Session *
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Session *
+                    </div>
                     <input
                       {...register("session", { required: true })}
                       type="text"
                       placeholder="session"
                       name="session"
-                      className="input input-bordered input-sm"
+                      className="input input-bordered input-sm w-full"
                       required
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium ">
-                        Institution *
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Institution *
+                    </div>
                     <input
                       {...register("institution", { required: true })}
                       type="text"
                       placeholder="institution"
                       name="institution"
-                      className="input input-bordered input-sm"
+                      className="input input-bordered input-sm w-full"
                       required
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium ">
-                        Preferable Course *
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Preferable Course *
+                    </div>
                     <select
                       {...register("prefCourse", { required: true })}
-                      className="select select-bordered select-sm"
+                      className="select select-bordered select-sm w-full"
                       required
                     >
                       <option value="">Select Preferable Course</option>
@@ -358,11 +348,9 @@ const Register = () => {
                     </select>
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium ">
-                        Password
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1">
+                      Password *
+                    </div>
                     <div className="relative">
                       <input
                         {...register("password", { required: true })}
@@ -385,11 +373,9 @@ const Register = () => {
                     </div>
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text text-md font-medium ">
-                        Confirm Password
-                      </span>
-                    </label>
+                    <div className="text-start text-sm font-medium mb-1 ">
+                      Confirm Password *
+                    </div>
                     <div className="relative">
                       <input
                         {...register("confirmPassword", { required: true })}
@@ -420,56 +406,63 @@ const Register = () => {
                   </button>
                 </div>
                 <p className="p-8 pt-0 text-md font-medium mt-2 lg:text-lg">
-                              Already have account?
-                              <NavLink to="/login" className="text-lg font-bold bg-grad-button lg:text-xl"> Sign In</NavLink> here.
-                            </p>
+                  Already have account?
+                  <NavLink
+                    to="/login"
+                    className="text-lg font-bold bg-grad-button lg:text-xl"
+                  >
+                    {" "}
+                    Sign In
+                  </NavLink>{" "}
+                  here.
+                </p>
               </form>
             ) : (
               <form
                 onSubmit={handleSubmit(onSubmit)}
-                className="flex flex-col gap-4 px-6"
+                className="flex flex-col gap-2 px-6"
               >
-                <div className="flex items-center gap-4">
-                  <label className="label w-1/3">
-                    <span className="label-text">Name *</span>
-                  </label>
+                <div className="form-control">
+                  <div className="text-start text-sm font-medium mb-1">
+                    Name *
+                  </div>
                   <input
                     {...register("name", { required: true })}
                     type="text"
                     placeholder="Enter name"
-                    className="input input-bordered w-2/3 input-sm"
+                    className="input input-bordered w-full input-sm"
                     required
                   />
                 </div>
-                <div className="flex items-center gap-4">
-                  <label className="label w-1/3">
-                    <span className="label-text">Email *</span>
-                  </label>
+                <div className="form-control">
+                  <div className="text-start text-sm font-medium mb-1">
+                    Email *
+                  </div>
                   <input
                     {...register("email", { required: true })}
                     type="email"
                     placeholder="Enter email"
-                    className="input input-bordered w-2/3 input-sm"
+                    className="input input-bordered w-full input-sm"
                     required
                   />
                 </div>
-                <div className="flex items-center gap-4">
-                  <label className="label w-1/3">
-                    <span className="label-text">Contact *</span>
-                  </label>
+                <div className="form-control">
+                  <div className="text-start text-sm font-medium mb-1">
+                    Contact *
+                  </div>
                   <input
                     {...register("contact", { required: true })}
                     type="text"
                     placeholder="Enter contact number"
-                    className="input input-bordered w-2/3 input-sm"
+                    className="input input-bordered w-full input-sm"
                     required
                   />
                 </div>
-                <div className="flex items-center gap-4">
-                  <label className="label w-1/3">
-                    <span className="label-text">Password *</span>
-                  </label>
-                  <div className="relative w-2/3">
+                <div className="form-control">
+                  <div className="text-start text-sm font-medium mb-1">
+                    Password *
+                  </div>
+                  <div className="relative">
                     <input
                       {...register("password", { required: true })}
                       type={showPassword ? "text" : "password"}
@@ -490,17 +483,17 @@ const Register = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <label className="label w-1/3">
-                    <span className="label-text">Confirm Password *</span>
-                  </label>
-                  <div className="relative w-2/3">
+                <div className="form-control">
+                  <div className="text-start text-sm font-medium mb-1">
+                    Confirm Password *
+                  </div>
+                  <div className="relative">
                     <input
                       {...register("confirmPassword", {
                         required: "Confirm password is required",
                         validate: (value) =>
                           value === watch("password") ||
-                          "Passwords do not match", // Use watch to compare
+                          "Passwords do not match",
                       })}
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm password"
@@ -544,12 +537,18 @@ const Register = () => {
                   </button>
                 </div>
                 <p className="p-8 pt-0 text-md font-medium lg:text-lg">
-                              Already have account?
-                              <NavLink to="/login" className="text-lg font-bold bg-grad-button lg:text-xl"> Sign In</NavLink> here.
-                            </p>
+                  Already have account?
+                  <NavLink
+                    to="/login"
+                    className="text-lg font-bold bg-grad-button lg:text-xl"
+                  >
+                    {" "}
+                    Sign In
+                  </NavLink>{" "}
+                  here.
+                </p>
               </form>
             )}
-            
           </div>
         </div>
       </div>
