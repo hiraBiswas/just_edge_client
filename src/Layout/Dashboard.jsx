@@ -170,10 +170,10 @@ const Dashboard = () => {
                 <li className="hover:text-sky-200 flex flex-row py-2 pb-3">
                   <NavLink
                     className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/batchEnrollment"
+                    to="/dashboard/studentDashboard"
                   >
                     <MdPending className="text-xl text-white hover:text-blue-600" />{" "}
-                    Batch Enrollment
+                  Dashboard
                   </NavLink>
                 </li>
 

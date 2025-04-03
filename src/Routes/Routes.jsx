@@ -35,7 +35,7 @@ import ClassList from "../Pages/Dashboard/InstructorDashboard/Classes/ClassList"
 import InstructorDashboard from "../Pages/Dashboard/InstructorDashboard/InstructorHome/InstructorDashboard";
 import StudentDashboard from "../Pages/Dashboard/StudentDashboard/StudentDashboard";
 import DashboardRedirect from "../Pages/Dashboard/DashboarRedirect/DashboarRedirect";
-import BatchEnrollment from "../Pages/Dashboard/StudentDashboard/BatchEnrollment/Batchenrollment";
+import BatchEnrollment from "../Pages/Dashboard/StudentDashboard/BatchEnrollment/EnrollmentRequests";
 import AdminDashboard from "../Pages/Dashboard/AdminHome/AdminDashboard";
 import UpdateBatch from "../Pages/Dashboard/BatchManagement/UpdateBatch";
 import ChangeRequests from "../Pages/Dashboard/CourseAssignment/ChangeRequests/ChangeRequests";
@@ -181,11 +181,6 @@ export const router = createBrowserRouter([
         {
             path: 'studentDashboard',
             element: <StudentDashboard></StudentDashboard>
-        },
-
-        {
-            path: 'batchEnrollment',
-            element: <BatchEnrollment></BatchEnrollment>
         },
 
 
