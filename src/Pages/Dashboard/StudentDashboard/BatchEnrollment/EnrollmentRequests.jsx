@@ -245,11 +245,10 @@ const EnrollmentRequests = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Manage Enrollment</h1>
+    <div className=" w-[1100px] mx-auto">
 
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Enrollment Management</h1>
+      <div className="flex justify-between items-center mb-2">
+        <h1 className="text-xl font-bold text-gray-800">Enrollment Management</h1>
         {pendingRequests.hasAnyPending && (
           <div className="badge badge-lg badge-warning gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -273,7 +272,9 @@ const EnrollmentRequests = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
      {/* Only show preferred course if not enrolled */}
   {!studentData?.enrolled_batch && (
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 
+                  transition duration-150 ease-in-out
+                  hover:bg-white hover:shadow-sm hover:border-gray-200">
       <p className="text-sm font-medium text-gray-500 mb-1">Preferred Course</p>
       <p className="text-lg font-semibold text-gray-800">{preferredCourseName}</p>
     </div>
@@ -282,18 +283,28 @@ const EnrollmentRequests = () => {
   {/* Show enrolled course and batch if enrolled */}
   {studentData?.enrolled_batch && (
     <>
-      <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-        <p className="text-sm font-medium text-gray-500 mb-1">Enrolled Course</p>
-        <p className="text-lg font-semibold text-gray-800">{enrolledCourseName}</p>
-      </div>
-      <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-        <p className="text-sm font-medium text-gray-500 mb-1">Enrolled Batch</p>
-        <p className="text-lg font-semibold text-gray-800">{enrolledBatchName}</p>
-      </div>
-      <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-        <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
-        <p className="text-lg font-semibold text-green-600">Active</p>
-      </div>
+<>
+  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 
+                  transition duration-150 ease-in-out
+                  hover:bg-white hover:shadow-sm hover:border-gray-200">
+    <p className="text-sm font-medium text-gray-500 mb-1">Enrolled Course</p>
+    <p className="text-lg font-semibold truncate text-gray-800">{enrolledCourseName}</p>
+  </div>
+  
+  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 
+                  transition duration-150 ease-in-out
+                  hover:bg-white hover:shadow-sm hover:border-gray-200">
+    <p className="text-sm font-medium text-gray-500 mb-1">Enrolled Batch</p>
+    <p className="text-lg font-semibold text-gray-800">{enrolledBatchName}</p>
+  </div>
+  
+  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 
+                  transition duration-150 ease-in-out
+                  hover:bg-white hover:shadow-sm hover:border-gray-200">
+    <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
+    <p className="text-lg font-semibold text-green-600">Active</p>
+  </div>
+</>
     </>
   )}
           </div>
@@ -338,7 +349,7 @@ const EnrollmentRequests = () => {
         </div>
 
         {/* Pending Request Banner */}
-        {pendingRequests.hasAnyPending && (
+        {/* {pendingRequests.hasAnyPending && (
           <div className="bg-blue-50 border-t border-blue-100 p-4">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
@@ -374,14 +385,14 @@ const EnrollmentRequests = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Batch Details Section */}
       {studentData?.enrolled_batch && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+          <div className="p-4">
+            <h2 className="text-xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>

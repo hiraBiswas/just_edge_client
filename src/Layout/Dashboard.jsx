@@ -180,30 +180,14 @@ const Dashboard = () => {
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
                   <NavLink
                     className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/updateProfile"
+                    to="/dashboard/profileAndDocument"
                   >
                     <ImProfile className="text-xl text-white hover:text-blue-600" />{" "}
-                    Update Profile
+                    Profile and Document Update
                   </NavLink>
                 </li>
-                <li className="hover:text-sky-200 flex flex-row py-2">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/onlineProfile"
-                  >
-                    <AiOutlineProfile className="text-xl text-white hover:text-blue-600" />{" "}
-                    Online Profile
-                  </NavLink>
-                </li>
-                <li className="hover:text-sky-200 flex flex-row py-2 pb-3">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/pendingRequest"
-                  >
-                    <MdPending className="text-xl text-white hover:text-blue-600" />{" "}
-                    Pending Request
-                  </NavLink>
-                </li>
+          
+            
               </>
             )}
 

@@ -13,7 +13,7 @@ const StudentDashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full  p-4 md:p-6">
+    <div className="min-h-screen w-[1100px]">
       {isLoading ? (
         <div className="flex items-center justify-center h-full ">
           <span className="loading loading-ring loading-xl text-primary"></span>
@@ -22,7 +22,7 @@ const StudentDashboard = () => {
       ) : (
         <>
           {/* Progress Steps */}
-          <div className="max-w-4xl mx-auto mb-8 p-4 bg-white rounded-lg shadow-sm">
+          <div className="w-full mx-auto mb-2 mt-6 bg-white rounded-lg shadow-sm">
             <ul className="steps w-full">
               <li className="step step-primary">Enrollment</li>
               <li className="step step-primary">Payment</li>

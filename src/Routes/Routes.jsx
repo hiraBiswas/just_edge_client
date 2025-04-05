@@ -39,6 +39,7 @@ import BatchEnrollment from "../Pages/Dashboard/StudentDashboard/BatchEnrollment
 import AdminDashboard from "../Pages/Dashboard/AdminHome/AdminDashboard";
 import UpdateBatch from "../Pages/Dashboard/BatchManagement/UpdateBatch";
 import ChangeRequests from "../Pages/Dashboard/CourseAssignment/ChangeRequests/ChangeRequests";
+import ProfileAndDocumentUpdate from "../Pages/Dashboard/StudentDashboard/ProfileAndDocumentUpdate";
 
 export const router = createBrowserRouter([
   {
@@ -184,19 +185,11 @@ export const router = createBrowserRouter([
         },
 
 
-        {
-            path: 'updateProfile',
-            element: <UpdateProfile></UpdateProfile>
-        },
+      
 
         {
-            path: 'onlineProfile',
-            element: <OnlineProfile></OnlineProfile>
-        },
-
-        {
-            path: 'onlineProfile',
-            element: <OnlineProfile></OnlineProfile>
+            path: 'profileAndDocument',
+            element: <ProfileAndDocumentUpdate></ProfileAndDocumentUpdate>
         },
 
 
