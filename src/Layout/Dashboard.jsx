@@ -129,7 +129,7 @@ const Dashboard = () => {
                   <NavLink
                     className="hover:text-sky-200 flex justify-center items-center gap-3"
                     end
-                    to="/dashboard"
+                    to="/dashboard/instructorDashboard"
                   >
                     <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
                     Dashboard
@@ -157,7 +157,7 @@ const Dashboard = () => {
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
                   <NavLink
                     className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/result"
+                    to="/dashboard/resultUpload"
                   >
                     <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
                     Result
@@ -184,6 +184,16 @@ const Dashboard = () => {
                   >
                     <ImProfile className="text-xl text-white hover:text-blue-600" />{" "}
                     Profile and Document Update
+                  </NavLink>
+                </li>
+
+                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
+                  <NavLink
+                    className="hover:text-sky-200 flex justify-center items-center gap-3"
+                    to="/dashboard/resultDisplay"
+                  >
+                    <ImProfile className="text-xl text-white hover:text-blue-600" />{" "}
+                    Result
                   </NavLink>
                 </li>
           

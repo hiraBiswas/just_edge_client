@@ -159,61 +159,60 @@ const UploadResult = () => {
 
 
 const handleManualSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    if (!batchId || selectedStudent === "") {
-      toast.error("Please select a batch and student.");
+  if (!batchId || selectedStudent === "") {
+    toast.error("Please select a batch and student.");
+    setLoading(false);
+    return;
+  }
+
+  const formData = new FormData(e.target);
+  const formValues = Object.fromEntries(formData.entries());
+
+  // Create result object in the format backend expects
+  const result = {
+    studentID: selectedStudent,
+    Mid_Term: parseInt(formValues["Mid Term"]) || null,
+    Project: parseInt(formValues["Project"]) || null,
+    Assignment: parseInt(formValues["Assignment"]) || null,
+    Final_Exam: parseInt(formValues["Final Exam"]) || null,
+    Attendance: parseInt(formValues["Attendance"]) || null,
+  };
+
+  try {
+    // Check if results already exist for the student
+    const existingResults = await axiosSecure.get(
+      `/results/checkExisting?batchId=${batchId}&studentID=${selectedStudent}`
+    );
+    
+    if (existingResults.data.length > 0) {
+      toast.error("Result already exists for this student in the selected batch. Please edit instead.");
       setLoading(false);
       return;
     }
 
-    const formData = new FormData(e.target);
-
-    // Collect all exam types dynamically
-    const results = examTypes.map((exam) => {
-      const marks = formData.get(exam.type);
-      return {
-        studentID: selectedStudent,
-        examType:
-          exam.type === "Final Project"
-            ? "Project"
-            : exam.type.replace(/\s+/g, "_"), // Fix Key Mapping
-        marks: parseInt(marks) || 0,
-      };
-    });
-
-    try {
-      // Check if results already exist for the student
-      const existingResults = await axiosSecure.get(`/results/checkExisting?batchId=${batchId}&studentID=${selectedStudent}`);
-      
-      if (existingResults.data.length > 0) {
-        toast.error("Result already exists for this student in the selected batch. Please edit instead.");
-        setLoading(false);
-        return;
+    const response = await axiosSecure.post(
+      "/results/upload",
+      {
+        batchId,
+        results: [result], // Wrap in array to match backend expectation
+      },
+      {
+        headers: { "Content-Type": "application/json" },
       }
+    );
 
-      console.log("Sending data:", { batchId, results }); // Debug log
-
-      const response = await axiosSecure.post(
-        "/results/upload",
-        {
-          batchId,
-          results,
-        },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      toast.success("Result uploaded successfully!");
-      queryClient.invalidateQueries(["results"]);
-      closeModal();
-    } catch (error) {
-      console.error("Upload Error:", error.response?.data);
-      toast.error(error.response?.data?.message || "Failed to upload result.");
-    }
+    toast.success("Result uploaded successfully!");
+    queryClient.invalidateQueries(["results"]);
+    closeModal();
+  } catch (error) {
+    console.error("Upload Error:", error.response?.data);
+    toast.error(error.response?.data?.message || "Failed to upload result.");
+  } finally {
     setLoading(false);
+  }
 };
 
 
@@ -347,19 +346,16 @@ const handleManualSubmit = async (e) => {
               {/* Exam Type Selection */}
 
               {examTypes.map((exam) => (
-                <div
-                  key={exam.id}
-                  className="my-2 flex justify-between gap-4 items-center"
-                >
-                  <label className="block text-md">{exam.type} Marks:</label>
-                  <input
-                    type="number"
-                    name={exam.type}
-                    className="input input-md input-bordered w-64"
-                    placeholder={`Enter ${exam.type} Marks`}
-                  />
-                </div>
-              ))}
+  <div key={exam.id} className="my-2 flex justify-between gap-4 items-center">
+    <label className="block text-md">{exam.type} Marks:</label>
+    <input
+      type="number"
+      name={exam.type} // This should match exactly with the exam.type
+      className="input input-md input-bordered w-64"
+      placeholder={`Enter ${exam.type} Marks`}
+    />
+  </div>
+))}
 
               <button
                 type="submit"

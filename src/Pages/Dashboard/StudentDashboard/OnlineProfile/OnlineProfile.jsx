@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { AuthContext } from "../../../../Providers/AuthProvider";
 import useAxiosSecure from "../../../../hooks/useAxiosSecure";
 
@@ -159,7 +159,7 @@ const OnlineProfile = () => {
                     </button>
                 </form>
             </div>
-            <ToastContainer position="bottom-center" autoClose={3000} />
+            <Toaster position="top-center" />
         </div>
     );
 };

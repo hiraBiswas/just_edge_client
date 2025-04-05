@@ -40,6 +40,7 @@ import AdminDashboard from "../Pages/Dashboard/AdminHome/AdminDashboard";
 import UpdateBatch from "../Pages/Dashboard/BatchManagement/UpdateBatch";
 import ChangeRequests from "../Pages/Dashboard/CourseAssignment/ChangeRequests/ChangeRequests";
 import ProfileAndDocumentUpdate from "../Pages/Dashboard/StudentDashboard/ProfileAndDocumentUpdate";
+import ResultDisplay from "../Pages/Dashboard/StudentDashboard/ResultDisplay";
 
 export const router = createBrowserRouter([
   {
@@ -175,7 +176,7 @@ export const router = createBrowserRouter([
         },
 
         {
-            path: 'result',
+            path: 'resultUpload',
             element: <InstructorRoute><ResultTable></ResultTable></InstructorRoute>
         },
 
@@ -184,12 +185,14 @@ export const router = createBrowserRouter([
             element: <StudentDashboard></StudentDashboard>
         },
 
-
-      
-
         {
             path: 'profileAndDocument',
             element: <ProfileAndDocumentUpdate></ProfileAndDocumentUpdate>
+        },
+
+        {
+            path: 'resultDisplay',
+            element:<ResultDisplay></ResultDisplay>
         },
 
 

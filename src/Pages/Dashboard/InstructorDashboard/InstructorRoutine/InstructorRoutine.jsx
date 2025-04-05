@@ -1,73 +1,73 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../../../../Providers/AuthProvider'; // Import AuthContext
-import useAxiosSecure from '../../../../hooks/useAxiosSecure'; // Import axiosSecure hook
+import { AuthContext } from '../../../../Providers/AuthProvider';
+import useAxiosSecure from '../../../../hooks/useAxiosSecure';
 
-// Function to convert 24-hour time format to 12-hour time format (AM/PM)
 const convertTo12HourFormat = (time) => {
   let [hours, minutes] = time.split(':');
   hours = parseInt(hours, 10);
   const suffix = hours >= 12 ? 'PM' : 'AM';
   if (hours > 12) hours -= 12;
-  if (hours === 0) hours = 12; // Handle midnight case
+  if (hours === 0) hours = 12;
   return `${hours}:${minutes} ${suffix}`;
 };
 
 const InstructorRoutine = () => {
-  const { user } = useContext(AuthContext); // Access the logged-in user from AuthContext
-  const [schedule, setSchedule] = useState(null);
-  const [batches, setBatches] = useState([]); // State to store batches data
+  const { user } = useContext(AuthContext);
+  const [schedules, setSchedules] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const axiosSecure = useAxiosSecure(); // Use axiosSecure for API calls
+  const axiosSecure = useAxiosSecure();
 
-  // Fetch instructor's ID and then schedule and batches data
   useEffect(() => { 
     if (!user || !user._id) {
-      setError("Instructor ID not found");
+      setError("User not logged in");
       setLoading(false);
       return;
     }
 
     const fetchData = async () => {
       try {
-        // Fetch all instructors and find the matching instructor
-        const instructorsResponse = await axiosSecure.get('/instructors');
-        const instructors = instructorsResponse.data;
+        // 1. Find the instructor's batches
+        const instructorsBatchesResponse = await axiosSecure.get('/instructors-batches');
+        const instructorBatches = instructorsBatchesResponse.data.filter(
+          item => item.instructorId === user._id
+        );
 
-        // Match instructor by userId
-        const instructor = instructors.find(inst => inst.userId === user._id);
-
-        if (!instructor) {
-          setError("Instructor not found");
+        if (!instructorBatches || instructorBatches.length === 0) {
+          setError("No batches assigned to this instructor");
           setLoading(false);
           return;
         }
 
-        // Fetch instructor's schedule using their _id
-        const scheduleResponse = await axiosSecure.get(`/instructors/${instructor._id}/classes`);
-        const scheduleData = scheduleResponse.data;
+        // 2. Get all batch IDs for this instructor
+        const batchIds = instructorBatches.map(item => item.batchId);
 
-        if (scheduleData.success) {
-          setSchedule(scheduleData.schedule); // Set the schedule in state
-        } else {
-          setError(scheduleData.message || 'Something went wrong');
-        }
+        // 3. Fetch routine for each batch
+        const routinePromises = batchIds.map(batchId => 
+          axiosSecure.get(`/routine/${batchId}`)
+        );
+        
+        const routineResponses = await Promise.all(routinePromises);
+        const allRoutines = routineResponses.flatMap(response => response.data);
+        
+        setSchedules(allRoutines);
 
-        // Fetch batches to map batchId to batchName
+        // 4. Fetch batch names
         const batchesResponse = await axiosSecure.get('/batches');
-        if (batchesResponse.data) {
-          setBatches(batchesResponse.data); // Set the batches in state
-        }
+        setBatches(batchesResponse.data);
+
       } catch (err) {
-        setError(err.message);
+        setError(err.response?.data?.message || err.message || "Error fetching data");
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [user, axiosSecure]); 
-  
+  }, [user, axiosSecure]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -75,74 +75,87 @@ const InstructorRoutine = () => {
       </div>
     );
   }
-  // Show error state
+
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="alert alert-error max-w-md mx-auto mt-10">
+        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Error: {error}</span>
+      </div>
+    );
   }
 
   // Map batchId to batchName
-  const mapBatchIdToName = (batchId) => {
+  const getBatchName = (batchId) => {
     const batch = batches.find(b => b._id === batchId);
     return batch ? batch.batchName : "Unknown Batch";
   };
 
-  // Group the schedule data by batchId
-  const groupedSchedule = {}; // Grouped schedule by batchId
-
-  Object.entries(schedule).forEach(([dayTime, sessions]) => {
-    sessions.forEach(session => {
-      const batchName = mapBatchIdToName(session.batchId);
-      if (!groupedSchedule[batchName]) {
-        groupedSchedule[batchName] = [];
-      }
-      groupedSchedule[batchName].push({
-        day: session.day,
-        startTime: session.startTime,
-        endTime: session.endTime,
-        batchId: session.batchId
-      });
-    });
-  });
+  // Group schedules by batchId
+  const groupedSchedules = schedules.reduce((acc, schedule) => {
+    const batchName = getBatchName(schedule.batchId);
+    if (!acc[batchName]) {
+      acc[batchName] = [];
+    }
+    acc[batchName].push(schedule);
+    return acc;
+  }, {});
 
   return (
-    <div className="overflow-x-auto w-[1100px] mt-20">
-      <h2 className='text-xl font-bold mb-4'>Assigned Course Schedule</h2>
-      <table className="table-auto w-full border-collapse border border-gray-200">
-        {/* Head */}
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-300 px-4 py-2">Index</th>
-            <th className="border border-gray-300 px-4 py-2">Batch Name</th>
-            <th className="border border-gray-300 px-4 py-2">Day</th>
-            <th className="border border-gray-300 px-4 py-2">Start Time</th>
-            <th className="border border-gray-300 px-4 py-2">End Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* Table rows */}
-          {Object.entries(groupedSchedule).map(([batchName, sessions], index) => (
-            <React.Fragment key={batchName}>
-              {/* Batch Name Row */}
+    <div className="w-[1100px] mx-auto mt-20 p-4">
+      <h2 className="text-2xl font-bold mb-6">Assigned Course Schedule</h2>
+      
+      {Object.keys(groupedSchedules).length === 0 ? (
+        <div className="alert alert-info">
+          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>No schedules assigned yet</span>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="table w-full border-collapse border border-gray-200">
+            <thead className="bg-gray-100">
               <tr>
-                <th rowSpan={sessions.length} className="border border-gray-300 px-4 py-2">{index + 1}</th> {/* Index */}
-                <td rowSpan={sessions.length} className="border border-gray-300 px-4 py-2">{batchName}</td> {/* Batch Name */}
-                {/* First session's Day, Time */}
-                <td className="border border-gray-300 px-4 py-2">{sessions[0].day}</td>
-                <td className="border border-gray-300 px-4 py-2">{convertTo12HourFormat(sessions[0].startTime)}</td>
-                <td className="border border-gray-300 px-4 py-2">{convertTo12HourFormat(sessions[0].endTime)}</td>
+                <th className="border border-gray-300 px-4 py-2">#</th>
+                <th className="border border-gray-300 px-4 py-2">Batch</th>
+                <th className="border border-gray-300 px-4 py-2">Day</th>
+                <th className="border border-gray-300 px-4 py-2">Start Time</th>
+                <th className="border border-gray-300 px-4 py-2">End Time</th>
               </tr>
-              {/* Additional sessions for the same batch */}
-              {sessions.slice(1).map((session, subIndex) => (
-                <tr key={subIndex}>
-                  <td className="border border-gray-300 px-4 py-2">{session.day}</td>
-                  <td className="border border-gray-300 px-4 py-2">{convertTo12HourFormat(session.startTime)}</td>
-                  <td className="border border-gray-300 px-4 py-2">{convertTo12HourFormat(session.endTime)}</td>
-                </tr>
+            </thead>
+            <tbody>
+              {Object.entries(groupedSchedules).map(([batchName, batchSchedules], index) => (
+                <React.Fragment key={batchName}>
+                  {batchSchedules.map((schedule, idx) => (
+                    <tr key={`${batchName}-${idx}`}>
+                      {idx === 0 && (
+                        <>
+                          <td rowSpan={batchSchedules.length} className="border border-gray-300 px-4 py-2">
+                            {index + 1}
+                          </td>
+                          <td rowSpan={batchSchedules.length} className="border border-gray-300 px-4 py-2">
+                            {batchName}
+                          </td>
+                        </>
+                      )}
+                      <td className="border border-gray-300 px-4 py-2">{schedule.day}</td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {convertTo12HourFormat(schedule.startTime)}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {convertTo12HourFormat(schedule.endTime)}
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

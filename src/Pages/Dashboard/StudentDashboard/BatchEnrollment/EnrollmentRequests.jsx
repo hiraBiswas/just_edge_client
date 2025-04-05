@@ -163,11 +163,17 @@ const EnrollmentRequests = () => {
   const enrolledBatchName =
     batches.find((batch) => batch._id === studentData?.enrolled_batch)
       ?.batchName || "N/A";
+
   
   // Get the course name for the enrolled batch
   const enrolledCourseName = studentData?.enrolled_batch 
     ? courses.find(course => course._id === batches.find(batch => batch._id === studentData.enrolled_batch)?.course_id)?.courseName 
     : "N/A";
+
+    
+    console.log(enrolledBatchName);
+    console.log(enrolledCourseName);
+    console.log(preferredCourseName);
 
   const handleCourseChangeRequest = () => {
     if (!selectedCourse) {
