@@ -41,6 +41,7 @@ import UpdateBatch from "../Pages/Dashboard/BatchManagement/UpdateBatch";
 import ChangeRequests from "../Pages/Dashboard/CourseAssignment/ChangeRequests/ChangeRequests";
 import ProfileAndDocumentUpdate from "../Pages/Dashboard/StudentDashboard/ProfileAndDocumentUpdate";
 import ResultDisplay from "../Pages/Dashboard/StudentDashboard/ResultDisplay";
+import BatchInfo from "../Pages/Dashboard/InstructorDashboard/BatchInfo";
 
 export const router = createBrowserRouter([
   {
@@ -161,8 +162,8 @@ export const router = createBrowserRouter([
         },
 
         {
-            path: 'instructorRoutine',
-            element: <InstructorRoute><InstructorRoutine></InstructorRoutine></InstructorRoute>
+            path: 'batch-details/:id',
+            element: <InstructorRoute><BatchInfo></BatchInfo></InstructorRoute>
         },
 
         {

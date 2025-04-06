@@ -9,10 +9,12 @@ import {
   Tab,
   TabPanel,
 } from "@material-tailwind/react";
+import { useNavigate } from "react-router-dom";
 
 const InstructorDashboard = () => {
   const { user, loading } = useContext(AuthContext);
   const axiosSecure = useAxiosSecure();
+  const navigate = useNavigate();
   const [instructorData, setInstructorData] = useState(null);
   const [assignedBatches, setAssignedBatches] = useState([]);
   const [toggleStates, setToggleStates] = useState({});
@@ -361,6 +363,7 @@ const InstructorDashboard = () => {
                             <div
                               key={batch._id}
                               className="border rounded-lg p-4 hover:shadow-md transition border-gray-100"
+                              onClick={() => navigate(`/dashboard/batch-details/${batch._id}`)}
                             >
                               <div className="flex justify-between items-start gap-3">
                                 <div className="flex-1">
@@ -383,7 +386,7 @@ const InstructorDashboard = () => {
                                   </p>
                                 </div>
                                 {batch.status === "Ongoing" && (
-                                  <label className="inline-flex items-center cursor-pointer">
+                                  <label className="inline-flex items-center cursor-pointer"         onClick={(e) => e.stopPropagation()} >
                                     <input
                                       type="checkbox"
                                       className="toggle toggle-primary toggle-sm"
