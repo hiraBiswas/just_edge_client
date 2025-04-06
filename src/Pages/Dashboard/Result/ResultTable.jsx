@@ -13,7 +13,6 @@ import {
   PDFDownloadLink,
 } from "@react-pdf/renderer";
 
-// Styles for the PDF
 const styles = StyleSheet.create({
   page: {
     flexDirection: "column",
@@ -21,46 +20,56 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   headerSection: {
-    marginBottom: 20,
-    borderBottom: 1,
-    paddingBottom: 10,
+    marginBottom: 15,
+    paddingBottom: 5,
   },
   title: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 3,
+  },
+
+  performance: {
+    fontSize: 7, // Match with table header
+    fontWeight: "bold", // Valid value
+    textAlign: "left",
+    marginBottom: 1,
+  },
+  
+
+  subtitle: {
+    fontSize: 10,
     textAlign: "center",
     marginBottom: 5,
   },
-  subtitle: {
-    fontSize: 12,
-    textAlign: "center",
-    marginBottom: 10,
-  },
   dateText: {
-    fontSize: 10,
+    fontSize: 8,
     textAlign: "right",
   },
+
+  // ✅ Table
   table: {
     width: "100%",
     borderStyle: "solid",
     borderWidth: 1,
     borderColor: "#000000",
-    marginVertical: 15,
+    marginVertical: 10,
   },
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 0.5,
     borderBottomColor: "#000000",
-    minHeight: 25,
+    minHeight: 20,
   },
   tableHeader: {
     backgroundColor: "#f0f0f0",
   },
   tableCell: {
-    padding: 5,
+    padding: 3,
     flex: 1,
     textAlign: "center",
-    fontSize: 9,
+    fontSize: 7,
     borderRightWidth: 0.5,
     borderRightColor: "#000000",
     justifyContent: "center",
@@ -69,52 +78,61 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   narrowCell: {
-    flex: 0.8,
+    flex: 0.5,
   },
   wideCell: {
-    flex: 1.5,
+    flex: 1.2,
   },
+
+  // ✅ Clean footer (removed border)
   footer: {
     textAlign: "center",
-    marginTop: 20,
-    fontSize: 9,
-    color: "#555555",
-    borderTopWidth: 0.5,
-    borderTopColor: "#555555",
-    paddingTop: 10,
-  },
-  summarySection: {
     marginTop: 15,
+    fontSize: 7,
+    color: "#555555",
+    paddingTop: 5,
+  },
+
+  // ✅ Updated summary section (no box borders)
+  summarySection: {
+    marginTop: 10,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
   },
   summaryBox: {
-    borderWidth: 0.5,
-    borderColor: "#000000",
-    padding: 8,
-    width: "30%",
+    padding: 0, // No padding box
+    width: "45%",
   },
   summaryTitle: {
-    fontSize: 9,
+    fontSize: 7,
     fontWeight: "bold",
-    marginBottom: 5,
+    marginBottom: 1,
+    textDecoration: "underline",
+    textAlign: "center",
   },
   summaryContent: {
-    fontSize: 9,
-  },
-  watermark: {
-    position: "absolute",
-    fontSize: 60,
-    color: "rgba(200, 200, 200, 0.2)",
-    transform: "rotate(-45deg)",
-    left: 100,
-    top: 300,
+    fontSize: 6,
+    marginBottom: 1,
+    textAlign: "center",
   },
 });
 
-// PDF Document component
+
+// In the PDF component, update the header row to:
+<View style={[styles.tableRow, styles.tableHeader]}>
+  <Text style={[styles.tableCell, styles.header, styles.wideCell]}>Student Name</Text>
+  <Text style={[styles.tableCell, styles.header]}>Student ID</Text>
+  <Text style={[styles.tableCell, styles.header]}>Assignment</Text>
+  <Text style={[styles.tableCell, styles.header]}>Mid Term</Text>
+  <Text style={[styles.tableCell, styles.header]}>Project</Text>
+  <Text style={[styles.tableCell, styles.header]}>Final Exam</Text>
+  <Text style={[styles.tableCell, styles.header]}>Attendance</Text>
+  <Text style={[styles.tableCell, styles.header]}>Total</Text>
+  <Text style={[styles.tableCell, styles.header]}>Status</Text>
+</View>
+
+
 const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
-  // Calculate summary statistics
   const totalStudents = students.length;
   const studentsWithResults = students.filter((student) =>
     allResults.some((result) => result.studentID === student.studentID)
@@ -142,7 +160,6 @@ const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
       ? ((passCount / studentsWithResults) * 100).toFixed(1)
       : 0;
 
-  // Get current date
   const currentDate = new Date().toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -152,138 +169,76 @@ const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
   return (
     <Document>
       <Page style={styles.page}>
-        {/* Watermark */}
-        {/* <Text style={styles.watermark}>CONFIDENTIAL</Text> */}
-
-        {/* Header Section */}
+        {/* Header */}
         <View style={styles.headerSection}>
-          <Text style={styles.title}>RESULT SUMMARY</Text>
+          <Text style={styles.title}>Result Summary</Text>
           <Text style={styles.subtitle}>Batch: {selectedBatchName}</Text>
           <Text style={styles.dateText}>Report Date: {currentDate}</Text>
         </View>
 
+        {/* Summary Info */}
+        <View >
+          <Text style={styles.performance}>Total Students: {totalStudents}</Text>
+          <Text style={styles.performance}>Pass: {passCount}</Text>
+          <Text style={styles.performance}>Fail: {failCount}</Text>
+      
+        </View>
+
         {/* Table */}
         <View style={styles.table}>
-          {/* Table Header */}
           <View style={[styles.tableRow, styles.tableHeader]}>
-            <Text style={[styles.tableCell, styles.header, styles.narrowCell]}>
-              SI
-            </Text>
-            <Text style={[styles.tableCell, styles.header, styles.wideCell]}>
-              Student{"\n"}Name
-            </Text>
+            <Text style={[styles.tableCell, styles.header, styles.wideCell]}>Student Name</Text>
             <Text style={[styles.tableCell, styles.header]}>Student ID</Text>
             <Text style={[styles.tableCell, styles.header]}>Assignment</Text>
-            <Text style={[styles.tableCell, styles.header]}>Mid{"\n"}Term</Text>
+            <Text style={[styles.tableCell, styles.header]}>Mid Term</Text>
             <Text style={[styles.tableCell, styles.header]}>Project</Text>
-            <Text style={[styles.tableCell, styles.header]}>
-              Final{"\n"}Exam
-            </Text>
+            <Text style={[styles.tableCell, styles.header]}>Final Exam</Text>
             <Text style={[styles.tableCell, styles.header]}>Attendance</Text>
             <Text style={[styles.tableCell, styles.header]}>Total</Text>
             <Text style={[styles.tableCell, styles.header]}>Status</Text>
           </View>
 
-          {/* Table Rows */}
-          {students.map((student, index) => {
-            const studentResults = allResults.find(
-              (result) => result.studentID === student.studentID
-            );
+          {students.map((student) => {
+            const result = allResults.find(r => r.studentID === student.studentID);
 
-            const assignmentMarks = studentResults?.Assignment ?? "-";
-            const midTermMarks = studentResults?.Mid_Term ?? "-";
-            const projectMarks = studentResults?.Project ?? "-";
-            const finalExamMarks = studentResults?.Final_Exam ?? "-";
-            const attendanceMarks = studentResults?.Attendance ?? "-";
+            const assignment = result?.Assignment ?? "-";
+            const midTerm = result?.Mid_Term ?? "-";
+            const project = result?.Project ?? "-";
+            const finalExam = result?.Final_Exam ?? "-";
+            const attendance = result?.Attendance ?? "-";
 
             const total =
-              assignmentMarks !== "-" &&
-              midTermMarks !== "-" &&
-              projectMarks !== "-" &&
-              finalExamMarks !== "-" &&
-              attendanceMarks !== "-"
-                ? Number(assignmentMarks) +
-                  Number(midTermMarks) +
-                  Number(projectMarks) +
-                  Number(finalExamMarks) +
-                  Number(attendanceMarks)
+              assignment !== "-" &&
+              midTerm !== "-" &&
+              project !== "-" &&
+              finalExam !== "-" &&
+              attendance !== "-"
+                ? Number(assignment) + Number(midTerm) + Number(project) + Number(finalExam) + Number(attendance)
                 : "-";
 
             const status =
-              total !== "-" && total >= 40
-                ? "Pass"
-                : total !== "-"
-                ? "Fail"
-                : "N/A";
-
-            // Apply background color based on status
-            const statusStyle =
-              status === "Pass"
-                ? { backgroundColor: "rgba(220, 255, 220, 0.5)" }
-                : status === "Fail"
-                ? { backgroundColor: "rgba(255, 220, 220, 0.5)" }
-                : {};
+              total !== "-" && total >= 40 ? "Pass" : total !== "-" ? "Fail" : "N/A";
 
             return (
               <View key={student.studentID} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.narrowCell]}>
-                  {index + 1}
-                </Text>
-                <Text
-                  style={[
-                    styles.tableCell,
-                    styles.wideCell,
-                    { textAlign: "left" },
-                  ]}
-                >
-                  {student.name}
-                </Text>
+                <Text style={[styles.tableCell, styles.wideCell]}>{student.name}</Text>
                 <Text style={styles.tableCell}>{student.studentID}</Text>
-                <Text style={styles.tableCell}>{assignmentMarks}</Text>
-                <Text style={styles.tableCell}>{midTermMarks}</Text>
-                <Text style={styles.tableCell}>{projectMarks}</Text>
-                <Text style={styles.tableCell}>{finalExamMarks}</Text>
-                <Text style={styles.tableCell}>{attendanceMarks}</Text>
-                <Text style={styles.tableCell}>
-                  {total !== "-" ? total : "N/A"}
-                </Text>
-                <Text style={[styles.tableCell, statusStyle]}>{status}</Text>
+                <Text style={styles.tableCell}>{assignment}</Text>
+                <Text style={styles.tableCell}>{midTerm}</Text>
+                <Text style={styles.tableCell}>{project}</Text>
+                <Text style={styles.tableCell}>{finalExam}</Text>
+                <Text style={styles.tableCell}>{attendance}</Text>
+                <Text style={styles.tableCell}>{total !== "-" ? total : "N/A"}</Text>
+                <Text style={styles.tableCell}>{status}</Text>
               </View>
             );
           })}
         </View>
-
-        {/* Summary Section */}
-        <View style={styles.summarySection}>
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryTitle}>BATCH SUMMARY</Text>
-            <Text style={styles.summaryContent}>
-              Total Students: {totalStudents}
-            </Text>
-            <Text style={styles.summaryContent}>
-              Evaluated: {studentsWithResults}
-            </Text>
-            <Text style={styles.summaryContent}>
-              Pending: {totalStudents - studentsWithResults}
-            </Text>
-          </View>
-
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryTitle}>PERFORMANCE</Text>
-            <Text style={styles.summaryContent}>Pass: {passCount}</Text>
-            <Text style={styles.summaryContent}>Fail: {failCount}</Text>
-            <Text style={styles.summaryContent}>Success Rate: {passRate}%</Text>
-          </View>
-        </View>
-
-        {/* Footer */}
-        {/* <Text style={styles.footer}>
-          This is an official document generated by JUST EDGE • Confidential and Private
-        </Text> */}
       </Page>
     </Document>
   );
 };
+
 
 const ResultTable = () => {
   const axiosSecure = useAxiosSecure();
@@ -467,7 +422,7 @@ const ResultTable = () => {
   }
 
   return (
-    <div className="p-6 bg-white w-[1100px] mx-auto mt-5">
+    <div className="p-6 bg-base-100 w-[1100px] mx-auto mt-5">
       {/* Upload Button with Aligned Text */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Upload or View Marks</h2>

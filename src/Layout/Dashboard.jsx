@@ -135,24 +135,7 @@ const Dashboard = () => {
                     Dashboard
                   </NavLink>
                 </li>
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/instructorRoutine"
-                  >
-                    <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
-                    Routine
-                  </NavLink>
-                </li>
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/classes"
-                  >
-                    <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
-                    Classes
-                  </NavLink>
-                </li>
+             
 
                 <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
                   <NavLink
