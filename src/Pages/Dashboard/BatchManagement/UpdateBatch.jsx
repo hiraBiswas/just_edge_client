@@ -130,7 +130,7 @@ const UpdateBatch = ({ batchId, onBatchUpdated }) => {
             className="input input-bordered w-full"
           >
             <option value="Soon to be started">Upcoming</option>
-            <option value="On going">On going</option>
+            <option value="Ongoing">On going</option>
             <option value="Completed">Completed</option>
           </select>
         </div>
