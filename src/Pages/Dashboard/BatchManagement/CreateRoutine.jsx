@@ -1,250 +1,55 @@
 import React, { useState, useEffect } from "react";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { toast as parentToast } from "react-toastify"; // Parent toast for success message
+import { toast as parentToast } from "react-toastify";
 import { Toaster, toast } from "react-hot-toast";
 
 // Helper: Convert time string to minutes for easier comparison
 const timeToMinutes = (timeStr) => {
+  console.log(`Converting time string to minutes: ${timeStr}`);
   const [hours, minutes] = timeStr.split(":").map(Number);
   return hours * 60 + minutes;
 };
 
 // Helper: Check if two time ranges overlap
 const hasTimeOverlap = (start1, end1, start2, end2) => {
+  console.log(
+    `Checking time overlap between ${start1}-${end1} and ${start2}-${end2}`
+  );
   const start1Mins = timeToMinutes(start1);
   const end1Mins = timeToMinutes(end1);
   const start2Mins = timeToMinutes(start2);
   const end2Mins = timeToMinutes(end2);
 
-  return (
+  const result =
     (start1Mins >= start2Mins && start1Mins < end2Mins) ||
     (end1Mins > start2Mins && end1Mins <= end2Mins) ||
     (start1Mins <= start2Mins && end1Mins >= end2Mins) ||
-    (start2Mins <= start1Mins && end2Mins >= end1Mins)
-  );
+    (start2Mins <= start1Mins && end2Mins >= end1Mins);
+
+  console.log(`Overlap result: ${result}`);
+  return result;
 };
 
 const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
+  console.log("CreateRoutine component rendering with batchId:", batchId);
+
   const [batchName, setBatchName] = useState("");
+  const [existingSchedules, setExistingSchedules] = useState({});
   const [numDays, setNumDays] = useState(2);
   const [schedule, setSchedule] = useState(
-    Array.from({ length: numDays }, () => ({ day: "", startTime: "", endTime: "" }))
+    Array.from({ length: numDays }, () => ({
+      day: "",
+      startTime: "",
+      endTime: "",
+    }))
   );
   const [loading, setLoading] = useState(false);
   const [instructorIds, setInstructorIds] = useState([]);
+  const [errors, setErrors] = useState([]);
+  const [instructorConflicts, setInstructorConflicts] = useState([]);
   const axiosSecure = useAxiosSecure();
 
-  // Fetch batch data and instructor IDs
-  useEffect(() => {
-    const fetchBatchData = async () => {
-      try {
-        const response = await axiosSecure.get(`/batches/${batchId}`);
-        const batchData = response.data;
-        setBatchName(batchData.batchName);
-        setInstructorIds(batchData.instructorIds);
-      } catch (error) {
-        console.error("Error fetching batch data:", error);
-      }
-    };
-
-    fetchBatchData();
-  }, [batchId, axiosSecure]);
-
-  // Handle change in the number of days
-  const handleDaysChange = (event) => {
-    const value = parseInt(event.target.value, 10);
-    setNumDays(value);
-    setSchedule(
-      Array.from({ length: value }, () => ({ day: "", startTime: "", endTime: "" }))
-    );
-  };
-
-  // Check for duplicate days
-  const isDuplicateDay = (day, index) => {
-    return schedule.some((entry, i) => entry.day === day && i !== index);
-  };
-
-  const validateSchedule = async (currentSchedule = schedule) => {
-    try {
-      const response = await axiosSecure.get(`/instructors/${instructorIds[0]}/classes`);
-      const instructorSchedule = response.data.schedule;
-      const conflicts = [];
-  
-      currentSchedule.forEach((newClass) => {
-        const { day: newDay, startTime: newStartTime, endTime: newEndTime } = newClass;
-  
-        if (!newDay || !newStartTime || !newEndTime) return;
-  
-        // Get all existing classes for the current day
-        const existingClassesOnDay = Object.entries(instructorSchedule).filter(([key]) =>
-          key.startsWith(newDay)
-        );
-  
-        // Check time conflicts with existing classes
-        existingClassesOnDay.forEach(([timeKey, classDetails]) => {
-          const [existingStartTime, existingEndTime] = timeKey
-            .replace(`${newDay} `, "")
-            .split(" - ");
-  
-          if (hasTimeOverlap(newStartTime, newEndTime, existingStartTime, existingEndTime)) {
-            conflicts.push({
-              message: `Time conflict on ${newDay}.Adjust and try again`,
-              day: newDay,
-              timeRange: `${newStartTime}-${newEndTime}`,
-              conflictsWith: `${existingStartTime}-${existingEndTime}`,
-            });
-          }
-        });
-      });
-  
-      console.log("Validation results:", { currentSchedule, conflicts });
-      return conflicts;
-    } catch (error) {
-      console.error("Error validating schedule:", error);
-      toast.error("Error validating schedule.");
-      return [];
-    }
-  };
-
-  
-// Separate function to check maximum classes per day
-const checkMaxClassesPerDay = async (day) => {
-  try {
-    const response = await axiosSecure.get(`/instructors/${instructorIds[0]}/classes`);
-    const instructorSchedule = response.data.schedule;
-    
-    // Get all existing classes for the selected day
-    const existingClassesOnDay = Object.entries(instructorSchedule).filter(([key]) =>
-      key.startsWith(day)
-    );
-
-    if (existingClassesOnDay.length >= 2) {
-      return {
-        hasError: true,
-        message: `Instructor is not available ${day}.`
-      };
-    }
-
-    return {
-      hasError: false,
-      message: ''
-    };
-  } catch (error) {
-    console.error("Error checking max classes:", error);
-    return {
-      hasError: false,
-      message: ''
-    };
-  }
-};
-
-// Modified handleChange function
-const handleChange = async (index, field, value) => {
-  console.log(`Changing field ${field} for index ${index} to value:`, value);
-  const updatedSchedule = [...schedule];
-  updatedSchedule[index][field] = value;
-
-  let hasError = false;
-
-  // Check duplicate days
-  if (field === "day" && isDuplicateDay(value, index)) {
-    toast.error("Already has class on this day.");
-    console.log("Duplicate day detected:", value);
-    hasError = true;
-  }
-
-  // Check maximum number of classes per day immediately when day changes
-  if (field === "day") {
-    const maxClassesCheck = await checkMaxClassesPerDay(value);
-    if (maxClassesCheck.hasError) {
-      toast.error(maxClassesCheck.message);
-      console.log("Max classes limit exceeded for day:", value);
-      hasError = true;
-    }
-  }
-
-  // Check invalid end time
-  if (field === "endTime" && updatedSchedule[index].startTime) {
-    const startTime = updatedSchedule[index].startTime;
-    if (value < startTime) {
-      toast.error("End time must be after the start time.");
-      console.log("Invalid end time:", value, "is before start time:", startTime);
-      hasError = true;
-    }
-  }
-
-  // Validate time conflicts only when time fields change
-  if ((field === "startTime" || field === "endTime") && 
-      updatedSchedule[index].day && 
-      updatedSchedule[index].startTime && 
-      updatedSchedule[index].endTime) {
-    console.log("Validating time conflicts...");
-    const conflicts = await validateSchedule(updatedSchedule);
-    const timeConflicts = conflicts.filter(conflict => 
-      conflict.message.includes("Time conflict")
-    );
-    if (timeConflicts.length > 0) {
-      timeConflicts.forEach((conflict) => {
-        console.log("Time conflict detected:", conflict);
-        toast.error(conflict.message);
-      });
-      hasError = true;
-    }
-  }
-
-  if (!hasError) {
-    setSchedule(updatedSchedule);
-  }
-};
-  
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const conflicts = await validateSchedule();
-    if (conflicts.length > 0) {
-      conflicts.forEach((conflict) => toast.error(conflict.message));
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Modify the submission to create individual routine entries
-      const routineEntries = schedule.map(entry => ({
-        batchId,
-        day: entry.day,
-        startTime: entry.startTime,
-        endTime: entry.endTime
-      }));
-
-      // Send multiple entries to be saved individually
-      const responses = await Promise.all(
-        routineEntries.map(entry => axiosSecure.post("/routine", entry))
-      );
-
-      // Check if all entries were successfully created
-      const allSuccessful = responses.every(
-        response => response.status === 201 || response.status === 200
-      );
-
-      if (allSuccessful) {
-        parentToast.success("Routine created successfully!");
-        closeModal();
-        fetchRoutines();
-      } else {
-        toast.error("Failed to create routine. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error creating routine:", error);
-      toast.error(error.response?.data?.message || "Error creating routine.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
+  // Days of week array
   const daysOfWeek = [
     "Saturday",
     "Sunday",
@@ -255,23 +60,432 @@ const handleChange = async (index, field, value) => {
     "Friday",
   ];
 
-  const resetForm = () => {
-    setBatchName("");
-    setNumDays(2);
+  // Fetch batch data and instructor IDs
+  useEffect(() => {
+    console.log("useEffect for fetching batch data running");
+    const fetchBatchData = async () => {
+      try {
+        console.log("Fetching batch data for batchId:", batchId);
+        const response = await axiosSecure.get(`/batches/${batchId}`);
+        console.log("Batch data response:", response.data);
+        const batchData = response.data;
+        setBatchName(batchData.batchName);
+        setInstructorIds(batchData.instructorIds);
+        console.log("Set batchName to:", batchData.batchName);
+        console.log("Set instructorIds to:", batchData.instructorIds);
+      } catch (error) {
+        console.error("Error fetching batch data:", error);
+        toast.error("Failed to load batch data");
+      }
+    };
+
+    fetchBatchData();
+  }, [batchId, axiosSecure]);
+
+  // Handle change in the number of days
+  const handleDaysChange = (event) => {
+    const value = parseInt(event.target.value, 10);
+    console.log("Number of days changed to:", value);
+    setNumDays(value);
     setSchedule(
-      Array.from({ length: 2 }, () => ({ day: "", startTime: "", endTime: "" }))
+      Array.from({ length: value }, () => ({
+        day: "",
+        startTime: "",
+        endTime: "",
+      }))
     );
+    console.log("Reset schedule for", value, "days");
+    // Reset errors when changing days
+    setErrors([]);
+    setInstructorConflicts([]);
+    console.log("Cleared errors and conflicts");
   };
 
-  useEffect(() => {
-    return () => resetForm();
-  }, []);
+  // Perform local validation without API checks
+  const validateLocalSchedule = () => {
+    console.log("Running local schedule validation");
+    const newErrors = [];
 
-  
+    // Basic field validation
+    schedule.forEach(({ day, startTime, endTime }, index) => {
+      if (!day || !startTime || !endTime) {
+        console.log(`Validation error: Day ${index + 1} missing fields`);
+        newErrors.push(`Day ${index + 1}: All fields are required`);
+        return;
+      }
+
+      if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+        console.log(
+          `Validation error: Day ${index + 1} end time not after start time`
+        );
+        newErrors.push(`Day ${index + 1}: End time must be after start time`);
+      }
+    });
+
+    // Check duplicate days in current schedule
+    const days = schedule.map((s) => s.day).filter((d) => d !== "");
+    const uniqueDays = new Set(days);
+    if (uniqueDays.size !== days.length) {
+      console.log("Validation error: Duplicate days found");
+      newErrors.push("Cannot have multiple classes on the same day");
+    }
+
+    console.log("Local validation complete. Found errors:", newErrors);
+    return newErrors;
+  };
+
+  const checkInstructorAvailability = async () => {
+    console.log("Checking instructor availability");
+    const newConflicts = [];
+    const allExistingSchedules = {}; // Store existing schedules by day
+    const daysWithMaxClasses = new Set(); // Track days that have max classes
+
+    try {
+      // Check each instructor
+      for (const instructorId of instructorIds) {
+        console.log(`Checking availability for instructor ${instructorId}`);
+        const response = await axiosSecure.get(
+          `/instructors/${instructorId}/classes`
+        );
+
+        if (response.data.success) {
+          const instructorSchedule = response.data.schedule;
+          const classCounts = response.data.classCounts || {};
+
+          // Store existing schedule data
+          Object.entries(instructorSchedule).forEach(([day, classes]) => {
+            if (!allExistingSchedules[day]) {
+              allExistingSchedules[day] = [];
+            }
+            allExistingSchedules[day].push(...classes);
+          });
+
+          // Check each day in the schedule for conflicts
+          schedule.forEach((scheduleEntry) => {
+            const { day, startTime, endTime } = scheduleEntry;
+            if (!day || !startTime || !endTime) return;
+
+            // Check for max class limit first
+            if (classCounts[day] >= 2) {
+              const conflict = `Instructor already has maximum classes (2) on ${day}`;
+              if (!newConflicts.includes(conflict)) {
+                newConflicts.push(conflict);
+                daysWithMaxClasses.add(day);
+              }
+              return; // Skip time conflict check if max classes reached
+            }
+
+            // Check for time conflicts
+            if (instructorSchedule[day]) {
+              instructorSchedule[day].forEach((existingClass) => {
+                if (
+                  hasTimeOverlap(
+                    startTime,
+                    endTime,
+                    existingClass.startTime,
+                    existingClass.endTime
+                  )
+                ) {
+                  const conflict =
+                    `Instructor has time conflict on ${day}: ` +
+                    `Existing class at ${existingClass.startTime}-${existingClass.endTime} ` +
+                    `conflicts with ${startTime}-${endTime}`;
+
+                  if (!newConflicts.includes(conflict)) {
+                    newConflicts.push(conflict);
+                  }
+                }
+              });
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error checking instructor availability:", error);
+      newConflicts.push("Failed to verify instructor availability");
+    }
+
+    return { conflicts: newConflicts, existingSchedules: allExistingSchedules };
+  };
+
+  // Enhanced validation function
+  const validateAll = async () => {
+    console.log("Running complete validation");
+    const validationErrors = validateLocalSchedule();
+    setErrors(validationErrors);
+    console.log("Set validation errors:", validationErrors);
+
+    // Only check instructor conflicts if local validation passes
+    if (validationErrors.length === 0) {
+      console.log("Local validation passed, checking instructor conflicts");
+      const instructorConflicts = await checkInstructorAvailability();
+      setInstructorConflicts(instructorConflicts);
+      console.log("Set instructor conflicts:", instructorConflicts);
+
+      // Show toast for each conflict
+      instructorConflicts.forEach((conflict) => {
+        console.log("Showing conflict toast:", conflict);
+        toast.error(conflict, { duration: 5000 });
+      });
+
+      const isValid = instructorConflicts.length === 0;
+      console.log("Validation complete. Is valid?", isValid);
+      return isValid;
+    }
+
+    console.log("Validation failed due to local errors");
+    return false;
+  };
+
+  const handleChange = (index, field, value) => {
+    console.log(
+      `Handling change for index ${index}, field ${field}, value ${value}`
+    );
+    const updatedSchedule = [...schedule];
+
+    // Store previous value for comparison
+    const previousValue = updatedSchedule[index][field];
+    updatedSchedule[index][field] = value;
+
+    // Update the schedule state first for UI responsiveness
+    setSchedule(updatedSchedule);
+
+    // Validate day selection (only checking for duplicates and max classes)
+    if (field === "day" && value) {
+      // Check for duplicate days in current form immediately
+      const isDuplicateInForm = updatedSchedule.some(
+        (entry, i) => i !== index && entry.day === value && value !== ""
+      );
+
+      if (isDuplicateInForm) {
+        console.log("Duplicate day in form detected");
+        toast.error(`Already has a class scheduled for ${value} in this form`);
+        return;
+      }
+
+      // Check if day has reached maximum classes
+      const checkMaxClasses = async () => {
+        try {
+          if (instructorIds.length > 0) {
+            const instructorId = instructorIds[0];
+            const response = await axiosSecure.get(
+              `/instructors/${instructorId}/classes`
+            );
+
+            if (
+              response.data.success &&
+              response.data.classCounts[value] >= 2
+            ) {
+              console.log(`Maximum classes detected for ${value}`);
+              toast.error(
+                `Instructor already has maximum classes (2) on ${value}`
+              );
+            }
+          }
+        } catch (error) {
+          console.error("Error checking day class count:", error);
+        }
+      };
+
+      checkMaxClasses();
+    }
+
+    // Immediate time validation for both start and end time
+    if (
+      (field === "startTime" || field === "endTime") &&
+      updatedSchedule[index].day &&
+      updatedSchedule[index].startTime &&
+      updatedSchedule[index].endTime
+    ) {
+      // First check if end time is after start time
+      if (
+        timeToMinutes(updatedSchedule[index].endTime) <=
+        timeToMinutes(updatedSchedule[index].startTime)
+      ) {
+        console.log("End time validation failed");
+        toast.error("End time must be after start time");
+        return;
+      }
+
+      // Then check for time conflicts with existing classes
+      const checkTimeConflicts = async () => {
+        try {
+          if (instructorIds.length > 0) {
+            const day = updatedSchedule[index].day;
+            const startTime = updatedSchedule[index].startTime;
+            const endTime = updatedSchedule[index].endTime;
+
+            const instructorId = instructorIds[0];
+            const response = await axiosSecure.get(
+              `/instructors/${instructorId}/classes`
+            );
+
+            if (response.data.success && response.data.schedule[day]) {
+              const existingClasses = response.data.schedule[day];
+
+              for (const existingClass of existingClasses) {
+                if (
+                  hasTimeOverlap(
+                    startTime,
+                    endTime,
+                    existingClass.startTime,
+                    existingClass.endTime
+                  )
+                ) {
+                  console.log(`Time conflict detected on ${day}`);
+                  toast.error(
+                    `Instructor has time conflict on ${day}: ` +
+                      `Existing class at ${existingClass.startTime}-${existingClass.endTime} ` +
+                      `conflicts with ${startTime}-${endTime}`
+                  );
+                  break;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error checking time conflicts:", error);
+        }
+      };
+
+      checkTimeConflicts();
+    }
+  };
+
+  // Enhanced validation useEffect
+  useEffect(() => {
+    // Skip validation if the form is not substantially filled
+    const hasSubstantialData = schedule.some(
+      ({ day, startTime, endTime }) =>
+        day !== "" || startTime !== "" || endTime !== ""
+    );
+
+    if (!hasSubstantialData || instructorIds.length === 0) {
+      return;
+    }
+
+    console.log("Running validation useEffect");
+
+    // Keep track of whether the component is mounted
+    let isMounted = true;
+
+    const validateEntries = async () => {
+      // Run validation checks
+      const localErrors = validateLocalSchedule();
+
+      // Update errors only if component is still mounted
+      if (isMounted) {
+        setErrors(localErrors);
+
+        // Only check with API if there are no local errors and all required fields are filled
+        const allRequiredFieldsFilled = schedule.every(
+          ({ day, startTime, endTime }) => day && startTime && endTime
+        );
+
+        if (localErrors.length === 0 && allRequiredFieldsFilled) {
+          try {
+            const { conflicts, existingSchedules: schedules } =
+              await checkInstructorAvailability();
+
+            // Only update state if component is still mounted
+            if (isMounted) {
+              setInstructorConflicts(conflicts);
+              setExistingSchedules(schedules);
+
+              // Show toast notifications for conflicts
+              conflicts.forEach((conflict) => {
+                toast.error(conflict);
+              });
+            }
+          } catch (error) {
+            console.error("Error in validation:", error);
+            if (isMounted) {
+              toast.error("Failed to validate schedule");
+            }
+          }
+        }
+      }
+    };
+
+    // Use debounce to avoid excessive validation calls
+    const timeoutId = setTimeout(() => {
+      validateEntries();
+    }, 300); // Shorter timeout for better responsiveness
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [schedule, instructorIds]);
+
+  // Updated handleSubmit to prevent submission if there are errors
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log("Form submission started");
+    setLoading(true);
+    console.log("Set loading to true");
+
+    try {
+      // Perform full validation
+      console.log("Validating before submission");
+      const isValid = await validateAll();
+
+      if (!isValid) {
+        console.log("Validation failed, aborting submission");
+        setLoading(false);
+        return;
+      }
+
+      // Submit each schedule entry
+      console.log("Preparing submission promises");
+      const submissionPromises = schedule.map((entry) => {
+        console.log("Submitting entry:", entry);
+        return axiosSecure.post("/routine", {
+          batchId,
+          day: entry.day,
+          startTime: entry.startTime,
+          endTime: entry.endTime,
+          instructorIds,
+        });
+      });
+
+      console.log("Waiting for all submissions to complete");
+      const results = await Promise.all(submissionPromises);
+      console.log("Submission results:", results);
+
+      // Check for any failed submissions
+      const failedSubmissions = results.filter((r) => !r.data?.success);
+      if (failedSubmissions.length > 0) {
+        console.log("Some submissions failed:", failedSubmissions);
+        throw new Error(
+          failedSubmissions[0].data?.message || "Some entries failed to save"
+        );
+      }
+
+      console.log("All submissions successful");
+      parentToast.success("Routine created successfully!");
+      closeModal();
+      console.log("Closing modal and fetching routines");
+      fetchRoutines();
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create routine"
+      );
+    } finally {
+      console.log("Submission process complete");
+      setLoading(false);
+    }
+  };
 
   return (
     <form className="text-black p-5" onSubmit={handleSubmit}>
-      <h3 className="text-center font-semibold text-black text-xl">Create Routine</h3>
+      <h3 className="text-center font-semibold text-black text-xl">
+        Create Routine
+      </h3>
 
       <div className="mb-4 mt-4 flex items-center gap-3">
         <label htmlFor="numDays" className="block text-sm font-medium">
@@ -291,11 +505,35 @@ const handleChange = async (index, field, value) => {
         </select>
       </div>
 
+      {/* Display validation errors */}
+      {/* {(errors.length > 0 || instructorConflicts.length > 0) && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-sm text-sm">
+          <h3 className="text-red-600 font-medium mb-1">
+            Please correct the following:
+          </h3>
+          <ul className="list-disc pl-5">
+            {errors.map((error, i) => (
+              <li key={`error-${i}`} className="text-red-600">
+                {error}
+              </li>
+            ))}
+            {instructorConflicts.map((conflict, i) => (
+              <li key={`conflict-${i}`} className="text-red-600">
+                {conflict}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )} */}
+
       {schedule.map((daySchedule, index) => (
         <div key={index} className="mb-4">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label htmlFor={`day-${index}`} className="block text-sm font-medium">
+              <label
+                htmlFor={`day-${index}`}
+                className="block text-sm font-medium"
+              >
                 Day {index + 1}
               </label>
               <select
@@ -315,21 +553,29 @@ const handleChange = async (index, field, value) => {
             </div>
 
             <div>
-              <label htmlFor={`startTime-${index}`} className="block text-sm font-medium">
+              <label
+                htmlFor={`startTime-${index}`}
+                className="block text-sm font-medium"
+              >
                 Start Time
               </label>
               <input
                 type="time"
                 id={`startTime-${index}`}
                 value={daySchedule.startTime}
-                onChange={(e) => handleChange(index, "startTime", e.target.value)}
+                onChange={(e) =>
+                  handleChange(index, "startTime", e.target.value)
+                }
                 className="mt-1 p-2 border border-gray-300 rounded-sm"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor={`endTime-${index}`} className="block text-sm font-medium">
+              <label
+                htmlFor={`endTime-${index}`}
+                className="block text-sm font-medium"
+              >
                 End Time
               </label>
               <input
@@ -346,9 +592,17 @@ const handleChange = async (index, field, value) => {
       ))}
 
       <div className="flex justify-center">
-        <button type="submit" className="btn bg-blue-950 text-white" disabled={loading}>
+        <button
+          type="submit"
+          className="btn bg-blue-950 text-white"
+          disabled={
+            loading || errors.length > 0 || instructorConflicts.length > 0
+          }
+        >
           {loading ? (
-            <>Saving <span className="loading loading-dots loading-md"></span></>
+            <>
+              Saving <span className="loading loading-dots loading-md"></span>
+            </>
           ) : (
             "Save Routine"
           )}
