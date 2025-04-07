@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import useAxiosSecure from "../../../hooks/useAxiosSecure"; 
 
 const CreateBatch = () => {
   const [courses, setCourses] = useState([]);
@@ -12,126 +13,105 @@ const CreateBatch = () => {
   const [batchNumber, setBatchNumber] = useState("");
   const [fetchingBatchNumber, setFetchingBatchNumber] = useState(false);
   const today = new Date().toISOString().split("T")[0];
+  const axiosSecure = useAxiosSecure();
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch("http://localhost:5000/courses");
-        const data = await response.json();
-        setCourses(data);
+        const response = await axiosSecure.get("/courses?isDeleted=false");
+        setCourses(response.data);
       } catch (error) {
         console.error("Error fetching courses:", error);
-        setError("Error fetching courses. Please try again later.");
+        toast.error("Error fetching courses. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
-  }, []);
+  }, [axiosSecure]);
 
   const fetchNextBatchNumber = async (courseId) => {
     if (!courseId) {
       toast.error("Please select a course first.");
-      return "001"; // Default fallback
+      return "001";
     }
-  
+
     try {
-      const response = await fetch(
-        `http://localhost:5000/next-batch-number/${courseId}`
-      );
-      
-      if (!response.ok) throw new Error("Failed to fetch batch number");
-      
-      const data = await response.json();
-      return data.nextBatchNumber || "001"; // Fallback to "001" if empty
+      const response = await axiosSecure.get(`/next-batch-number/${courseId}`);
+      return response.data.nextBatchNumber || "001";
     } catch (error) {
       console.error("Error:", error);
       toast.error("Using default batch number");
-      return "001"; // Default fallback
+      return "001";
     }
   };
-  
 
   const handleCourseSelect = async (e) => {
     const selectedCourseId = e.target.value;
     setSelectedCourse(selectedCourseId);
-  
-    // Find course name from the selected course
+
     const course = courses.find((course) => course._id === selectedCourseId);
     if (course) {
       setSelectedCourseName(course.courseName);
     }
-  
-    // Fetch batch number for the selected course
+
     const nextBatch = await fetchNextBatchNumber(selectedCourseId);
-    setBatchNumber(nextBatch || "001"); // Default to "001" if fetching fails
+    setBatchNumber(nextBatch);
   };
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!selectedCourse) {
       toast.error("Please select a course.");
       return;
     }
-  
+
     let currentBatchNumber = batchNumber;
     if (!currentBatchNumber) {
       currentBatchNumber = await fetchNextBatchNumber(selectedCourse);
       if (!currentBatchNumber) return;
     }
-  
-    const formData = new FormData(e.target);
-    const seatCount = formData.get("seat");
-  
+
     const batchName = `${selectedCourseName} - ${currentBatchNumber}`;
-  
-    const data = {
+
+    const batchData = {
       course_id: selectedCourse,
-      batchName: batchName,
+      batchName,
       batchNumber: currentBatchNumber,
-      startDate: formData.get("startDate"),
-      endDate: formData.get("endDate"),
-      seat: seatCount,
+      startDate: e.target.startDate.value,
+      endDate: e.target.endDate.value,
+      seat: parseInt(e.target.seat.value),
       isDeleted: false,
       occupiedSeat: 0,
       status: "Upcoming",
     };
-  
+
     try {
-      const response = await fetch("http://localhost:5000/batches", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-  
-      if (!response.ok) {
+      const response = await axiosSecure.post("/batches", batchData);
+      
+      if (response.data.insertedId) {
+        toast.success("Batch created successfully!");
+        e.target.reset();
+        setSelectedCourse("");
+        setSelectedCourseName("");
+        setBatchNumber("");
+      } else {
         throw new Error("Failed to create batch");
       }
-  
-      toast.success("Batch created successfully!");
-      e.target.reset();
-      setSelectedCourse("");
-      setSelectedCourseName("");
-      setBatchNumber("");
-  
     } catch (error) {
       console.error("Error submitting batch:", error);
-      toast.error("Failed to create batch. Please try again.");
+      toast.error(error.message || "Failed to create batch. Please try again.");
     }
   };
-  
 
   const handleStartDateChange = (e) => {
     setStartDate(e.target.value);
   };
 
-  // Since we want to auto-generate the batch number with form submission only,
-  // let's remove the separate button and adjust the form accordingly
+
+
   return (
     <div className="p-6 bg-white">
       <ToastContainer position="bottom-right" />
@@ -158,11 +138,13 @@ const CreateBatch = () => {
             {loading ? (
               <option>Loading courses...</option>
             ) : (
-              courses.map((course) => (
-                <option key={course._id} value={course._id}>
-                  {course.courseName}
-                </option>
-              ))
+              courses
+                .filter((course) => course.isDeleted === false) // Only show non-deleted courses
+                .map((course) => (
+                  <option key={course._id} value={course._id}>
+                    {course.courseName}
+                  </option>
+                ))
             )}
           </select>
         </div>

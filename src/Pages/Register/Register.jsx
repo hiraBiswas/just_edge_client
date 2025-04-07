@@ -340,11 +340,13 @@ const Register = () => {
                       required
                     >
                       <option value="">Select Preferable Course</option>
-                      {courses.map((course) => (
-                        <option key={course._id} value={course._id}>
-                          {course.courseName}
-                        </option>
-                      ))}
+                      {courses
+                        .filter((course) => course.isDeleted === false) // Only show non-deleted courses
+                        .map((course) => (
+                          <option key={course._id} value={course._id}>
+                            {course.courseName}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <div className="form-control">

@@ -258,29 +258,27 @@ const ChangeRequests = () => {
     }
   };
 
+  // Request rejection
+  const handleReject = async (requestId) => {
+    try {
+      const reason = prompt("Please enter rejection reason (optional):") || "";
 
-    // Request rejection
-    const handleReject = async (requestId) => {
-      try {
-        const reason = prompt("Please enter rejection reason (optional):") || "";
-  
-        const response = await axiosSecure.patch(
-          `/batch-change-requests/${requestId}/reject`,
-          { reason }
-        );
-  
-        if (response.status === 200) {
-          toast.success("Request rejected successfully");
-          fetchAllBatchRequests();
-        } else {
-          throw new Error(response.data.message || "Failed to reject request");
-        }
-      } catch (err) {
-        console.error("Error rejecting request:", err);
-        toast.error(err.message || "Failed to reject request");
+      const response = await axiosSecure.patch(
+        `/batch-change-requests/${requestId}/reject`,
+        { reason }
+      );
+
+      if (response.status === 200) {
+        toast.success("Request rejected successfully");
+        fetchAllBatchRequests();
+      } else {
+        throw new Error(response.data.message || "Failed to reject request");
       }
-    };
-  
+    } catch (err) {
+      console.error("Error rejecting request:", err);
+      toast.error(err.message || "Failed to reject request");
+    }
+  };
 
   const openBatchAssignModal = async (request) => {
     try {
@@ -347,60 +345,61 @@ const ChangeRequests = () => {
     try {
       const selectElement = document.getElementById("batch_select");
       const selectedBatchId = selectElement.value;
-  
+
       if (!selectedBatchId) {
         toast.error("Please select a batch");
         return;
       }
-  
+
       // Disable button during processing
       selectElement.disabled = true;
-      document.querySelector('#batch_assign_modal .btn-primary').disabled = true;
-  
+      document.querySelector(
+        "#batch_assign_modal .btn-primary"
+      ).disabled = true;
+
       const response = await axiosSecure.patch(
         `/course-change-requests/${batchModal.currentRequest._id}/approve`,
         { batchId: selectedBatchId }
       );
-  
+
       toast.success(response.data.message);
       document.getElementById("batch_assign_modal").close();
       fetchAllCourseRequests();
-  
     } catch (error) {
       console.error("Assignment error:", error);
-      
+
       // Specific handling for already processed requests
       if (error.response?.data?.message?.includes("already processed")) {
         toast.error("This request was already processed. Refreshing data...");
         document.getElementById("batch_assign_modal").close();
         fetchAllCourseRequests();
-      } 
-      else if (error.response?.data?.message) {
+      } else if (error.response?.data?.message) {
         toast.error(error.response.data.message);
-      } 
-      else {
+      } else {
         toast.error("Failed to process approval. Please try again.");
       }
     } finally {
       // Re-enable inputs
       const selectElement = document.getElementById("batch_select");
       if (selectElement) selectElement.disabled = false;
-      const approveBtn = document.querySelector('#batch_assign_modal .btn-primary');
+      const approveBtn = document.querySelector(
+        "#batch_assign_modal .btn-primary"
+      );
       if (approveBtn) approveBtn.disabled = false;
     }
   };
-  
+
   const handleRejectCourse = async (requestId) => {
     try {
       const reason = prompt("Please enter rejection reason (optional):") || "";
-  
+
       if (reason === null) return; // User cancelled
-  
+
       const response = await axiosSecure.patch(
         `/course-change-requests/${requestId}/reject`,
         { reason }
       );
-  
+
       if (response.status === 200) {
         toast.success(response.data.message);
         fetchAllCourseRequests();
@@ -515,7 +514,6 @@ const ChangeRequests = () => {
                 Choose a batch
               </option>
               {batchModal.availableBatches.map((batch) => (
-                
                 <option key={batch._id} value={batch._id}>
                   {batch.batchName} ({batch.status})
                 </option>
@@ -645,75 +643,85 @@ const ChangeRequests = () => {
             </TabPanel>
 
             <TabPanel value="course">
-  <div className="card bg-base-100 shadow-sm p-4">
-    <h2 className="text-xl font-semibold mb-4">
-      Pending Course Change Requests
-    </h2>
-    {loading ? (
-      <div className="flex items-center justify-center h-40">
-        <span className="loading loading-ring loading-xl"></span>
-      </div>
-    ) : error ? (
-      <p className="text-red-500">{error}</p>
-    ) : pendingCourseRequests.length === 0 ? (
-      <p>No pending course change requests found.</p>
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border p-2">SI</th>
-              <th className="border p-2">Student</th>
-              <th className="border p-2">Current Course</th>
-              <th className="border p-2">Requested Course</th>
-              <th className="border p-2">Batch Available</th>
-              <th className="border p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingCourseRequests.map((req, index) => (
-              <tr key={req._id} className="border">
-                <td className="border p-2 text-center">{index + 1}</td>
-                <td className="border p-2">
-                  {req.studentInfo?.name || "Unknown"}
-                </td>
-                <td className="border p-2">
-                  {req.currentCourseInfo?.courseName || "N/A"}
-                </td>
-                <td className="border p-2">
-                  {req.requestedCourseInfo?.courseName || "N/A"}
-                </td>
-                <td className={`border p-2 text-center ${
-                  req.hasAvailableBatches
-                    ? "text-green-600 font-medium"
-                    : "text-red-600 font-medium"
-                }`}>
-                  {req.hasAvailableBatches ? "Available" : "Unavailable"}
-                </td>
-                <td className="border p-2 space-x-2">
-                  <button
-                    onClick={() => openBatchAssignModal(req)}
-                    className="btn btn-sm btn-primary"
-                    disabled={!req.hasAvailableBatches}
-                    title={!req.hasAvailableBatches ? "No batches available" : ""}
-                  >
-                    Assign Batch
-                  </button>
-                  <button
-                    onClick={() => handleRejectCourse(req._id)}
-                    className="btn btn-sm btn-error"
-                  >
-                    Reject
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-</TabPanel>
+              <div className="card bg-base-100 shadow-sm p-4">
+                <h2 className="text-xl font-semibold mb-4">
+                  Pending Course Change Requests
+                </h2>
+                {loading ? (
+                  <div className="flex items-center justify-center h-40">
+                    <span className="loading loading-ring loading-xl"></span>
+                  </div>
+                ) : error ? (
+                  <p className="text-red-500">{error}</p>
+                ) : pendingCourseRequests.length === 0 ? (
+                  <p>No pending course change requests found.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-gray-200">
+                          <th className="border p-2">SI</th>
+                          <th className="border p-2">Student</th>
+                          <th className="border p-2">Current Course</th>
+                          <th className="border p-2">Requested Course</th>
+                          <th className="border p-2">Batch Available</th>
+                          <th className="border p-2">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingCourseRequests.map((req, index) => (
+                          <tr key={req._id} className="border">
+                            <td className="border p-2 text-center">
+                              {index + 1}
+                            </td>
+                            <td className="border p-2">
+                              {req.studentInfo?.name || "Unknown"}
+                            </td>
+                            <td className="border p-2">
+                              {req.currentCourseInfo?.courseName || "N/A"}
+                            </td>
+                            <td className="border p-2">
+                              {req.requestedCourseInfo?.courseName || "N/A"}
+                            </td>
+                            <td
+                              className={`border p-2 text-center ${
+                                req.hasAvailableBatches
+                                  ? "text-green-600 font-medium"
+                                  : "text-red-600 font-medium"
+                              }`}
+                            >
+                              {req.hasAvailableBatches
+                                ? "Available"
+                                : "Unavailable"}
+                            </td>
+                            <td className="border p-2 space-x-2">
+                              <button
+                                onClick={() => openBatchAssignModal(req)}
+                                className="btn btn-sm btn-primary"
+                                disabled={!req.hasAvailableBatches}
+                                title={
+                                  !req.hasAvailableBatches
+                                    ? "No batches available"
+                                    : ""
+                                }
+                              >
+                                Assign Batch
+                              </button>
+                              <button
+                                onClick={() => handleRejectCourse(req._id)}
+                                className="btn btn-sm btn-error"
+                              >
+                                Reject
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </TabPanel>
           </TabsBody>
         </Tabs>
       </div>

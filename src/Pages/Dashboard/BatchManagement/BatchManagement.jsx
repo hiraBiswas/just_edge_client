@@ -6,8 +6,8 @@ import UpdateBatch from "./UpdateBatch";
 import { Link } from "react-router-dom";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { useQuery } from "@tanstack/react-query";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { ImCross } from "react-icons/im";
 import { RxCross2 } from "react-icons/rx";
 
@@ -393,7 +393,7 @@ const BatchManagement = () => {
           </div>
         </dialog>
       </div>
-      <ToastContainer />
+      <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
 };

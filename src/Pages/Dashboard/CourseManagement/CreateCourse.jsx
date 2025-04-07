@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
-import "react-toastify/dist/ReactToastify.css";
+
 import useAxiosPublic from "../../../hooks/useAxiosPublic";
 
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
@@ -80,7 +80,7 @@ const CreateCourse = () => {
           classDuration: "",
           minimumQualification: "",
           ageLimit: "",
-          image: null,
+          image: "",
         });
   
         // Navigate after 1 second
