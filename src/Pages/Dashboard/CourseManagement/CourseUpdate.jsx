@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import useAxiosPublic from '../../../hooks/useAxiosPublic';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Toaster, toast } from "react-hot-toast";
+import useAxiosPublic from "../../../hooks/useAxiosPublic";
 
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
 const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
@@ -12,13 +11,14 @@ const UpdateCourse = () => {
   const navigate = useNavigate();
   const axiosPublic = useAxiosPublic();
   const [course, setCourse] = useState({
-    courseName: '',
-    level: '',
-    courseDuration: '',
-    minimumEducationalQualification: '',
-    ageLimit: '',
+    courseName: "",
+    level: "",
+    numberOfClass: "",
+    classDuration: "",
+    minimumQualification: "",
+    ageLimit: "",
     image: null,
-    isDeleted: null,
+    isDeleted: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,15 +26,14 @@ const UpdateCourse = () => {
   useEffect(() => {
     const fetchCourseDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/courses/${id}`);
-        if (!response.ok) throw new Error('Failed to fetch course details');
-
-        const data = await response.json();
+        const response = await axiosPublic.get(`/courses/${id}`);
+        const data = response.data;
         setCourse({
           courseName: data.courseName,
           level: data.level,
-          courseDuration: data.courseDuration,
-          minimumEducationalQualification: data.minimumEducationalQualification,
+          numberOfClass: data.numberOfClass,
+          classDuration: data.classDuration,
+          minimumQualification: data.minimumQualification,
           ageLimit: data.ageLimit,
           image: data.image,
           isDeleted: data.isDeleted,
@@ -47,34 +46,31 @@ const UpdateCourse = () => {
     };
 
     fetchCourseDetails();
-  }, [id]);
+  }, [id, axiosPublic]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("Submitting course data:", course);
-
     let imageUrl = course.image;
-    if (typeof course.image === 'object') {
+    if (typeof course.image === "object") {
       const formData = new FormData();
-      formData.append('image', course.image);
+      formData.append("image", course.image);
 
       try {
         const imageUploadResponse = await fetch(image_hosting_api, {
-          method: 'POST',
+          method: "POST",
           body: formData,
         });
-        if (!imageUploadResponse.ok) throw new Error(`ImgBB upload failed with status: ${imageUploadResponse.status}`);
+        if (!imageUploadResponse.ok) throw new Error(`ImgBB upload failed`);
 
         const result = await imageUploadResponse.json();
         if (!result.success) {
-          toast.error('Error during image upload', { autoClose: 3000 }); // Toast with timer
+          toast.error("Error during image upload");
           return;
         }
         imageUrl = result.data.display_url;
       } catch (error) {
-        console.error('Error:', error.message);
-        toast.error('Failed to upload image.', { autoClose: 3000 }); // Toast with timer
+        toast.error("Failed to upload image.");
         return;
       }
     }
@@ -82,32 +78,33 @@ const UpdateCourse = () => {
     const updatedCourseData = {
       ...course,
       image: imageUrl,
-      isDeleted: course.isDeleted,
     };
 
     try {
-      const response = await axiosPublic.patch(`/courses/${id}`, updatedCourseData);
+      const response = await axiosPublic.patch(
+        `/courses/${id}`,
+        updatedCourseData
+      );
       if (response.data) {
-        toast.success('Course updated successfully', { autoClose: 3000 }); // Toast with timer
-        navigate('/dashboard/courseManagement');
+        toast.success("Course updated successfully");
+        setTimeout(() => {
+          navigate("/dashboard/courseManagement");
+        }, 1000);
       } else {
-        toast.error('Course update failed', { autoClose: 3000 }); // Toast with timer
+        toast.error("Course update failed");
       }
     } catch (error) {
-      console.error('Error:', error.message);
-      toast.error('Failed to update course.', { autoClose: 3000 }); // Toast with timer
+      toast.error("Failed to update course.");
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCourse({ ...course, [name]: value });
-    console.log(`Field changed: ${name} = ${value}`);
   };
 
   const handleImageChange = (e) => {
     setCourse({ ...course, image: e.target.files[0] });
-    console.log("Selected image:", e.target.files[0]);
   };
 
   if (loading) {
@@ -121,98 +118,150 @@ const UpdateCourse = () => {
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className="p-6 bg-white w-[1100px] mx-auto mt-5">
-      {/* Updated Breadcrumbs */}
-      <nav className="text-gray-600 mb-4" aria-label="Breadcrumb">
+    <div className="p-6 bg-white w-[1100px] mx-auto mt-5 rounded-lg shadow-sm">
+      <nav className="text-gray-600 mb-6" aria-label="Breadcrumb">
         <ol className="list-none p-0 inline-flex space-x-2">
           <li className="flex items-center">
-            <a href="/dashboard" className="text-blue-900 text-xl font-medium hover:underline">Dashboard</a>
-            <span className="mx-2">/</span>
+            <a
+              href="/dashboard"
+              className="text-blue-900 text-lg font-medium hover:underline"
+            >
+              Dashboard
+            </a>
+            <span className="mx-2 text-gray-400">/</span>
           </li>
           <li className="flex items-center">
-            <a href="/dashboard/courseManagement" className="text-blue-900 text-xl font-medium hover:underline">Course Management</a>
-            <span className="mx-2">/</span>
+            <a
+              href="/dashboard/courseManagement"
+              className="text-blue-900 text-lg font-medium hover:underline"
+            >
+              Course Management
+            </a>
+            <span className="mx-2 text-gray-400">/</span>
           </li>
-          <li className="text-black font-medium text-xl">Update Course</li>
-          <span className="mx-2">/</span>
-          <li className="text-black font-medium text-xl"> {course.courseName}</li> 
+          <li className="text-gray-800 font-medium text-lg">Update Course</li>
+          <span className="mx-2 text-gray-400">/</span>
+          <li className="text-gray-800 font-medium text-lg">
+            {course.courseName}
+          </li>
         </ol>
       </nav>
 
-      <div className="w-[600px] mx-auto shadow-xl mt-8 p-8">
-        {/* <h2 className="text-2xl font-bold mb-4 text-center">Update Course</h2> */}
+      <div className="w-full max-w-lg mx-auto bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4 text-center">
+          Update Course
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center space-x-4">
-            <label className="font-medium w-40">Course Name:</label>
+          {/* Course Name */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Course Name
+            </label>
             <input
               type="text"
               name="courseName"
               value={course.courseName}
               onChange={handleChange}
-              className="input input-bordered w-full"
+              className="input input-bordered w-full input-sm"
               required
+              placeholder="Course name"
             />
           </div>
 
-          <div className="flex items-center space-x-4">
-            <label className="font-medium w-40">Level:</label>
+          {/* Level */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Level</label>
             <select
               name="level"
               value={course.level}
               onChange={handleChange}
-              className="select select-bordered w-full"
+              className="select select-bordered w-full select-sm"
               required
             >
-              <option value="" disabled>Select Level</option>
-              <option value="Foundational Level">Foundational Level</option>
-              <option value="Intermediate Level">Intermediate Level</option>
-              <option value="Advanced Level">Advanced Level</option>
+              <option value="" disabled>
+                Select Level
+              </option>
+              <option value="Foundational Level">Foundational</option>
+              <option value="Intermediate Level">Intermediate</option>
+              <option value="Advanced Level">Advanced</option>
             </select>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <label className="font-medium w-40">Course Duration:</label>
-            <input
-              type="text"
-              name="courseDuration"
-              value={course.courseDuration}
-              onChange={handleChange}
-              className="input input-bordered w-full"
-              required
-            />
+          {/* Number of Classes and Duration */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Classes</label>
+              <input
+                type="number"
+                name="numberOfClass"
+                value={course.numberOfClass}
+                onChange={handleChange}
+                className="input input-bordered w-full input-sm"
+                required
+                placeholder="12"
+                min="1"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Duration (hrs)
+              </label>
+              <input
+                type="number"
+                name="classDuration"
+                value={course.classDuration}
+                onChange={handleChange}
+                className="input input-bordered w-full input-sm"
+                required
+                placeholder="1.5"
+                step="0.5"
+                min="0.5"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <label className="font-medium w-40">Minimum Qualification:</label>
-            <input
-              type="text"
-              name="minimumEducationalQualification"
-              value={course.minimumEducationalQualification}
-              onChange={handleChange}
-              className="input input-bordered w-full"
-              required
-            />
+          {/* Qualification and Age Limit */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Qualification
+              </label>
+              <input
+                type="text"
+                name="minimumQualification"
+                value={course.minimumQualification}
+                onChange={handleChange}
+                className="input input-bordered w-full input-sm"
+                required
+                placeholder="High School"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Age Limit
+              </label>
+              <input
+                type="text"
+                name="ageLimit"
+                value={course.ageLimit}
+                onChange={handleChange}
+                className="input input-bordered w-full input-sm"
+                required
+                placeholder="18+"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <label className="font-medium w-40">Age Limit:</label>
-            <input
-              type="text"
-              name="ageLimit"
-              value={course.ageLimit}
-              onChange={handleChange}
-              className="input input-bordered w-full"
-              required
-            />
-          </div>
-
-          <div className="flex flex-col space-y-2 items-start">
-            <label className="font-medium w-40">Image:</label>
-            {course.image && typeof course.image === 'string' && (
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Course Image
+            </label>
+            {course.image && typeof course.image === "string" && (
               <img
                 src={course.image}
                 alt="Current course"
-                className="w-32 h-32 object-cover mb-2 border border-gray-300"
+                className="w-24 h-24 object-cover mb-2 border border-gray-300 rounded"
               />
             )}
             <input
@@ -220,16 +269,19 @@ const UpdateCourse = () => {
               name="image"
               accept="image/*"
               onChange={handleImageChange}
-              className="file-input file-input-bordered w-full"
+              className="file-input file-input-bordered w-full file-input-sm"
             />
           </div>
 
-          <button type="submit" className="btn bg-blue-950 text-white w-full mt-4">
+          <button
+            type="submit"
+            className="btn btn-sm bg-blue-900 hover:bg-blue-800 text-white w-full mt-4"
+          >
             Update Course
           </button>
         </form>
       </div>
-      <ToastContainer />
+      <Toaster position="top-center" />
     </div>
   );
 };

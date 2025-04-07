@@ -151,7 +151,7 @@ const CourseManagement = () => {
           <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
           <td>{course.courseName}</td>
           <td>{course.level}</td>
-          <td>{course.minimumEducationalQualification}</td>
+          <td>{course.minimumQualification}</td>
           <td className="flex items-center justify-center gap-4">
             <Link to={`/dashboard/courseDetails/${course._id}`}>
               <FaEye className="text-blue-950 cursor-pointer hover:scale-105" />
