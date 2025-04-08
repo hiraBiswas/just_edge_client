@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import useAxiosSecure from "../../../hooks/useAxiosSecure"; 
 
-const CreateBatch = () => {
+const CreateBatch = ({ onBatchCreated, onCloseModal }) => {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedCourseName, setSelectedCourseName] = useState("");
@@ -62,47 +62,57 @@ const CreateBatch = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!selectedCourse) {
       toast.error("Please select a course.");
       return;
     }
-
-    let currentBatchNumber = batchNumber;
-    if (!currentBatchNumber) {
-      currentBatchNumber = await fetchNextBatchNumber(selectedCourse);
-      if (!currentBatchNumber) return;
-    }
-
-    const batchName = `${selectedCourseName} - ${currentBatchNumber}`;
-
-    const batchData = {
-      course_id: selectedCourse,
-      batchName,
-      batchNumber: currentBatchNumber,
-      startDate: e.target.startDate.value,
-      endDate: e.target.endDate.value,
-      seat: parseInt(e.target.seat.value),
-      isDeleted: false,
-      occupiedSeat: 0,
-      status: "Upcoming",
-    };
-
+  
     try {
+      setFetchingBatchNumber(true);
+      let currentBatchNumber = batchNumber;
+      if (!currentBatchNumber) {
+        currentBatchNumber = await fetchNextBatchNumber(selectedCourse);
+        if (!currentBatchNumber) return;
+      }
+  
+      const batchName = `${selectedCourseName} - ${currentBatchNumber}`;
+  
+      const batchData = {
+        course_id: selectedCourse,
+        batchName,
+        batchNumber: currentBatchNumber,
+        startDate: e.target.startDate.value,
+        endDate: e.target.endDate.value,
+        seat: parseInt(e.target.seat.value),
+        isDeleted: false,
+        occupiedSeat: 0,
+        status: "Upcoming",
+      };
+  
       const response = await axiosSecure.post("/batches", batchData);
       
-      if (response.data.insertedId) {
+      // Updated success condition check
+      if (response.status === 201 || response.data.insertedId) {
         toast.success("Batch created successfully!");
         e.target.reset();
         setSelectedCourse("");
         setSelectedCourseName("");
         setBatchNumber("");
+
+
+          onBatchCreated?.();
+     onCloseModal?.(); 
+        
+        return response.data;
       } else {
-        throw new Error("Failed to create batch");
+        throw new Error(response.data?.error || "Failed to create batch");
       }
     } catch (error) {
       console.error("Error submitting batch:", error);
-      toast.error(error.message || "Failed to create batch. Please try again.");
+      toast.error(error.response?.data?.error || error.message || "Failed to create batch. Please try again.");
+    } finally {
+      setFetchingBatchNumber(false);
     }
   };
 
@@ -114,7 +124,7 @@ const CreateBatch = () => {
 
   return (
     <div className="p-6 bg-white">
-      <ToastContainer position="bottom-right" />
+
       <h2 className="text-2xl text-center font-bold mb-4">Create New Batch</h2>
 
       {error && <div className="text-red-500 mb-4">{error}</div>}
@@ -221,13 +231,15 @@ const CreateBatch = () => {
         </div>
 
         <button
-          type="submit"
-          className="btn bg-blue-950 text-white mt-4"
-          disabled={fetchingBatchNumber || !selectedCourse}
-        >
-          Create Batch
-        </button>
+  type="submit"
+  className="btn bg-blue-950 text-white w-full"
+  disabled={fetchingBatchNumber || !selectedCourse }
+>
+  {fetchingBatchNumber ? "Creating..." : "Create Batch"}
+</button>
       </form>
+      
+      <Toaster position="top-center" />
     </div>
   );
 };

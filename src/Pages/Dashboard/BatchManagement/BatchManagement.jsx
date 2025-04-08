@@ -55,7 +55,8 @@ const BatchManagement = () => {
     queryKey: ["instructors"],
     queryFn: async () => {
       const res = await axiosSecure.get("/instructors");
-      return res.data;
+      // Filter the response data to only include instructors with "Approved" status
+      return res.data.filter(instructor => instructor.status === "Approved");
     },
   });
 
@@ -171,8 +172,13 @@ const BatchManagement = () => {
   };
 
   const closeModal = () => {
-    document.getElementById("my_modal_5").close();
-    setSelectedBatchId(null);
+    const modal = document.getElementById("my_modal_5");
+    if (modal) {
+      modal.close();
+      setSelectedBatchId(null);
+    } else {
+      console.error("Modal element not found");
+    }
   };
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
@@ -371,28 +377,32 @@ const BatchManagement = () => {
       </div>
 
       <div className="modal">
-        <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
-          <div className="modal-box">
-            <div className="absolute top-0 right-6 p-4">
-              <button
-                className="text-2xl font-bold hover:text-3xl hover:scale-110 transition-transform duration-200 cursor-pointer"
-                onClick={() => {
-                  document.getElementById("my_modal_5").close();
-                  setSelectedBatchId(null);
-                }}
-              >
-                <RxCross2 />
-              </button>
-            </div>
-
-            {selectedBatchId ? (
-              <UpdateBatch batchId={selectedBatchId} />
-            ) : (
-              <CreateBatch />
-            )}
-          </div>
-        </dialog>
+  <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+    <div className="modal-box">
+      <div className="absolute top-0 right-6 p-4">
+        <button
+          className="text-2xl font-bold hover:text-3xl hover:scale-110 transition-transform duration-200 cursor-pointer"
+          onClick={closeModal}
+        >
+          <RxCross2 />
+        </button>
       </div>
+
+      {selectedBatchId ? (
+        <UpdateBatch 
+          batchId={selectedBatchId} 
+          onBatchUpdated={refreshBatches}  // Pass the refresh function
+          onCloseModal={closeModal}       // Pass the close function
+        />
+      ) : (
+        <CreateBatch 
+        onBatchUpdated={refreshBatches}  // Pass the refresh function
+        onCloseModal={closeModal} 
+      />
+      )}
+    </div>
+  </dialog>
+</div>
       <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
