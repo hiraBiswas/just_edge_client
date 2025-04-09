@@ -45,8 +45,11 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   );
   const [loading, setLoading] = useState(false);
   const [instructorIds, setInstructorIds] = useState([]);
+  const [availableInstructors, setAvailableInstructors] = useState([]);
+  const [selectedInstructors, setSelectedInstructors] = useState([]);
   const [errors, setErrors] = useState([]);
   const [instructorConflicts, setInstructorConflicts] = useState([]);
+  const [instructorAssignmentStep, setInstructorAssignmentStep] = useState(true);
   const axiosSecure = useAxiosSecure();
 
   // Days of week array
@@ -60,7 +63,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     "Friday",
   ];
 
-  // Fetch batch data and instructor IDs
+  // Fetch batch data and available instructors
   useEffect(() => {
     console.log("useEffect for fetching batch data running");
     const fetchBatchData = async () => {
@@ -70,17 +73,70 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         console.log("Batch data response:", response.data);
         const batchData = response.data;
         setBatchName(batchData.batchName);
-        setInstructorIds(batchData.instructorIds);
+        
+        // If batch already has instructors, set them
+        if (batchData.instructorIds && batchData.instructorIds.length > 0) {
+          setInstructorIds(batchData.instructorIds);
+          setSelectedInstructors(batchData.instructorIds);
+        }
+        
         console.log("Set batchName to:", batchData.batchName);
-        console.log("Set instructorIds to:", batchData.instructorIds);
       } catch (error) {
         console.error("Error fetching batch data:", error);
         toast.error("Failed to load batch data");
       }
     };
 
+    const fetchAvailableInstructors = async () => {
+      try {
+        const response = await axiosSecure.get('/instructors');
+        setAvailableInstructors(response.data);
+      } catch (error) {
+        console.error("Error fetching available instructors:", error);
+        toast.error("Failed to load available instructors");
+      }
+    };
+
     fetchBatchData();
+    fetchAvailableInstructors();
   }, [batchId, axiosSecure]);
+
+  // Handle instructor selection
+  const handleInstructorSelection = (instructorId, isSelected) => {
+    if (isSelected) {
+      setSelectedInstructors(prev => [...prev, instructorId]);
+    } else {
+      setSelectedInstructors(prev => prev.filter(id => id !== instructorId));
+    }
+  };
+
+  // Submit instructor assignments
+  const assignInstructorsToBatch = async () => {
+    if (selectedInstructors.length === 0) {
+      toast.error("Please select at least one instructor");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axiosSecure.patch(`/batches/${batchId}`, {
+        instructorIds: selectedInstructors
+      });
+
+      if (response.data.success) {
+        toast.success("Instructors assigned successfully");
+        setInstructorIds(selectedInstructors);
+        setInstructorAssignmentStep(false);
+      } else {
+        toast.error(response.data.message || "Failed to assign instructors");
+      }
+    } catch (error) {
+      console.error("Error assigning instructors:", error);
+      toast.error("Failed to assign instructors to batch");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle change in the number of days
   const handleDaysChange = (event) => {
@@ -218,17 +274,18 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     // Only check instructor conflicts if local validation passes
     if (validationErrors.length === 0) {
       console.log("Local validation passed, checking instructor conflicts");
-      const instructorConflicts = await checkInstructorAvailability();
-      setInstructorConflicts(instructorConflicts);
-      console.log("Set instructor conflicts:", instructorConflicts);
+      const result = await checkInstructorAvailability();
+      const conflicts = result.conflicts;
+      setInstructorConflicts(conflicts);
+      console.log("Set instructor conflicts:", conflicts);
 
       // Show toast for each conflict
-      instructorConflicts.forEach((conflict) => {
+      conflicts.forEach((conflict) => {
         console.log("Showing conflict toast:", conflict);
         toast.error(conflict, { duration: 5000 });
       });
 
-      const isValid = instructorConflicts.length === 0;
+      const isValid = conflicts.length === 0;
       console.log("Validation complete. Is valid?", isValid);
       return isValid;
     }
@@ -354,7 +411,11 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
 
   // Enhanced validation useEffect
   useEffect(() => {
-    // Skip validation if the form is not substantially filled
+    // Skip validation if in instructor assignment step or if the form is not substantially filled
+    if (instructorAssignmentStep) {
+      return;
+    }
+    
     const hasSubstantialData = schedule.some(
       ({ day, startTime, endTime }) =>
         day !== "" || startTime !== "" || endTime !== ""
@@ -417,57 +478,54 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [schedule, instructorIds]);
+  }, [schedule, instructorIds, instructorAssignmentStep]);
 
   // Updated handleSubmit to prevent submission if there are errors
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Form submission started");
     setLoading(true);
-    console.log("Set loading to true");
-
+  
     try {
-      // Perform full validation
-      console.log("Validating before submission");
-      const isValid = await validateAll();
-
-      if (!isValid) {
-        console.log("Validation failed, aborting submission");
+      // Ensure there's at least one instructor
+      if (instructorIds.length === 0) {
+        toast.error("At least one instructor must be assigned to the batch");
         setLoading(false);
         return;
       }
-
-      // Submit each schedule entry
-      console.log("Preparing submission promises");
-      const submissionPromises = schedule.map((entry) => {
-        console.log("Submitting entry:", entry);
-        return axiosSecure.post("/routine", {
-          batchId,
+      
+      // Perform local validation
+      console.log("Validating before submission");
+      const validationErrors = validateLocalSchedule();
+      if (validationErrors.length > 0) {
+        setErrors(validationErrors);
+        setLoading(false);
+        return;
+      }
+  
+      // Prepare data for batch submission
+      const routineData = {
+        batchId,
+        schedules: schedule.map(entry => ({
           day: entry.day,
           startTime: entry.startTime,
           endTime: entry.endTime,
-          instructorIds,
-        });
-      });
-
-      console.log("Waiting for all submissions to complete");
-      const results = await Promise.all(submissionPromises);
-      console.log("Submission results:", results);
-
-      // Check for any failed submissions
-      const failedSubmissions = results.filter((r) => !r.data?.success);
-      if (failedSubmissions.length > 0) {
-        console.log("Some submissions failed:", failedSubmissions);
-        throw new Error(
-          failedSubmissions[0].data?.message || "Some entries failed to save"
-        );
+        
+        }))
+      };
+  
+      console.log("Submitting batch routine data:", routineData);
+      const response = await axiosSecure.post("/routine", routineData);
+  
+      // Check for successful status code (2xx) instead of response.data.success
+      if (response.status >= 200 && response.status < 300) {
+        console.log("Batch submission successful");
+        parentToast.success(response.data.message || "Routine created successfully!");
+        closeModal();
+        fetchRoutines();
+      } else {
+        throw new Error(response.data.message || "Failed to create routine");
       }
-
-      console.log("All submissions successful");
-      parentToast.success("Routine created successfully!");
-      closeModal();
-      console.log("Closing modal and fetching routines");
-      fetchRoutines();
     } catch (error) {
       console.error("Submission error:", error);
       toast.error(
@@ -475,11 +533,16 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
           error.message ||
           "Failed to create routine"
       );
+      
+      if (error.response?.data?.error?.code === 11000) {
+        toast.error("Duplicate routine detected. Please check your entries.");
+      }
     } finally {
       console.log("Submission process complete");
       setLoading(false);
     }
   };
+
 
   return (
     <form className="text-black p-5" onSubmit={handleSubmit}>
