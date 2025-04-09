@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Toaster } from 'react-hot-toast';
-import toast from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
-const UpdateBatch = ({ batchId, onBatchUpdated, onCloseModal}) => {
+const UpdateBatch = ({ batchId, onBatchUpdated, onCloseModal }) => {
   const [batchData, setBatchData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [batchName, setBatchName] = useState("");
@@ -52,7 +52,7 @@ const UpdateBatch = ({ batchId, onBatchUpdated, onCloseModal}) => {
       startDate,
       endDate,
       seat: parseInt(seat), // Convert seat to integer
-    occupiedSeat: parseInt(occupiedSeat)
+      occupiedSeat: parseInt(occupiedSeat),
     };
 
     try {
@@ -64,11 +64,11 @@ const UpdateBatch = ({ batchId, onBatchUpdated, onCloseModal}) => {
 
       if (response.ok) {
         toast.success("Batch updated successfully!");
-     // Execute callbacks if they exist
-     onBatchUpdated?.(); // Optional chaining
-     onCloseModal?.();   // Optional chaining
+        // Execute callbacks if they exist
+        onBatchUpdated?.(); // Optional chaining
+        onCloseModal?.(); // Optional chaining
       }
-      }catch (error) {
+    } catch (error) {
       console.error("Error updating batch:", error);
       toast.error("An error occurred while updating the batch.");
     }
@@ -83,11 +83,12 @@ const UpdateBatch = ({ batchId, onBatchUpdated, onCloseModal}) => {
     setEndDate("");
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center min-h-[200px]">
-      <span className="loading loading-ring loading-lg"></span>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <span className="loading loading-ring loading-lg"></span>
+      </div>
+    );
 
   if (!batchData) return <div>No batch data found</div>;
 
@@ -95,7 +96,7 @@ const UpdateBatch = ({ batchId, onBatchUpdated, onCloseModal}) => {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-       <h2 className="text-2xl text-center font-bold mb-4">Update Batch</h2>
+      <h2 className="text-2xl text-center font-bold mb-4">Update Batch</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Batch Name (Editable) */}
         <div className="mb-4">
@@ -173,7 +174,7 @@ const UpdateBatch = ({ batchId, onBatchUpdated, onCloseModal}) => {
         </button>
       </form>
 
-        <Toaster position="top-center" />
+      <Toaster position="top-center" />
     </div>
   );
 };

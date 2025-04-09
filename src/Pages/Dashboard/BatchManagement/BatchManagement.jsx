@@ -20,13 +20,13 @@ const BatchManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState(null);
   const [instructorSelection, setInstructorSelection] = useState({});
   const axiosSecure = useAxiosSecure();
 
   const openModal = () => setIsModalOpen(true);
-
-  console.log(selectedBatchId);
 
   // Fetch courses
   useEffect(() => {
@@ -56,7 +56,7 @@ const BatchManagement = () => {
     queryFn: async () => {
       const res = await axiosSecure.get("/instructors");
       // Filter the response data to only include instructors with "Approved" status
-      return res.data.filter(instructor => instructor.status === "Approved");
+      return res.data.filter((instructor) => instructor.status === "Approved");
     },
   });
 
@@ -171,15 +171,30 @@ const BatchManagement = () => {
     }
   };
 
+  // Change all references from "my_modal_5" to "batch_modal"
   const closeModal = () => {
-    const modal = document.getElementById("my_modal_5");
+    const modal = document.getElementById("batch_modal"); // Changed ID
     if (modal) {
       modal.close();
-      setSelectedBatchId(null);
-    } else {
-      console.error("Modal element not found");
+      if (selectedBatchId) setSelectedBatchId(null);
+      setIsModalOpen(false);
     }
   };
+
+  useEffect(() => {
+    const modal = document.getElementById("batch_modal");
+    const handleCancel = (e) => {
+      e.preventDefault();
+      closeModal();
+    };
+
+    if (modal) {
+      modal.addEventListener("cancel", handleCancel);
+      return () => {
+        modal.removeEventListener("cancel", handleCancel);
+      };
+    }
+  }, []);
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -243,7 +258,7 @@ const BatchManagement = () => {
 
           <button
             className="btn btn-outline"
-            onClick={() => document.getElementById("my_modal_5").showModal()}
+            onClick={() => setShowCreateModal(true)}
           >
             <FaPlus /> Create Batch
           </button>
@@ -334,11 +349,10 @@ const BatchManagement = () => {
                           <Link to={`/dashboard/batchDetails/${batch._id}`}>
                             <FaEye className="w-4 h-4" />
                           </Link>
-
                           <button
                             onClick={() => {
                               setSelectedBatchId(batch._id);
-                              document.getElementById("my_modal_5").showModal();
+                              setShowUpdateModal(true);
                             }}
                           >
                             <MdEdit className="w-4 h-4" />
@@ -376,33 +390,52 @@ const BatchManagement = () => {
         </button>
       </div>
 
-      <div className="modal">
-  <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
-    <div className="modal-box">
-      <div className="absolute top-0 right-6 p-4">
-        <button
-          className="text-2xl font-bold hover:text-3xl hover:scale-110 transition-transform duration-200 cursor-pointer"
-          onClick={closeModal}
-        >
-          <RxCross2 />
-        </button>
-      </div>
+      {/* Create Batch Modal */}
+      <dialog
+        id="create_modal"
+        className="modal modal-bottom sm:modal-middle"
+        open={showCreateModal}
+      >
+        <div className="modal-box">
+          <button
+            className="absolute top-2 right-2 btn btn-sm btn-circle"
+            onClick={() => setShowCreateModal(false)}
+          >
+            <RxCross2 />
+          </button>
+          <CreateBatch
+            onBatchCreated={() => {
+              refreshBatches();
+              setShowCreateModal(false);
+            }}
+          />
+        </div>
+      </dialog>
 
-      {selectedBatchId ? (
-        <UpdateBatch 
-          batchId={selectedBatchId} 
-          onBatchUpdated={refreshBatches}  // Pass the refresh function
-          onCloseModal={closeModal}       // Pass the close function
-        />
-      ) : (
-        <CreateBatch 
-        onBatchUpdated={refreshBatches}  // Pass the refresh function
-        onCloseModal={closeModal} 
-      />
-      )}
-    </div>
-  </dialog>
-</div>
+      {/* Update Batch Modal */}
+      <dialog
+        id="update_modal"
+        className="modal modal-bottom sm:modal-middle"
+        open={showUpdateModal}
+      >
+        <div className="modal-box">
+          <button
+            className="absolute top-2 right-2 btn btn-sm btn-circle"
+            onClick={() => setShowUpdateModal(false)}
+          >
+            <RxCross2 />
+          </button>
+          {selectedBatchId && (
+            <UpdateBatch
+              batchId={selectedBatchId}
+              onBatchUpdated={() => {
+                refreshBatches();
+                setShowUpdateModal(false);
+              }}
+            />
+          )}
+        </div>
+      </dialog>
       <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
