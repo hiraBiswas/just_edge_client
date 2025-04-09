@@ -30,7 +30,7 @@ const hasTimeOverlap = (start1, end1, start2, end2) => {
   return result;
 };
 
-const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
+const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
   console.log("CreateRoutine component rendering with batchId:", batchId);
 
   const [batchName, setBatchName] = useState("");
@@ -49,7 +49,8 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   const [selectedInstructors, setSelectedInstructors] = useState([]);
   const [errors, setErrors] = useState([]);
   const [instructorConflicts, setInstructorConflicts] = useState([]);
-  const [instructorAssignmentStep, setInstructorAssignmentStep] = useState(true);
+  const [instructorAssignmentStep, setInstructorAssignmentStep] =
+    useState(true);
   const axiosSecure = useAxiosSecure();
 
   // Days of week array
@@ -73,13 +74,13 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         console.log("Batch data response:", response.data);
         const batchData = response.data;
         setBatchName(batchData.batchName);
-        
+
         // If batch already has instructors, set them
         if (batchData.instructorIds && batchData.instructorIds.length > 0) {
           setInstructorIds(batchData.instructorIds);
           setSelectedInstructors(batchData.instructorIds);
         }
-        
+
         console.log("Set batchName to:", batchData.batchName);
       } catch (error) {
         console.error("Error fetching batch data:", error);
@@ -89,7 +90,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
 
     const fetchAvailableInstructors = async () => {
       try {
-        const response = await axiosSecure.get('/instructors');
+        const response = await axiosSecure.get("/instructors");
         setAvailableInstructors(response.data);
       } catch (error) {
         console.error("Error fetching available instructors:", error);
@@ -104,9 +105,11 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
   // Handle instructor selection
   const handleInstructorSelection = (instructorId, isSelected) => {
     if (isSelected) {
-      setSelectedInstructors(prev => [...prev, instructorId]);
+      setSelectedInstructors((prev) => [...prev, instructorId]);
     } else {
-      setSelectedInstructors(prev => prev.filter(id => id !== instructorId));
+      setSelectedInstructors((prev) =>
+        prev.filter((id) => id !== instructorId)
+      );
     }
   };
 
@@ -120,7 +123,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     try {
       setLoading(true);
       const response = await axiosSecure.patch(`/batches/${batchId}`, {
-        instructorIds: selectedInstructors
+        instructorIds: selectedInstructors,
       });
 
       if (response.data.success) {
@@ -415,7 +418,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     if (instructorAssignmentStep) {
       return;
     }
-    
+
     const hasSubstantialData = schedule.some(
       ({ day, startTime, endTime }) =>
         day !== "" || startTime !== "" || endTime !== ""
@@ -485,7 +488,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
     e.preventDefault();
     console.log("Form submission started");
     setLoading(true);
-  
+
     try {
       // Ensure there's at least one instructor
       if (instructorIds.length === 0) {
@@ -493,7 +496,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         setLoading(false);
         return;
       }
-      
+
       // Perform local validation
       console.log("Validating before submission");
       const validationErrors = validateLocalSchedule();
@@ -502,27 +505,28 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
         setLoading(false);
         return;
       }
-  
+
       // Prepare data for batch submission
       const routineData = {
         batchId,
-        schedules: schedule.map(entry => ({
+        schedules: schedule.map((entry) => ({
           day: entry.day,
           startTime: entry.startTime,
           endTime: entry.endTime,
-        
-        }))
+        })),
       };
-  
+
       console.log("Submitting batch routine data:", routineData);
       const response = await axiosSecure.post("/routine", routineData);
-  
+
       // Check for successful status code (2xx) instead of response.data.success
       if (response.status >= 200 && response.status < 300) {
         console.log("Batch submission successful");
-        parentToast.success(response.data.message || "Routine created successfully!");
-        closeModal();
-        fetchRoutines();
+        parentToast.success(
+          response.data.message || "Routine created successfully!"
+        );
+        onSuccess(); // Refresh routines
+        closeModal(); // Close modal
       } else {
         throw new Error(response.data.message || "Failed to create routine");
       }
@@ -533,7 +537,7 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
           error.message ||
           "Failed to create routine"
       );
-      
+
       if (error.response?.data?.error?.code === 11000) {
         toast.error("Duplicate routine detected. Please check your entries.");
       }
@@ -542,7 +546,6 @@ const CreateRoutine = ({ batchId, closeModal, fetchRoutines }) => {
       setLoading(false);
     }
   };
-
 
   return (
     <form className="text-black p-5" onSubmit={handleSubmit}>

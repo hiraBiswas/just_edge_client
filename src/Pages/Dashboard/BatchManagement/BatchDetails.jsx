@@ -36,18 +36,16 @@ const BatchDetails = () => {
     setRoutineLoading(true);
     try {
       const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
-      console.log(routineResponse.data);
-      if (routineResponse.data && Array.isArray(routineResponse.data.schedule)) {
-        setRoutines(routineResponse.data.schedule);
-        toast.success("Routine updated successfully");
+      if (routineResponse.data) {
+        // Ensure we're handling both the old and new API response formats
+        const routinesData = routineResponse.data.schedule || routineResponse.data;
+        setRoutines(Array.isArray(routinesData) ? routinesData : []);
       } else {
-        console.error("Routine data not found");
-        setRoutines([]); // Ensure it's always an array
+        setRoutines([]);
       }
     } catch (error) {
       console.error("Error fetching routine:", error);
-      toast.error("Failed to fetch routine");
-      setRoutines([]); // Ensure it's always an array
+      setRoutines([]);
     } finally {
       setRoutineLoading(false);
     }
@@ -383,34 +381,25 @@ const BatchDetails = () => {
       </section>
 
       {/* Create Routine Modal */}
-      <dialog
-        id="create_routine_modal"
-        className="modal modal-bottom sm:modal-middle"
-      >
-        <div className="modal-box relative">
-          {/* Close Button */}
-          <button
-            type="button"
-            className="absolute top-2 right-2 text-xl"
-            onClick={() =>
-              document.getElementById("create_routine_modal").close()
-            }
-          >
-            <RxCross2 />
-          </button>
-
-          {/* CreateRoutine Component */}
-
-          <CreateRoutine
-            batchId={batchId}
-            closeModal={() => {
-              document.getElementById("create_routine_modal").close();
-              fetchRoutines(); // Refresh routine after creating
-            }}
-            fetchRoutines={fetchRoutines}
-          />
-        </div>
-      </dialog>
+      <dialog id="create_routine_modal" className="modal">
+  <div className="modal-box relative">
+    <button
+      onClick={() => document.getElementById("create_routine_modal").close()}
+      className="absolute top-2 right-2"
+    >
+      <RxCross2 />
+    </button>
+    <CreateRoutine 
+      batchId={batchId}
+      closeModal={() => {
+        document.getElementById("create_routine_modal").close();
+      }}
+      onSuccess={() => {
+        fetchRoutines(); // Explicitly refresh after success
+      }}
+    />
+  </div>
+</dialog>
 
       {/* Update Routine Modal */}
       <dialog
