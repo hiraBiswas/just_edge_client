@@ -4,8 +4,7 @@ import useAxiosSecure from "./../../../hooks/useAxiosSecure";
 import CreateRoutine from "./CreateRoutine";
 import UpdateRoutine from "./UpdateRoutine";
 import { RxCross2 } from "react-icons/rx";
-import { toast } from "react-hot-toast";
-import { Toaster } from "react-hot-toast";
+
 
 const BatchDetails = () => {
   const { id: batchId } = useParams();
@@ -20,7 +19,6 @@ const BatchDetails = () => {
   const [routineLoading, setRoutineLoading] = useState(false);
   const axiosSecure = useAxiosSecure();
 
-  // Custom order for days starting from Saturday
   const dayOrder = [
     "Saturday",
     "Sunday",
@@ -31,13 +29,11 @@ const BatchDetails = () => {
     "Friday",
   ];
 
-  // Fetch data
   const fetchRoutines = async () => {
     setRoutineLoading(true);
     try {
       const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
       if (routineResponse.data) {
-        // Ensure we're handling both the old and new API response formats
         const routinesData =
           routineResponse.data.schedule || routineResponse.data;
         setRoutines(Array.isArray(routinesData) ? routinesData : []);
@@ -92,7 +88,6 @@ const BatchDetails = () => {
     fetchData();
   }, [batchId, axiosSecure]);
 
-  // Function to get instructor's name based on instructorId
   const getInstructorNames = (instructorId) => {
     const instructor = instructors.find(
       (instructor) => instructor._id === instructorId
@@ -105,28 +100,10 @@ const BatchDetails = () => {
     return "Instructor Not Found";
   };
 
-  // Filter instructorBatches for the current batchId
   const filteredInstructorBatches = instructorBatches.filter(
     (instructorBatch) => instructorBatch.batchId === batchId
   );
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <span className="loading loading-ring loading-lg"></span>
-      </div>
-    );
-  }
-
-  if (!batch) {
-    return (
-      <div className="text-center text-gray-500">
-        Batch not found or data unavailable.
-      </div>
-    );
-  }
-
-  // Function to get user's name based on userId
   const getUserName = (userId) => {
     const user = Array.isArray(users)
       ? users.find((user) => user._id === userId)
@@ -134,17 +111,14 @@ const BatchDetails = () => {
     return user ? user.name : "N/A";
   };
 
-  // Format the time in 12-hour format with AM/PM
   const formatTime = (time) => {
     const [hours, minutes] = time.split(":");
     const date = new Date();
     date.setHours(hours);
     date.setMinutes(minutes);
-
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Function to handle instructor removal from the batch
   const handleDeleteInstructor = async (instructorBatchId) => {
     try {
       await axiosSecure.delete(`/instructors-batches/${instructorBatchId}`);
@@ -187,39 +161,128 @@ const BatchDetails = () => {
       ).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
     : [];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <span className="loading loading-ring loading-lg"></span>
+      </div>
+    );
+  }
+
+  if (!batch) {
+    return (
+      <div className="text-center text-gray-500 py-10">
+        Batch not found or data unavailable.
+      </div>
+    );
+  }
+
   return (
-    <div className="w-[1100px] mx-auto p-6">
+    <div className="w-[1100px] mx-auto p-4">
       {/* Breadcrumb Navigation */}
-      <div className="breadcrumbs text-sm mb-4">
-        <ul className="flex space-x-2 text-gray-600">
+      <nav className="mb-3">
+        <ol className="flex items-center space-x-2 font-semibold text-lg">
           <li>
-            <Link
-              to="/dashboard"
-              className="text-blue-900 text-xl font-medium hover:underline"
-            >
+            <Link to="/dashboard" className="text-blue-600 hover:underline">
               Dashboard
             </Link>
           </li>
+          <li>/</li>
           <li>
             <Link
               to="/dashboard/batchManagement"
-              className="text-blue-900 text-xl font-medium hover:underline"
+              className="text-blue-600 hover:underline"
             >
               Batch Management
             </Link>
           </li>
-          <li className="text-gray-700 text-xl font-medium">Batch Details</li>
-          <li className="text-gray-700 text-xl font-medium">
-            {batch.batchName || "Batch Details"}
-          </li>
-        </ul>
+          <li>/</li>
+          <li className="text-gray-600">{batch.batchName || "Batch Details"}</li>
+        </ol>
+      </nav>
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">
+          {batch.batchName}
+        </h1>
+        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+          <div>
+            <span className="font-medium">Total Seats:</span> {batch.seat}
+          </div>
+          <div>
+            <span className="font-medium">Enrolled:</span> {batch.occupiedSeat}
+          </div>
+          <div>
+            <span className="font-medium">Status:</span>{" "}
+            <span
+              className={`px-2 py-1 rounded-full text-xs ${
+                batch.status === "active"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {batch.status}
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Section for Routine Display and Options */}
+        {/* Instructors Section */}
+        <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            Assigned Instructors
+          </h2>
+          {filteredInstructorBatches && filteredInstructorBatches.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="py-3 px-4 font-medium text-md text-black text-left">
+                      Instructor
+                    </th>
+                    <th className="py-3 px-4 font-medium text-black text-md  text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInstructorBatches.map((instructorBatch) => {
+                    const instructorName = getInstructorNames(
+                      instructorBatch.instructorId
+                    );
+                    return (
+                      <tr key={instructorBatch._id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 text-md text-black px-4">{instructorName}</td>
+                        <td className="py-3 text-md text-black  px-4 text-right">
+                          <button
+                            className="btn btn-sm btn-error text-white"
+                            onClick={() =>
+                              handleDeleteInstructor(instructorBatch._id)
+                            }
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-600">
+              No instructors assigned to this batch yet.
+            </div>
+          )}
+        </div>
+      </section>
 
-      <section className="mb-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-md font-semibold">Current Routine</h3>
+      {/* Routine Section */}
+      <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="flex justify-between items-center p-6 pb-0">
+          <h2 className="text-lg font-semibold text-black">Class Routine</h2>
           {routineLoading ? (
             <span className="loading loading-spinner loading-sm"></span>
           ) : sortedRoutines.length > 0 ? (
@@ -227,42 +290,52 @@ const BatchDetails = () => {
               onClick={() =>
                 document.getElementById("update_routine_modal").showModal()
               }
-              className="btn btn-sm bg-blue-950 text-white rounded-lg hover:bg-blue-900"
+              className="btn btn-sm btn-primary"
             >
               Update Routine
             </button>
           ) : (
             <button
-              onClick={() =>
-                document.getElementById("create_routine_modal").showModal()
-              }
-              className="btn btn-sm bg-blue-950 text-white rounded-lg hover:bg-blue-900"
-            >
-              Create Routine
-            </button>
+            onClick={() =>
+              document.getElementById("create_routine_modal").showModal()
+            }
+            className={`btn btn-sm btn-primary ${
+              filteredInstructorBatches.length === 0 ? "btn-disabled cursor-not-allowed" : ""
+            }`}
+            disabled={filteredInstructorBatches.length === 0}
+            title={
+              filteredInstructorBatches.length === 0
+                ? "Please assign an instructor first"
+                : "Create Routine"
+            }
+          >
+            Create Routine
+          </button>
           )}
         </div>
 
         {routineLoading ? (
-          <div className="flex justify-center items-center my-4">
+          <div className="flex justify-center items-center p-8">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : sortedRoutines.length > 0 ? (
-          <div className="rounded-lg mt-2">
-            <table className="table-auto w-full border-collapse border border-gray-200">
+          <div className="overflow-x-auto p-6 pt-2">
+            <table className="table w-full">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-2">Day</th>
-                  <th className="border border-gray-300 px-4 py-2">Time</th>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="py-3 px-4 font-medium text-black text-left">
+                    Day
+                  </th>
+                  <th className="py-3 px-4 font-medium text-black text-left">
+                    Time
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sortedRoutines.map((item, index) => (
-                  <tr key={index}>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {item.day}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
+                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4 text-black">{item.day}</td>
+                    <td className="py-3 text-black px-4">
                       {formatTime(item.startTime)} - {formatTime(item.endTime)}
                     </td>
                   </tr>
@@ -271,105 +344,70 @@ const BatchDetails = () => {
             </table>
           </div>
         ) : (
-          <div className="border rounded-lg p-4 mb-4 text-gray-500">
-            No routine has been created for this batch yet.
+          <div className="text-center p-6 text-gray-500">
+            No schedule has been created for this batch yet.
           </div>
         )}
       </section>
 
-      {/* Assigned Instructors Section */}
-      <section className="mb-6">
-        <h2 className="text-md font-semibold mb-2">Assigned Instructor :</h2>
-        {filteredInstructorBatches && filteredInstructorBatches.length > 0 ? (
-          <table className="table-auto w-full border-collapse border border-gray-200 mb-4">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-2">
-                  Instructor Name
-                </th>
-                <th className="border border-gray-300 px-4 py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredInstructorBatches.map((instructorBatch) => {
-                const instructorName = getInstructorNames(
-                  instructorBatch.instructorId
-                );
-                return (
-                  <tr key={instructorBatch._id}>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {instructorName}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      <div className="flex justify-center">
-                        <button
-                          className="bg-red-500 text-white btn btn-sm rounded-sm"
-                          onClick={() =>
-                            handleDeleteInstructor(instructorBatch._id)
-                          }
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <div className="border rounded-lg p-4 mb-4 text-gray-500">
-            No instructors assigned to this batch yet.
-          </div>
-        )}
-      </section>
+    
 
-      {/* Section for Enrolled Students */}
-      <section className="mt-5">
-        <h2 className="text-md font-semibold mb-2">Enrolled Students:</h2>
-        {batch.occupiedSeat > 0 && (
-          <p className="mb-2">Total Enrolled Students: {batch.occupiedSeat}</p>
-        )}
-        {filteredStudents && filteredStudents.length > 0 ? (
-          <table className="table-auto w-full border-collapse border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-2">#</th>
-                <th className="border border-gray-300 px-4 py-2">Name</th>
-                <th className="border border-gray-300 px-4 py-2">Student ID</th>
-                <th className="border border-gray-300 px-4 py-2">Department</th>
-                <th className="border border-gray-300 px-4 py-2">
-                  Institution
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents.map((student, index) => (
-                <tr key={student._id}>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {index + 1}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {getUserName(student.userId) || "N/A"}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {student.studentID}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {student.department}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {student.institution}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="border rounded-lg p-4 mb-4 text-gray-500">
-            No students enrolled in this batch yet.
+      {/* Students Section */}
+      <section className="bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Enrolled Students
+            </h2>
+            {batch.occupiedSeat > 0 && (
+              <span className="text-sm text-gray-600">
+                Total: {batch.occupiedSeat}
+              </span>
+            )}
           </div>
-        )}
+          {filteredStudents && filteredStudents.length > 0 ? (
+            <div className="overflow-x-auto">
+              <div className="max-h-[500px] overflow-y-auto relative">
+                <table className="table w-full">
+                  <thead className="sticky top-0 bg-gray-50 z-10">
+                    <tr className="border-b border-gray-200">
+                      <th className="py-3 px-4 font-medium text-black text-center w-12">
+                        #
+                      </th>
+                      <th className="py-3 px-4 font-medium text-black text-left min-w-[150px]">
+                        Name
+                      </th>
+                      <th className="py-3 px-4 font-medium text-black text-left min-w-[120px]">
+                        Student ID
+                      </th>
+                      <th className="py-3 px-4 font-medium text-black text-left min-w-[180px]">
+                        Department
+                      </th>
+                      <th className="py-3 px-4 font-medium text-black text-left min-w-[200px]">
+                        Institution
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((student, index) => (
+                      <tr key={student._id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-center">{index + 1}</td>
+                        <td className="py-3 px-4">{getUserName(student.userId)}</td>
+                        <td className="py-3 px-4">{student.studentID}</td>
+                        <td className="py-3 px-4">{student.department}</td>
+                        <td className="py-3 px-4">{student.institution}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              No students enrolled in this batch yet.
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Create Routine Modal */}
@@ -430,13 +468,6 @@ const BatchDetails = () => {
         </div>
       </dialog>
 
-      <Toaster
-        position="bottom-right" // Different position from modal toaster
-        reverseOrder={false}
-        toastOptions={{
-          duration: 3000,
-        }}
-      />
     </div>
   );
 };

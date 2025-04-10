@@ -167,38 +167,59 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
   const handleChange = async (index, field, value) => {
     const updatedRoutines = [...routines];
     updatedRoutines[index][field] = value;
-
-    // Immediate validation for day uniqueness within the batch
+  
+    // Track if we should prevent state update
+    let shouldPreventUpdate = false;
+  
+    // Day uniqueness validation (only when day changes)
     if (field === "day") {
       const isDuplicate = updatedRoutines.some(
         (r, i) => i !== index && r.day === value && value !== ""
       );
       if (isDuplicate) {
-        toast.error("This batch already has a class scheduled for this day");
-        return;
+        toast.error("This batch already has a class scheduled for this day", {
+          id: "day-duplicate-error" // Same ID prevents duplicate toasts
+        });
+        shouldPreventUpdate = true;
       }
     }
-
-    // Validate end time is after start time
+  
+    // Time validation (only when both times exist)
     if (
+      !shouldPreventUpdate &&
       (field === "startTime" || field === "endTime") &&
-      updatedRoutines[index].day &&
-      updatedRoutines[index].startTime &&
-      updatedRoutines[index].endTime
+      updatedRoutines[index].day
     ) {
-      if (
-        timeToMinutes(updatedRoutines[index].endTime) <=
-        timeToMinutes(updatedRoutines[index].startTime)
-      ) {
-        toast.error("End time must be after start time");
-        return;
+      const { startTime, endTime } = updatedRoutines[index];
+      
+      // Only validate if both times are present
+      if (startTime && endTime) {
+        // Skip validation if this field is being cleared
+        if (!value) return;
+  
+        const start = timeToMinutes(startTime);
+        const end = timeToMinutes(endTime);
+  
+        if (end <= start) {
+          toast.error("End time must be after start time", {
+            id: "time-error" // Same ID prevents duplicate toasts
+          });
+          shouldPreventUpdate = true;
+        } else {
+          // Clear time error toast if validation passes
+          toast.dismiss("time-error");
+        }
       }
     }
-
-    // Update state first for responsive UI
+  
+    if (shouldPreventUpdate) {
+      return;
+    }
+  
+    // Update state
     setRoutines(updatedRoutines);
-
-    // Perform full validation if all required fields are present
+  
+    // Full validation only when all fields are complete
     if (
       updatedRoutines[index].day &&
       updatedRoutines[index].startTime &&

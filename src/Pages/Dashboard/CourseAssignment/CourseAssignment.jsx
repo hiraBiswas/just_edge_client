@@ -400,15 +400,19 @@ const CourseAssignment = () => {
   };
 
   return (
-    <div className="h-screen w-[1100px]">
-      <div className="flex justify-between mt-4 items-center">
-     
-
-        <div className="flex justify-center">
+    <div className="min-h-screen w-full p-4 lg:p-8">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Student Batch Assignment</h1>
+          <p className="text-gray-600">Manage student batch assignments</p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
           <select
-            className="select select-bordered"
-            value={filterCourse} // updated filterCourse
-            onChange={(e) => setFilterCourse(e.target.value)} // updated filterCourse
+            className="select select-bordered w-full md:w-64"
+            value={filterCourse}
+            onChange={(e) => setFilterCourse(e.target.value)}
           >
             <option value="">Filter by Course</option>
             {courseList.map((course) => (
@@ -417,162 +421,178 @@ const CourseAssignment = () => {
               </option>
             ))}
           </select>
+          
+          <Link 
+            to="/dashboard/changeRequests" 
+            className="btn btn-outline w-full md:w-auto"
+          >
+            View Change Requests
+          </Link>
         </div>
-
-        <Link to="/dashboard/changeRequests"><button className="btn btn-outline">View Change Requests</button></Link>
       </div>
 
-      <h2 className="text-3xl font-bold mt-8 mb-10">
-          Total Students: {combinedData.length}
+      {/* Summary Card */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Total Students: <span className="text-blue-600">{combinedData.length}</span>
         </h2>
+      </div>
 
-    {/* Loading State */}
-    {loading && (
+      {/* Loading State */}
+      {loading && (
         <div className="flex justify-center items-center h-64">
-          <span className="loading loading-ring loading-xl"></span>
+          <span className="loading loading-spinner loading-lg"></span>
         </div>
       )}
 
       {/* Data Loaded State */}
       {!loading && (
         <>
-       
-
           {/* No Data State */}
-          {combinedData.length === 0 && !loading && (
-            <div className="text-center text-2xl mt-32  font-semibold text-red-600">
-              {filterCourse
-                ? "No students prefer the selected course."
-                : "No student data available."}
+          {combinedData.length === 0 && (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
+              <h3 className="text-xl font-semibold text-gray-700">
+                {filterCourse
+                  ? "No students prefer the selected course"
+                  : "No student data available"}
+              </h3>
+              <p className="text-gray-500 mt-2">
+                {filterCourse
+                  ? "Try selecting a different course filter"
+                  : "Please check back later or add new students"}
+              </p>
             </div>
           )}
 
           {/* Data Available State */}
           {combinedData.length > 0 && (
             <>
-              <div className="overflow-x-auto">
-                <table className="table w-full">
-                  <thead className="bg-blue-950 text-white">
-                    <tr className="text-white">
-                      <th>
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="table w-full">
+                    <thead className="bg-blue-950 text-white">
+                      <tr>
+                        <th className="w-10">
                         <input
-                          type="checkbox"
-                          checked={selectAll}
-                          onChange={handleSelectAll}
-                        />
-                      </th>
-                      <th className="text-lg font-semibold text-white">#</th>
-                      <th className="text-lg font-semibold text-white">Image</th>
-                      <th className="text-lg font-semibold text-white">Name</th>
-                      <th className="text-lg font-semibold text-white">
-                        Student ID
-                      </th>
-                      <th className="text-lg font-semibold text-white">
-                        Session
-                      </th>
-                      <th className="text-lg font-semibold text-white">
-                        Preferred Course
-                      </th>
-                      <th className="text-lg font-semibold text-white">
-                        Assign Batch
-                      </th>
-                      <th className="text-lg font-semibold text-white">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentUsers.map((user, index) => (
-                      <tr key={user._id} className="text-base text-black compact-row">
-                        <td>
-                          <input
-                            type="checkbox"
-                            checked={selectedUsers.includes(user._id)}
-                            onChange={() => handleSelectUser(user._id)}
-                          />
-                        </td>
-                        <td>{index + 1}</td>
-                        <td className="text-right text-base text-black">
-                          <div className="flex items-center justify-center gap-4">
+  type="checkbox"
+  checked={selectAll}
+  onChange={handleSelectAll}
+  className="checkbox checkbox-sm bg-white border border-gray-300"
+/>
+
+                        </th>
+                        <th className="py-3 px-4 text-left">#</th>
+                        <th className="py-3 px-4 text-left">Image</th>
+                        <th className="py-3 px-4 text-left min-w-[150px]">Name</th>
+                        <th className="py-3 px-4 text-left">Student ID</th>
+                        <th className="py-3 px-4 text-left">Session</th>
+                        <th className="py-3 px-4 text-left min-w-[180px]">Preferred Course</th>
+                        <th className="py-3 px-4 text-left min-w-[200px]">Assign Batch</th>
+                        <th className="py-3 px-4 text-left">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {currentUsers.map((user, index) => (
+                        <tr key={user._id} className="hover:bg-gray-50">
+                          <td className="py-2 px-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedUsers.includes(user._id)}
+                              onChange={() => handleSelectUser(user._id)}
+                              className="checkbox checkbox-sm"
+                            />
+                          </td>
+                          <td className="py-2 px-4">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                          <td className="py-2 px-4">
                             <div className="avatar">
-                              <div className="mask mask-squircle w-12 h-12">
-                                <img src={user.image} alt="User Avatar" />
+                              <div className="mask mask-squircle w-10 h-10">
+                                <img src={user.image} alt={user.name} />
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td>{user.name}</td>
-                        <td>{user.studentID}</td>
-                        <td>{user.session}</td>
-                        <td>{user.prefCourse}</td>
-                        <td>
-                          <select
-                            className="select select-bordered select-sm"
-                            value={assignedBatches[user._id] || ""}
-                            onChange={(e) => {
-                              setAssignedBatches((prev) => ({
-                                ...prev,
-                                [user._id]: e.target.value,
-                              }));
-                            }}
-                          >
-                            <option value="">Select Batch</option>
-                            {batchList
-                              .filter((batch) => batch.status === "Upcoming")
-                              .map((batch) => (
-                                <option key={batch._id} value={batch.batchName}>
-                                  {batch.batchName}
-                                </option>
-                              ))}
-                          </select>
-                        </td>
-                        <td>
-                          <button
-                            className="ml-5"
-                            onClick={() => {
-                              setSelectedStudent(user);
-                              document.getElementById("studentModal").showModal();
-                            }}
-                          >
-                            <FaEye />
-                          </button>
-                          <button onClick={handleArchive} className="ml-5">
-                            <FaRegFileArchive />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Action Buttons - Only show when data exists */}
-              <div className="flex items-center">
-                <div className="flex justify-center mb-8 mt-4">
-                  <button
-                    className="btn bg-blue-950 text-white"
-                    onClick={handleAssignBatch}
-                  >
-                    Assign Batch
-                  </button>
+                          </td>
+                          <td className="py-2 px-4 font-medium">{user.name}</td>
+                          <td className="py-2 px-4">{user.studentID}</td>
+                          <td className="py-2 px-4">{user.session}</td>
+                          <td className="py-2 px-4">{user.prefCourse}</td>
+                          <td className="py-2 px-4">
+                            <select
+                              className="select select-bordered select-sm w-full max-w-xs"
+                              value={assignedBatches[user._id] || ""}
+                              onChange={(e) => {
+                                setAssignedBatches((prev) => ({
+                                  ...prev,
+                                  [user._id]: e.target.value,
+                                }));
+                              }}
+                            >
+                              <option value="">Select Batch</option>
+                              {batchList
+                                .filter((batch) => batch.status === "Upcoming")
+                                .map((batch) => (
+                                  <option key={batch._id} value={batch.batchName}>
+                                    {batch.batchName}
+                                  </option>
+                                ))}
+                            </select>
+                          </td>
+                          <td className="py-2 px-4">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedStudent(user);
+                                  document.getElementById("studentModal").showModal();
+                                }}
+                                className="btn btn-ghost btn-sm text-gray-600 hover:text-blue-600"
+                                title="View Details"
+                              >
+                                <FaEye size={16} />
+                              </button>
+                              <button
+                                onClick={handleArchive}
+                                className="btn btn-ghost btn-sm text-gray-600 hover:text-red-600"
+                                title="Archive Student"
+                              >
+                                <FaRegFileArchive size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
-                <div className="flex justify-end w-full px-8 py-4 mt-auto">
-                  <button
-                    className="join-item btn"
-                    disabled={currentPage === 1}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                  >
-                    Previous
-                  </button>
-                  <button className="join-item btn">{`Page ${currentPage}`}</button>
-                  <button
-                    className="join-item btn"
-                    disabled={currentPage === totalPages}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                  >
-                    Next
-                  </button>
+                {/* Action Buttons and Pagination */}
+                <div className="flex flex-col sm:flex-row justify-between items-center p-4 border-t border-gray-200">
+                  <div className="mb-4 sm:mb-0">
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleAssignBatch}
+                      disabled={selectedUsers.length === 0}
+                    >
+                      Assign Batch ({selectedUsers.length})
+                    </button>
+                  </div>
+                  
+                  <div className="join">
+                    <button
+                      className="join-item btn"
+                      disabled={currentPage === 1}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                    >
+                      «
+                    </button>
+                    <button className="join-item btn">
+                      Page {currentPage} of {totalPages}
+                    </button>
+                    <button
+                      className="join-item btn"
+                      disabled={currentPage === totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                    >
+                      »
+                    </button>
+                  </div>
                 </div>
               </div>
             </>
@@ -580,40 +600,56 @@ const CourseAssignment = () => {
         </>
       )}
 
-      {/* Modal for student details */}
-      <dialog id="studentModal" className="modal modal-bottom sm:modal-middle">
-        <div className="modal-box">
-          {selectedStudent ? (
-            <>
-              <h3 className="font-bold text-lg">{selectedStudent.name}</h3>
-              <img
-                src={selectedStudent.image}
-                alt="Student Avatar"
-                className="w-24 h-24 rounded-full"
-              />
-              <p className="py-4">Email: {selectedStudent.email}</p>
-              <p>Student ID: {selectedStudent.studentID}</p>
-              <p>Session: {selectedStudent.session}</p>
-              <p>Preferred Course: {selectedStudent.prefCourse}</p>
-              <p>
-                Assigned Batch:{" "}
-                {assignedBatches[selectedStudent.enrolled_batch] ||
-                  "Not Assigned"}
-              </p>
-              <div className="modal-action">
-                <button
-                  className="btn"
-                  onClick={() => {
-                    setSelectedStudent(null);
-                    document.getElementById("studentModal").close();
-                  }}
-                >
-                  Close
-                </button>
+      {/* Student Details Modal */}
+      <dialog id="studentModal" className="modal">
+        <div className="modal-box max-w-2xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg">Student Details</h3>
+            <button
+              onClick={() => {
+                setSelectedStudent(null);
+                document.getElementById("studentModal").close();
+              }}
+              className="btn btn-sm btn-circle btn-ghost"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {selectedStudent && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col items-center">
+                <img
+                  src={selectedStudent.image}
+                  alt={selectedStudent.name}
+                  className="w-32 h-32 rounded-full object-cover mb-4"
+                />
+                <h4 className="text-xl font-semibold">{selectedStudent.name}</h4>
+                <p className="text-gray-600">{selectedStudent.email}</p>
               </div>
-            </>
-          ) : (
-            <p>Loading...</p>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Student ID:</span>
+                  <span>{selectedStudent.studentID}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Session:</span>
+                  <span>{selectedStudent.session}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Preferred Course:</span>
+                  <span>{selectedStudent.prefCourse}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Assigned Batch:</span>
+                  <span>
+                    {assignedBatches[selectedStudent.enrolled_batch] ||
+                      "Not Assigned"}
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </dialog>
