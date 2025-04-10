@@ -38,7 +38,8 @@ const BatchDetails = () => {
       const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
       if (routineResponse.data) {
         // Ensure we're handling both the old and new API response formats
-        const routinesData = routineResponse.data.schedule || routineResponse.data;
+        const routinesData =
+          routineResponse.data.schedule || routineResponse.data;
         setRoutines(Array.isArray(routinesData) ? routinesData : []);
       } else {
         setRoutines([]);
@@ -50,7 +51,6 @@ const BatchDetails = () => {
       setRoutineLoading(false);
     }
   };
-  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -166,29 +166,26 @@ const BatchDetails = () => {
       console.error("Updated routines is not an array:", updatedRoutines);
       return;
     }
-  
+
     const organizedRoutines = updatedRoutines.reduce((acc, routine) => {
       acc[routine.day] = routine;
       return acc;
     }, {});
-  
+
     setRoutines(Object.values(organizedRoutines));
     toast.success("Routine updated successfully");
   };
-  
 
   const sortedRoutines = Array.isArray(routines)
-  ? Object.values(
-      routines.reduce((acc, routine) => {
-        if (routine.day && !acc[routine.day]) {
-          acc[routine.day] = routine;
-        }
-        return acc;
-      }, {})
-    ).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
-  : [];
-
-
+    ? Object.values(
+        routines.reduce((acc, routine) => {
+          if (routine.day && !acc[routine.day]) {
+            acc[routine.day] = routine;
+          }
+          return acc;
+        }, {})
+      ).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
+    : [];
 
   return (
     <div className="w-[1100px] mx-auto p-6">
@@ -260,19 +257,16 @@ const BatchDetails = () => {
                 </tr>
               </thead>
               <tbody>
-               
-                  {sortedRoutines.map((item, index) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {item.day}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {formatTime(item.startTime)} -{" "}
-                        {formatTime(item.endTime)}
-                      </td>
-                    </tr>
-                  ))}
-
+                {sortedRoutines.map((item, index) => (
+                  <tr key={index}>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {item.day}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {formatTime(item.startTime)} - {formatTime(item.endTime)}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -334,9 +328,7 @@ const BatchDetails = () => {
       <section className="mt-5">
         <h2 className="text-md font-semibold mb-2">Enrolled Students:</h2>
         {batch.occupiedSeat > 0 && (
-          <p className="mb-2">
-            Total Enrolled Students: {batch.occupiedSeat}
-          </p>
+          <p className="mb-2">Total Enrolled Students: {batch.occupiedSeat}</p>
         )}
         {filteredStudents && filteredStudents.length > 0 ? (
           <table className="table-auto w-full border-collapse border border-gray-200">
@@ -381,25 +373,31 @@ const BatchDetails = () => {
       </section>
 
       {/* Create Routine Modal */}
-      <dialog id="create_routine_modal" className="modal">
-  <div className="modal-box relative">
-    <button
-      onClick={() => document.getElementById("create_routine_modal").close()}
-      className="absolute top-2 right-2"
-    >
-      <RxCross2 />
-    </button>
-    <CreateRoutine 
-      batchId={batchId}
-      closeModal={() => {
-        document.getElementById("create_routine_modal").close();
-      }}
-      onSuccess={() => {
-        fetchRoutines(); // Explicitly refresh after success
-      }}
-    />
-  </div>
-</dialog>
+      <dialog
+        id="create_routine_modal"
+        className="modal"
+        style={{ zIndex: 9999 }}
+      >
+        <div className="modal-box relative">
+          <button
+            onClick={() =>
+              document.getElementById("create_routine_modal").close()
+            }
+            className="absolute top-2 right-2"
+          >
+            <RxCross2 />
+          </button>
+          <CreateRoutine
+            batchId={batchId}
+            closeModal={() => {
+              document.getElementById("create_routine_modal").close();
+            }}
+            onSuccess={() => {
+              fetchRoutines(); // Explicitly refresh after success
+            }}
+          />
+        </div>
+      </dialog>
 
       {/* Update Routine Modal */}
       <dialog
@@ -420,20 +418,25 @@ const BatchDetails = () => {
 
           {/* UpdateRoutine Component */}
           <UpdateRoutine
-  batchId={batchId}
-  closeModal={() => {
-    document.getElementById("update_routine_modal").close();
-  }}
-  onRoutineUpdate={(updatedRoutines) => {
-    handleRoutineUpdate(updatedRoutines);
-    fetchRoutines(); // Ensure fresh data is fetched after routine update
-  }}
-/>
-
+            batchId={batchId}
+            closeModal={() => {
+              document.getElementById("update_routine_modal").close();
+            }}
+            onRoutineUpdate={(updatedRoutines) => {
+              handleRoutineUpdate(updatedRoutines);
+              fetchRoutines(); // Ensure fresh data is fetched after routine update
+            }}
+          />
         </div>
       </dialog>
 
-      <Toaster position="top-center" reverseOrder={false} />
+      <Toaster
+        position="bottom-right" // Different position from modal toaster
+        reverseOrder={false}
+        toastOptions={{
+          duration: 3000,
+        }}
+      />
     </div>
   );
 };

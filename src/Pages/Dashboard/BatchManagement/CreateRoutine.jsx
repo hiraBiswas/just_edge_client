@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { toast as parentToast } from "react-toastify";
 import { Toaster, toast } from "react-hot-toast";
 
 // Helper: Convert time string to minutes for easier comparison
@@ -32,7 +31,7 @@ const hasTimeOverlap = (start1, end1, start2, end2) => {
 
 const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
   console.log("CreateRoutine component rendering with batchId:", batchId);
-
+  const [users, setUsers] = useState([]);
   const [batchName, setBatchName] = useState("");
   const [existingSchedules, setExistingSchedules] = useState({});
   const [numDays, setNumDays] = useState(2);
@@ -63,6 +62,15 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
     "Thursday",
     "Friday",
   ];
+
+  // Function to get instructor name by userId
+  const getInstructorName = (instructorId) => {
+    const instructor = availableInstructors.find((i) => i._id === instructorId);
+    if (!instructor) return "Unknown Instructor";
+
+    const user = users.find((u) => u._id === instructor.userId);
+    return user ? user.name : "Unknown Instructor";
+  };
 
   // Fetch batch data and available instructors
   useEffect(() => {
@@ -98,48 +106,19 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       }
     };
 
+    const fetchUsers = async () => {
+      try {
+        const response = await axiosSecure.get("/users");
+        setUsers(response.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
     fetchBatchData();
     fetchAvailableInstructors();
+    fetchUsers();
   }, [batchId, axiosSecure]);
-
-  // Handle instructor selection
-  const handleInstructorSelection = (instructorId, isSelected) => {
-    if (isSelected) {
-      setSelectedInstructors((prev) => [...prev, instructorId]);
-    } else {
-      setSelectedInstructors((prev) =>
-        prev.filter((id) => id !== instructorId)
-      );
-    }
-  };
-
-  // Submit instructor assignments
-  const assignInstructorsToBatch = async () => {
-    if (selectedInstructors.length === 0) {
-      toast.error("Please select at least one instructor");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await axiosSecure.patch(`/batches/${batchId}`, {
-        instructorIds: selectedInstructors,
-      });
-
-      if (response.data.success) {
-        toast.success("Instructors assigned successfully");
-        setInstructorIds(selectedInstructors);
-        setInstructorAssignmentStep(false);
-      } else {
-        toast.error(response.data.message || "Failed to assign instructors");
-      }
-    } catch (error) {
-      console.error("Error assigning instructors:", error);
-      toast.error("Failed to assign instructors to batch");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Handle change in the number of days
   const handleDaysChange = (event) => {
@@ -193,11 +172,11 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
     return newErrors;
   };
 
+  // Update the checkInstructorAvailability function to use instructor names
   const checkInstructorAvailability = async () => {
     console.log("Checking instructor availability");
     const newConflicts = [];
-    const allExistingSchedules = {}; // Store existing schedules by day
-    const daysWithMaxClasses = new Set(); // Track days that have max classes
+    const allExistingSchedules = {};
 
     try {
       // Check each instructor
@@ -211,14 +190,6 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
           const instructorSchedule = response.data.schedule;
           const classCounts = response.data.classCounts || {};
 
-          // Store existing schedule data
-          Object.entries(instructorSchedule).forEach(([day, classes]) => {
-            if (!allExistingSchedules[day]) {
-              allExistingSchedules[day] = [];
-            }
-            allExistingSchedules[day].push(...classes);
-          });
-
           // Check each day in the schedule for conflicts
           schedule.forEach((scheduleEntry) => {
             const { day, startTime, endTime } = scheduleEntry;
@@ -226,12 +197,13 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
 
             // Check for max class limit first
             if (classCounts[day] >= 2) {
-              const conflict = `Instructor already has maximum classes (2) on ${day}`;
+              const conflict = `${getInstructorName(
+                instructorId
+              )} already has maximum classes (2) on ${day}`;
               if (!newConflicts.includes(conflict)) {
                 newConflicts.push(conflict);
-                daysWithMaxClasses.add(day);
               }
-              return; // Skip time conflict check if max classes reached
+              return;
             }
 
             // Check for time conflicts
@@ -246,7 +218,9 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
                   )
                 ) {
                   const conflict =
-                    `Instructor has time conflict on ${day}: ` +
+                    `${getInstructorName(
+                      instructorId
+                    )} has time conflict on ${day}: ` +
                     `Existing class at ${existingClass.startTime}-${existingClass.endTime} ` +
                     `conflicts with ${startTime}-${endTime}`;
 
@@ -327,19 +301,24 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       const checkMaxClasses = async () => {
         try {
           if (instructorIds.length > 0) {
-            const instructorId = instructorIds[0];
-            const response = await axiosSecure.get(
-              `/instructors/${instructorId}/classes`
-            );
-
-            if (
-              response.data.success &&
-              response.data.classCounts[value] >= 2
-            ) {
-              console.log(`Maximum classes detected for ${value}`);
-              toast.error(
-                `Instructor already has maximum classes (2) on ${value}`
+            // Check all instructors, not just the first one
+            for (const instructorId of instructorIds) {
+              const response = await axiosSecure.get(
+                `/instructors/${instructorId}/classes`
               );
+
+              if (
+                response.data.success &&
+                response.data.classCounts[value] >= 2
+              ) {
+                console.log(`Maximum classes detected for ${value}`);
+                toast.error(
+                  `${getInstructorName(
+                    instructorId
+                  )} already has maximum classes (2) on ${value}`
+                );
+                break;
+              }
             }
           }
         } catch (error) {
@@ -375,30 +354,32 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
             const startTime = updatedSchedule[index].startTime;
             const endTime = updatedSchedule[index].endTime;
 
-            const instructorId = instructorIds[0];
-            const response = await axiosSecure.get(
-              `/instructors/${instructorId}/classes`
-            );
+            for (const instructorId of instructorIds) {
+              const response = await axiosSecure.get(
+                `/instructors/${instructorId}/classes`
+              );
 
-            if (response.data.success && response.data.schedule[day]) {
-              const existingClasses = response.data.schedule[day];
+              if (response.data.success && response.data.schedule[day]) {
+                const existingClasses = response.data.schedule[day];
 
-              for (const existingClass of existingClasses) {
-                if (
-                  hasTimeOverlap(
-                    startTime,
-                    endTime,
-                    existingClass.startTime,
-                    existingClass.endTime
-                  )
-                ) {
-                  console.log(`Time conflict detected on ${day}`);
-                  toast.error(
-                    `Instructor has time conflict on ${day}: ` +
-                      `Existing class at ${existingClass.startTime}-${existingClass.endTime} ` +
-                      `conflicts with ${startTime}-${endTime}`
-                  );
-                  break;
+                for (const existingClass of existingClasses) {
+                  if (
+                    hasTimeOverlap(
+                      startTime,
+                      endTime,
+                      existingClass.startTime,
+                      existingClass.endTime
+                    )
+                  ) {
+                    toast.error(
+                      `${getInstructorName(
+                        instructorId
+                      )} has time conflict on ${day}: ` +
+                        `Existing class at ${existingClass.startTime}-${existingClass.endTime} ` +
+                        `conflicts with ${startTime}-${endTime}`
+                    );
+                    return; // Stop checking after first conflict
+                  }
                 }
               }
             }
@@ -522,9 +503,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       // Check for successful status code (2xx) instead of response.data.success
       if (response.status >= 200 && response.status < 300) {
         console.log("Batch submission successful");
-        parentToast.success(
-          response.data.message || "Routine created successfully!"
-        );
+        toast.success(response.data.message || "Routine created successfully!");
         onSuccess(); // Refresh routines
         closeModal(); // Close modal
       } else {
@@ -570,27 +549,6 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
           ))}
         </select>
       </div>
-
-      {/* Display validation errors */}
-      {/* {(errors.length > 0 || instructorConflicts.length > 0) && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-sm text-sm">
-          <h3 className="text-red-600 font-medium mb-1">
-            Please correct the following:
-          </h3>
-          <ul className="list-disc pl-5">
-            {errors.map((error, i) => (
-              <li key={`error-${i}`} className="text-red-600">
-                {error}
-              </li>
-            ))}
-            {instructorConflicts.map((conflict, i) => (
-              <li key={`conflict-${i}`} className="text-red-600">
-                {conflict}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )} */}
 
       {schedule.map((daySchedule, index) => (
         <div key={index} className="mb-4">
@@ -675,7 +633,22 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         </button>
       </div>
 
-      <Toaster position="top-center" reverseOrder={false} />
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        containerStyle={{
+          position: "fixed",
+          top: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10000, // Higher than modal's z-index
+        }}
+        toastOptions={{
+          style: {
+            zIndex: 10000, // Ensure individual toasts also have high z-index
+          },
+        }}
+      />
     </form>
   );
 };
