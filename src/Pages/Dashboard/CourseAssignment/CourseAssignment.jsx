@@ -3,20 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { FaRegFileArchive, FaEye } from "react-icons/fa";
-import Swal from "sweetalert2";
+import { Toaster, toast } from "react-hot-toast";
 import "./courseAssignment.css";
 import { Link } from "react-router-dom";
 
 const CourseAssignment = () => {
   const axiosSecure = useAxiosSecure();
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterCourse, setFilterCourse] = useState(""); // changed to filter by course
+  const [filterCourse, setFilterCourse] = useState("");
   const [batchList, setBatchList] = useState([]);
   const [courseList, setCourseList] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState("");
-  const [assignedBatches, setAssignedBatches] = useState({});
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const itemsPerPage = 8;
@@ -32,10 +31,10 @@ const CourseAssignment = () => {
       } catch (error) {
         console.error("Error fetching batches:", error);
       } finally {
-        setLoading(false); // Ensure that loading is set to false after data is fetched or failed
+        setLoading(false);
       }
     };
-    setLoading(true); // Set loading to true when data is being fetched
+    setLoading(true);
     fetchBatches();
   }, [axiosSecure]);
 
@@ -48,17 +47,9 @@ const CourseAssignment = () => {
       } catch (error) {
         console.error("Error fetching courses:", error);
         if (error.code === "ERR_NETWORK") {
-          Swal.fire({
-            icon: "error",
-            title: "Network Error",
-            text: "Please check your internet connection.",
-          });
+          toast.error("Network Error: Please check your internet connection.");
         } else {
-          Swal.fire({
-            icon: "error",
-            title: "Error fetching courses",
-            text: error.message,
-          });
+          toast.error(`Error fetching courses: ${error.message}`);
         }
       } finally {
         setLoading(false);
@@ -110,19 +101,21 @@ const CourseAssignment = () => {
           session: student.session,
           prefBatch: getBatchNameById(student.prefBatch),
           prefCourse: getCourseNameById(student.prefCourse),
-          enrolled_batch: student.enrolled_batch, // include enrolled_batch
-          assignedBatch: student.assigned_batch || "",
+          enrolled_batch: student.enrolled_batch,
+          studentDocId: student._id, // Add student document ID
+          isDeleted: student.isDeleted || false, // Add isDeleted status
         };
       })
       .filter(
         (item) =>
           item !== null &&
-          item.enrolled_batch === null && // Only show students without an enrolled batch
-          (filterCourse ? item.prefCourse === filterCourse : true) // updated filter by course
+          item.isDeleted === false &&
+          item.enrolled_batch === null &&
+          (filterCourse ? item.prefCourse === filterCourse : true)
       );
   }, [students, users, filterCourse, batchList, courseList]);
 
-  // Paginate the combined data
+  // Pagination
   const totalPages = Math.ceil(combinedData.length / itemsPerPage);
   const currentItems = combinedData
     .filter((instructor) =>
@@ -131,22 +124,6 @@ const CourseAssignment = () => {
     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
-
-  useEffect(() => {
-    const initialAssignedBatches = {};
-    combinedData.forEach((student) => {
-      if (!assignedBatches[student._id]) {
-        initialAssignedBatches[student._id] = student.prefBatch;
-      }
-    });
-
-    if (Object.keys(initialAssignedBatches).length > 0) {
-      setAssignedBatches((prev) => ({
-        ...prev,
-        ...initialAssignedBatches,
-      }));
-    }
-  }, [combinedData]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -167,252 +144,200 @@ const CourseAssignment = () => {
     const allCurrentUserIds = currentUsers.map((user) => user._id);
 
     setSelectedUsers((prev) => {
-      // If currently selecting all, add all current users
       if (!selectAll) {
-        // Merge with existing selected users to avoid duplicates
-        const newSelectedUsers = [...new Set([...prev, ...allCurrentUserIds])];
-
-        // Track batch increments
-        const batchIncrements = {};
-        newSelectedUsers.forEach((userId) => {
-          const user = currentUsers.find((u) => u._id === userId);
-          if (user && user.prefBatch) {
-            batchIncrements[user.prefBatch] =
-              (batchIncrements[user.prefBatch] || 0) + 1;
-          }
-        });
-
-        // Update assigned batches based on current page's selections
-        setAssignedBatches((prev) => {
-          const updatedBatches = { ...prev };
-          newSelectedUsers.forEach((userId) => {
-            const user = currentUsers.find((u) => u._id === userId);
-            if (user && !updatedBatches[userId]) {
-              updatedBatches[userId] = user.prefBatch;
-            }
-          });
-          return updatedBatches;
-        });
-
-        return newSelectedUsers;
+        return [...new Set([...prev, ...allCurrentUserIds])];
       }
-
-      // If deselecting all, remove only the current page's users
       return prev.filter((id) => !allCurrentUserIds.includes(id));
     });
   };
 
   const handleAssignBatch = async () => {
-    console.log("Starting batch assignment process...");
-    console.log("Selected Users:", selectedUsers);
-    console.log("Current Assigned Batches:", assignedBatches);
+    if (selectedUsers.length === 0) {
+      toast.error(
+        "No students selected. Please select students before proceeding."
+      );
+      return;
+    }
 
-    if (selectedUsers.length > 0) {
-      // Map to store batch IDs and their new enrolledStudentNumber
-      const batchUpdates = {};
+    if (!selectedBatch) {
+      toast.error(
+        "No batch selected. Please select a batch before proceeding."
+      );
+      return;
+    }
+
+    // Find the selected batch
+    const batchToAssign = batchList.find(
+      (batch) => batch.batchName === selectedBatch
+    );
+
+    if (!batchToAssign) {
+      toast.error("Invalid batch. The selected batch could not be found.");
+      return;
+    }
+
+    // Check if batch has available seats
+    const availableSeats =
+      batchToAssign.seat - (batchToAssign.occupiedSeat || 0);
+    if (selectedUsers.length > availableSeats) {
+      toast.error(
+        `The selected batch only has ${availableSeats} available seats, but you're trying to assign ${selectedUsers.length} students.`
+      );
+      return;
+    }
+
+    try {
       const successfulAssignments = [];
       const failedAssignments = [];
 
-      const selectedUserDetails = selectedUsers.map(async (userId) => {
-        console.log(`Processing user ID: ${userId}`);
-
-        // Get the student associated with the user
-        const student = students.find((student) => student.userId === userId);
-
-        if (student) {
-          const studentId = student._id;
-          const assignedBatchName =
-            assignedBatches[userId] || student.prefBatch;
-
-          console.group(`Student ${studentId} Details`);
-          console.log(`Preferred batch: ${student.prefBatch}`);
-          console.log(`Assigned batch from UI: ${assignedBatchName}`);
-
-          // Find the corresponding batch from the batchList
-          const assignedBatch = batchList.find(
-            (batch) => batch.batchName === assignedBatchName
-          );
-
-          if (!assignedBatch) {
-            console.warn(`Batch "${assignedBatchName}" not found!`);
-            failedAssignments.push(userId);
-            console.groupEnd();
-            return;
-          }
-
-          console.log(
-            `Assigned batch ID: ${assignedBatch._id}, Name: ${assignedBatch.batchName}`
-          );
-
-          // Prepare the data to be updated
-          const updateData = {
-            enrolled_batch: assignedBatch._id,
-          };
-
-          try {
-            const response = await axiosSecure.patch(
-              `/students/${studentId}`,
-              updateData
-            );
-
-            if (response.status === 200) {
-              console.log(
-                `Batch ${assignedBatchName} assigned to student ${studentId}`
-              );
-              successfulAssignments.push(userId);
-
-              // Increment batch update count
-              batchUpdates[assignedBatch._id] =
-                (batchUpdates[assignedBatch._id] || 0) + 1;
-            }
-          } catch (error) {
-            console.error(
-              `Error assigning batch to student ${studentId}:`,
-              error
-            );
-            failedAssignments.push(userId);
-          }
-          console.groupEnd();
+      // First, verify all students can be assigned (pre-check)
+      for (const userId of selectedUsers) {
+        const student = students.find((s) => s.userId === userId);
+        if (!student) {
+          failedAssignments.push(userId);
         }
-      });
-
-      await Promise.all(selectedUserDetails);
-
-      // Log batch update details
-      console.log("Batch Updates:", batchUpdates);
-
-      // Update the enrolledStudentNumber for all affected batches
-      const batchUpdatePromises = Object.entries(batchUpdates).map(
-        async ([batchId, increment]) => {
-          console.group(`Batch ${batchId} Update`);
-          console.log(`Updating batch with increment: ${increment}`);
-
-          const batch = batchList.find((batch) => batch._id === batchId);
-
-          if (!batch) {
-            console.warn(`Batch ID ${batchId} not found!`);
-            console.groupEnd();
-            return;
-          }
-
-          const newOccupiedSeat = (batch.occupiedSeat || 0) + increment;
-
-          try {
-            const response = await axiosSecure.patch(`/batches/${batchId}`, {
-              occupiedSeat: newOccupiedSeat,
-            });
-
-            if (response.status === 200) {
-              console.log(`Batch ${batchId} updated successfully`);
-              console.log(`New Occupied Seat: ${newOccupiedSeat}`);
-            }
-          } catch (error) {
-            console.error(`Error updating batch ${batchId}:`, error);
-          }
-          console.groupEnd();
-        }
-      );
-
-      await Promise.all(batchUpdatePromises);
-
-      // Comprehensive notification
-      if (successfulAssignments.length > 0) {
-        Swal.fire({
-          title: "Batch Assignment Completed",
-          html: `
-            <p>Successfully assigned batches to ${
-              successfulAssignments.length
-            } students.</p>
-            ${
-              failedAssignments.length > 0
-                ? `<p style="color:red">${failedAssignments.length} assignments failed.</p>`
-                : ""
-            }
-          `,
-          icon:
-            successfulAssignments.length === selectedUsers.length
-              ? "success"
-              : "warning",
-        });
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Batch Assignment Failed",
-          text: "No students could be assigned to batches.",
-        });
       }
 
-      // Log final summary
-      console.log("Batch Assignment Summary:");
-      console.log("Total Selected Users:", selectedUsers.length);
-      console.log("Successful Assignments:", successfulAssignments.length);
-      console.log("Failed Assignments:", failedAssignments.length);
+      if (failedAssignments.length > 0) {
+        toast.error(
+          `Could not find ${failedAssignments.length} student records. Assignment aborted.`
+        );
+        return;
+      }
 
-      // Refetch data to reflect updates
+      // Process all assignments in a single transaction if your backend supports it
+      // Alternatively, process sequentially with error handling
+      for (const userId of selectedUsers) {
+        try {
+          const student = students.find((s) => s.userId === userId);
+          const response = await axiosSecure.patch(`/students/${student._id}`, {
+            enrolled_batch: batchToAssign._id,
+          });
+
+          if (response.status === 200) {
+            successfulAssignments.push(userId);
+          } else {
+            failedAssignments.push(userId);
+          }
+        } catch (error) {
+          console.error(`Error assigning batch to student ${userId}:`, error);
+          failedAssignments.push(userId);
+        }
+      }
+
+      // Update batch occupied seats if any assignments were successful
+      if (successfulAssignments.length > 0) {
+        try {
+          await axiosSecure.patch(`/batches/${batchToAssign._id}`, {
+            occupiedSeat:
+              (batchToAssign.occupiedSeat || 0) + successfulAssignments.length,
+          });
+        } catch (error) {
+          console.error("Error updating batch seats:", error);
+          // Revert student assignments if batch update fails
+          for (const userId of successfulAssignments) {
+            try {
+              const student = students.find((s) => s.userId === userId);
+              await axiosSecure.patch(`/students/${student._id}`, {
+                enrolled_batch: null,
+              });
+            } catch (revertError) {
+              console.error(
+                `Failed to revert assignment for student ${userId}:`,
+                revertError
+              );
+            }
+          }
+          toast.error(
+            "Failed to update batch seats. All assignments have been reverted."
+          );
+          return;
+        }
+      }
+
+      // Show result
+      if (successfulAssignments.length > 0) {
+        toast.success(
+          `Successfully assigned ${batchToAssign.batchName} to ${successfulAssignments.length} students.`
+        );
+      }
+
+      if (failedAssignments.length > 0) {
+        toast.error(`Failed to assign ${failedAssignments.length} students.`);
+      }
+
+      // Refresh data
       await queryClient.refetchQueries(["students"]);
       await queryClient.refetchQueries(["batches"]);
-
-      // Reset selection after assignment
+    } catch (error) {
+      console.error("Error during batch assignment:", error);
+      if (error.response?.status === 401) {
+        // Handle unauthorized error (likely token expired)
+        toast.error("Session expired. Please login again.");
+        // You might want to redirect to login here
+      } else {
+        toast.error("An unexpected error occurred during assignment.");
+      }
+    } finally {
+      // Reset selections
       setSelectedUsers([]);
       setSelectAll(false);
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "No Students Selected",
-        text: "Please select students before proceeding.",
-      });
+      setSelectedBatch("");
     }
   };
 
-  const handleArchive = async () => {
-    if (selectedUsers.length > 0) {
-      const selectedUserDetails = selectedUsers.map((userId) => {
-        // Archive the student by setting isDeleted to true
-        axiosSecure
-          .patch(`/students/${userId}`, {
-            isDeleted: true, // Mark student as archived
-          })
-          .then(() => {
-            Swal.fire({
-              title: "Student Archived!",
-              text: `Student ${userId} has been archived successfully.`,
-              icon: "success",
-            });
-          })
-          .catch((error) => {
-            console.error("Error archiving student:", error);
-            Swal.fire({
-              icon: "error",
-              title: "Failed to Archive Student",
-              text: "Something went wrong while archiving the student.",
-            });
-          });
+  const handleArchiveStudent = async (studentId, studentDocId) => {
+    const confirmArchive = window.confirm(
+      "Are you sure you want to archive this student?"
+    );
+
+    if (!confirmArchive) return;
+
+    try {
+      const response = await axiosSecure.patch(`/students/${studentDocId}`, {
+        isDeleted: true,
       });
 
-      if (selectedUserDetails.some((user) => user === null)) return;
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "No Students Selected",
-        text: "Please select students before proceeding.",
-      });
+      if (response.status === 200) {
+        toast.success("Student archived successfully");
+        await queryClient.refetchQueries(["students"]);
+      } else {
+        toast.error("Failed to archive student");
+      }
+    } catch (error) {
+      console.error("Error archiving student:", error);
+      toast.error("An error occurred while archiving the student");
     }
   };
+
+  // Filter batches that have available seats and are ongoing or upcoming
+  const availableBatches = batchList.filter((batch) => {
+    const occupied = batch.occupiedSeat || 0;
+    const hasAvailableSeats = occupied < batch.seat;
+    const validStatus =
+      batch.status === "Ongoing" || batch.status === "Upcoming";
+    return hasAvailableSeats && validStatus;
+  });
 
   return (
-    <div className="min-h-screen w-full p-4 lg:p-8">
+    <div className="min-h-screen w-[1100px] p-4 lg:p-8">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Student Batch Assignment</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Student Batch Assignment
+          </h1>
           <p className="text-gray-600">Manage student batch assignments</p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
           <select
             className="select select-bordered w-full md:w-64"
             value={filterCourse}
-            onChange={(e) => setFilterCourse(e.target.value)}
+            onChange={(e) => {
+              setFilterCourse(e.target.value);
+              setCurrentPage(1); // Reset to first page when changing filter
+            }}
           >
             <option value="">Filter by Course</option>
             {courseList.map((course) => (
@@ -421,9 +346,9 @@ const CourseAssignment = () => {
               </option>
             ))}
           </select>
-          
-          <Link 
-            to="/dashboard/changeRequests" 
+
+          <Link
+            to="/dashboard/changeRequests"
             className="btn btn-outline w-full md:w-auto"
           >
             View Change Requests
@@ -434,9 +359,45 @@ const CourseAssignment = () => {
       {/* Summary Card */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <h2 className="text-xl font-semibold text-gray-800">
-          Total Students: <span className="text-blue-600">{combinedData.length}</span>
+          Total Students:{" "}
+          <span className="text-blue-600">{combinedData.length}</span>
         </h2>
       </div>
+
+      {/* Batch Selection (shown only when students are selected) */}
+      {selectedUsers.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assign Selected Students ({selectedUsers.length}) to Batch:
+              </label>
+              <select
+                className="select select-bordered w-full"
+                value={selectedBatch}
+                onChange={(e) => setSelectedBatch(e.target.value)}
+              >
+                <option value="">Select a Batch</option>
+                {availableBatches.map((batch) => (
+                  <option key={batch._id} value={batch.batchName}>
+                    {batch.batchName} ({batch.status}) - Available:{" "}
+                    {batch.seat - (batch.occupiedSeat || 0)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="btn btn-primary"
+                onClick={handleAssignBatch}
+                disabled={!selectedBatch}
+              >
+                Assign Batch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading State */}
       {loading && (
@@ -456,11 +417,6 @@ const CourseAssignment = () => {
                   ? "No students prefer the selected course"
                   : "No student data available"}
               </h3>
-              <p className="text-gray-500 mt-2">
-                {filterCourse
-                  ? "Try selecting a different course filter"
-                  : "Please check back later or add new students"}
-              </p>
             </div>
           )}
 
@@ -473,21 +429,23 @@ const CourseAssignment = () => {
                     <thead className="bg-blue-950 text-white">
                       <tr>
                         <th className="w-10">
-                        <input
-  type="checkbox"
-  checked={selectAll}
-  onChange={handleSelectAll}
-  className="checkbox checkbox-sm bg-white border border-gray-300"
-/>
-
+                          <input
+                            type="checkbox"
+                            checked={selectAll}
+                            onChange={handleSelectAll}
+                            className="checkbox checkbox-sm bg-white border border-gray-300"
+                          />
                         </th>
                         <th className="py-3 px-4 text-left">#</th>
                         <th className="py-3 px-4 text-left">Image</th>
-                        <th className="py-3 px-4 text-left min-w-[150px]">Name</th>
+                        <th className="py-3 px-4 text-left min-w-[150px]">
+                          Name
+                        </th>
                         <th className="py-3 px-4 text-left">Student ID</th>
                         <th className="py-3 px-4 text-left">Session</th>
-                        <th className="py-3 px-4 text-left min-w-[180px]">Preferred Course</th>
-                        <th className="py-3 px-4 text-left min-w-[200px]">Assign Batch</th>
+                        <th className="py-3 px-4 text-left min-w-[180px]">
+                          Preferred Course
+                        </th>
                         <th className="py-3 px-4 text-left">Actions</th>
                       </tr>
                     </thead>
@@ -502,7 +460,9 @@ const CourseAssignment = () => {
                               className="checkbox checkbox-sm"
                             />
                           </td>
-                          <td className="py-2 px-4">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                          <td className="py-2 px-4">
+                            {(currentPage - 1) * itemsPerPage + index + 1}
+                          </td>
                           <td className="py-2 px-4">
                             <div className="avatar">
                               <div className="mask mask-squircle w-10 h-10">
@@ -515,32 +475,13 @@ const CourseAssignment = () => {
                           <td className="py-2 px-4">{user.session}</td>
                           <td className="py-2 px-4">{user.prefCourse}</td>
                           <td className="py-2 px-4">
-                            <select
-                              className="select select-bordered select-sm w-full max-w-xs"
-                              value={assignedBatches[user._id] || ""}
-                              onChange={(e) => {
-                                setAssignedBatches((prev) => ({
-                                  ...prev,
-                                  [user._id]: e.target.value,
-                                }));
-                              }}
-                            >
-                              <option value="">Select Batch</option>
-                              {batchList
-                                .filter((batch) => batch.status === "Upcoming")
-                                .map((batch) => (
-                                  <option key={batch._id} value={batch.batchName}>
-                                    {batch.batchName}
-                                  </option>
-                                ))}
-                            </select>
-                          </td>
-                          <td className="py-2 px-4">
                             <div className="flex space-x-2">
                               <button
                                 onClick={() => {
                                   setSelectedStudent(user);
-                                  document.getElementById("studentModal").showModal();
+                                  document
+                                    .getElementById("studentModal")
+                                    .showModal();
                                 }}
                                 className="btn btn-ghost btn-sm text-gray-600 hover:text-blue-600"
                                 title="View Details"
@@ -548,7 +489,12 @@ const CourseAssignment = () => {
                                 <FaEye size={16} />
                               </button>
                               <button
-                                onClick={handleArchive}
+                                onClick={() =>
+                                  handleArchiveStudent(
+                                    user._id,
+                                    user.studentDocId
+                                  )
+                                }
                                 className="btn btn-ghost btn-sm text-gray-600 hover:text-red-600"
                                 title="Archive Student"
                               >
@@ -562,18 +508,8 @@ const CourseAssignment = () => {
                   </table>
                 </div>
 
-                {/* Action Buttons and Pagination */}
-                <div className="flex flex-col sm:flex-row justify-between items-center p-4 border-t border-gray-200">
-                  <div className="mb-4 sm:mb-0">
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleAssignBatch}
-                      disabled={selectedUsers.length === 0}
-                    >
-                      Assign Batch ({selectedUsers.length})
-                    </button>
-                  </div>
-                  
+                {/* Pagination */}
+                <div className="flex justify-center p-4 border-t border-gray-200">
                   <div className="join">
                     <button
                       className="join-item btn"
@@ -615,7 +551,7 @@ const CourseAssignment = () => {
               ✕
             </button>
           </div>
-          
+
           {selectedStudent && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col items-center">
@@ -624,10 +560,12 @@ const CourseAssignment = () => {
                   alt={selectedStudent.name}
                   className="w-32 h-32 rounded-full object-cover mb-4"
                 />
-                <h4 className="text-xl font-semibold">{selectedStudent.name}</h4>
+                <h4 className="text-xl font-semibold">
+                  {selectedStudent.name}
+                </h4>
                 <p className="text-gray-600">{selectedStudent.email}</p>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between border-b pb-2">
                   <span className="font-medium">Student ID:</span>
@@ -641,18 +579,12 @@ const CourseAssignment = () => {
                   <span className="font-medium">Preferred Course:</span>
                   <span>{selectedStudent.prefCourse}</span>
                 </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="font-medium">Assigned Batch:</span>
-                  <span>
-                    {assignedBatches[selectedStudent.enrolled_batch] ||
-                      "Not Assigned"}
-                  </span>
-                </div>
               </div>
             </div>
           )}
         </div>
       </dialog>
+      <Toaster position="top-center" />
     </div>
   );
 };

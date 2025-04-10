@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { PlusIcon, TrashIcon, EyeIcon, PencilIcon } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
-
+import useAxiosSecure from "../../../hooks/useAxiosSecure";
 
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
 const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
@@ -10,7 +10,6 @@ const NoticeManagement = () => {
   const [notices, setNotices] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [attachments, setAttachments] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingNoticeId, setEditingNoticeId] = useState(null);
   const [newNotice, setNewNotice] = useState({
@@ -19,8 +18,15 @@ const NoticeManagement = () => {
     tags: [],
     currentTag: "",
     attachments: [],
+    deadline: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const axiosSecure = useAxiosSecure();
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [noticesPerPage] = useState(5);
+  const [totalNotices, setTotalNotices] = useState(0);
 
   // Custom notification system
   const showNotification = (message, type = "success") => {
@@ -28,53 +34,38 @@ const NoticeManagement = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const fetchNotices = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axiosSecure.get("/notice");
+      // Sort notices by createdAt in descending order (newest first)
+      const sortedNotices = response.data.sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      setNotices(sortedNotices);
+      setTotalNotices(sortedNotices.length);
+    } catch (error) {
+      console.error("Error fetching notices:", error);
+      toast.error(`Failed to fetch notices: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotices = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch("http://localhost:5000/notice", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        // Log full response for debugging
-        console.log("Response status:", response.status);
-        console.log("Response headers:", response.headers);
-
-        // Check if the response is OK
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `HTTP error! status: ${response.status}, message: ${errorText}`
-          );
-        }
-
-        const contentType = response.headers.get("Content-Type");
-
-        // Strict JSON checking
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error(`Expected JSON, but got ${contentType}`);
-        }
-
-        const data = await response.json();
-        console.log("Fetched Data:", data);
-        setNotices(data);
-      } catch (error) {
-        console.error("Detailed error fetching notices:", error);
-        toast.error(`Failed to fetch notices: ${error.message}`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchNotices();
   }, []);
 
+  // Get current notices for pagination
+  const indexOfLastNotice = currentPage * noticesPerPage;
+  const indexOfFirstNotice = indexOfLastNotice - noticesPerPage;
+  const currentNotices = notices.slice(indexOfFirstNotice, indexOfLastNotice);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   const handleFileUpload = async (event) => {
     const files = Array.from(event.target.files);
-
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -84,21 +75,12 @@ const NoticeManagement = () => {
     const maxSize = 10 * 1024 * 1024; // 10MB
 
     const uploadPromises = files.map(async (file) => {
-      // Enhanced logging
-      console.log("File details:", {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-      });
-
       if (!allowedTypes.includes(file.type)) {
-        console.error(`Invalid file type: ${file.name}`);
         toast.error(`Invalid file type: ${file.name}`);
         return null;
       }
 
       if (file.size > maxSize) {
-        console.error(`File too large: ${file.name}`);
         toast.error(`File too large: ${file.name} (Max 10MB)`);
         return null;
       }
@@ -107,16 +89,11 @@ const NoticeManagement = () => {
       formData.append("image", file);
 
       try {
-        console.log("Attempting to upload file to ImgBB");
-        const imageUploadResponse = await fetch(image_hosting_api, {
+        const response = await fetch(image_hosting_api, {
           method: "POST",
           body: formData,
         });
-
-        console.log("ImgBB response status:", imageUploadResponse.status);
-
-        const result = await imageUploadResponse.json();
-        console.log("ImgBB upload result:", result);
+        const result = await response.json();
 
         if (result.success) {
           return {
@@ -126,12 +103,10 @@ const NoticeManagement = () => {
             fileSize: file.size,
           };
         } else {
-          console.error("Upload failed for file:", file.name);
           toast.error(`Upload failed: ${file.name}`);
           return null;
         }
       } catch (error) {
-        console.error("Network error during file upload:", error);
         toast.error(`Network error: ${file.name}`);
         return null;
       }
@@ -139,19 +114,13 @@ const NoticeManagement = () => {
 
     try {
       const uploadedFiles = await Promise.all(uploadPromises);
-      const validFiles = uploadedFiles.filter((file) => file !== null);
-
-      console.log("Successfully uploaded files:", validFiles);
-
-      return validFiles;
+      return uploadedFiles.filter((file) => file !== null);
     } catch (error) {
-      console.error("Overall upload error:", error);
       toast.error("File upload failed");
       return [];
     }
   };
 
-  // Add tag functionality
   const handleAddTag = () => {
     const trimmedTag = newNotice.currentTag.trim();
     if (trimmedTag && !newNotice.tags.includes(trimmedTag)) {
@@ -163,7 +132,6 @@ const NoticeManagement = () => {
     }
   };
 
-  // Remove tag
   const handleRemoveTag = (tagToRemove) => {
     setNewNotice((prev) => ({
       ...prev,
@@ -171,90 +139,98 @@ const NoticeManagement = () => {
     }));
   };
 
-
-  
   const handleEditNotice = (notice) => {
     setNewNotice({
       title: notice.title || "",
       description: notice.description || "",
-      tags: notice.tags || [], // Ensure tags is always an array
+      tags: notice.tags || [],
       currentTag: "",
-      attachments: notice.attachments || [], // Ensure attachments is always an array
+      attachments: notice.attachments || [],
       deadline: notice.deadline || "",
     });
     setEditingNoticeId(notice._id);
     setIsEditing(true);
     setIsModalOpen(true);
   };
-  
-
 
   const handleSubmitNotice = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const noticeData = {
-        ...newNotice,
-        createdAt: new Date().toISOString(),
+        title: newNotice.title,
+        description: newNotice.description,
+        tags: newNotice.tags,
+        attachment: newNotice.attachments[0]?.fileUrl || "",
+        deadline: newNotice.deadline,
       };
-
-      const url = isEditing
-        ? `http://localhost:5000/notice/${editingNoticeId}`
-        : "http://localhost:5000/notice";
-      const method = isEditing ? "PATCH" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(noticeData),
-      });
-
-      if (!response.ok) throw new Error("Failed to save notice");
-
-      const result = await response.json();
-      setNotices((prev) =>
-        isEditing
-          ? prev.map((notice) =>
-              notice._id === editingNoticeId ? { ...notice, ...noticeData } : notice
-            )
-          : [result, ...prev]
-      );
-
+  
+      let response;
+      if (isEditing) {
+        response = await axiosSecure.patch(`/notice/${editingNoticeId}`, noticeData);
+      } else {
+        response = await axiosSecure.post("/notice", noticeData);
+      }
+  
+      await fetchNotices();
+  
       setIsModalOpen(false);
       setIsEditing(false);
-      setNewNotice({ title: "", description: "", tags: [], currentTag: "", attachments: [], deadline: "" });
+      setEditingNoticeId(null);
+      setNewNotice({
+        title: "",
+        description: "",
+        tags: [],
+        currentTag: "",
+        attachments: [],
+        deadline: "",
+      });
+  
       toast.success(isEditing ? "Notice updated successfully" : "Notice created successfully");
     } catch (error) {
-      toast.error("An unexpected error occurred");
+      console.error("Error saving notice:", error);
+      toast.error(error.response?.data?.message || "An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
   };
+  
 
-
-  // Delete notice
   const handleDeleteNotice = async (noticeId) => {
     try {
-      const response = await fetch(`http://localhost:5000/notice/${noticeId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setNotices((prev) => prev.filter((notice) => notice._id !== noticeId));
-        toast.success("Notice deleted successfully");
-      } else {
-        toast.error(data.message || "Failed to delete notice", "error");
-      }
+      await axiosSecure.delete(`/notice/${noticeId}`);
+      setNotices(prevNotices => prevNotices.filter(notice => notice._id !== noticeId));
+      setTotalNotices(prev => prev - 1);
+      toast.success("Notice deleted successfully");
     } catch (error) {
-      toast.error("Failed to delete notice", "error");
+      console.error("Error deleting notice:", error);
+      toast.error(error.response?.data?.message || "Failed to delete notice");
+    }
+  };
+
+  const handleFileInputChange = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setIsLoading(true);
+      try {
+        const uploadedFiles = await handleFileUpload(e);
+        if (uploadedFiles && uploadedFiles.length > 0) {
+          setNewNotice(prev => ({
+            ...prev,
+            attachments: [...prev.attachments, ...uploadedFiles]
+          }));
+          toast.success("File uploaded successfully");
+        }
+      } catch (error) {
+        console.error("File upload error:", error);
+        toast.error("File upload failed");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   return (
     <div className="w-[1100px] m-6">
-      {/* Notification System */}
       {notification && (
         <div
           className={`toast toast-end ${
@@ -277,7 +253,15 @@ const NoticeManagement = () => {
           className="btn bg-blue-950 text-white"
           onClick={() => {
             setIsEditing(false);
-            setNewNotice({ title: "", description: "", tags: [], currentTag: "", attachments: [], deadline: "" });
+            setEditingNoticeId(null);
+            setNewNotice({
+              title: "",
+              description: "",
+              tags: [],
+              currentTag: "",
+              attachments: [],
+              deadline: ""
+            });
             setIsModalOpen(true);
           }}
           disabled={isLoading}
@@ -286,85 +270,149 @@ const NoticeManagement = () => {
         </button>
       </div>
 
+      {/* Loader */}
+      {isLoading && (
+        <div className="flex justify-center my-8">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      )}
+
       {/* Notices Table */}
       <div className="overflow-x-auto w-[900px] mx-auto">
         <table className="table table-zebra w-full">
           <thead className="bg-blue-950 text-white">
             <tr>
-              <th>SI</th> {/* Added SI Column */}
+              <th>SI</th>
               <th>Title</th>
               <th>Tags</th>
+              <th>Date</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {notices.map((notice, index) => (
-              <tr key={notice._id}>
-                <td>{index + 1}</td>{" "}
-                {/* Displaying the serial number (index + 1) */}
-                <td>{notice.title}</td>
-                <td>
-                  {notice.tags?.map((tag) => (
-                    <span key={tag} className="">
-                      {tag}
-                    </span>
-                  ))}
-                </td>
-                <td>
-                  <div className="flex space-x-2">
-                  <button className="btn btn-ghost btn-sm" onClick={() => handleEditNotice(notice)}>
-                      <PencilIcon size={16} />
-                    </button>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => {
-                        /* View Details */
-                      }}
-                    >
-                      <EyeIcon size={16} />
-                    </button>
-                    <button
-                      className="btn btn-ghost btn-sm text-error"
-                      onClick={() => handleDeleteNotice(notice._id)}
-                    >
-                      <TrashIcon size={16} />
-                    </button>
-                  </div>
-                </td>
+            {notices.length === 0 && !isLoading ? (
+              <tr>
+                <td colSpan="5" className="text-center py-4">No notices available</td>
               </tr>
-            ))}
+            ) : (
+              currentNotices.map((notice, index) => (
+                <tr key={notice._id || index}>
+                  <td>{indexOfFirstNotice + index + 1}</td>
+                  <td>{notice.title}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-1">
+                      {notice.tags?.map((tag) => (
+                        <span key={tag} className="badge badge-sm">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    {new Date(notice.createdAt).toLocaleDateString()}
+                  </td>
+                  <td>
+                    <div className="flex space-x-2">
+                      <button 
+                        className="btn btn-ghost btn-sm" 
+                        onClick={() => handleEditNotice(notice)}
+                      >
+                        <PencilIcon size={16} />
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-sm text-error"
+                        onClick={() => handleDeleteNotice(notice._id)}
+                      >
+                        <TrashIcon size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
+      {/* Pagination */}
+      {notices.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <div className="join">
+            <button
+              className="join-item btn"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1 || isLoading}
+            >
+              «
+            </button>
+            {Array.from({ length: Math.ceil(totalNotices / noticesPerPage) }).map((_, index) => (
+              <button
+                key={index}
+                className={`join-item btn ${currentPage === index + 1 ? 'btn-active' : ''}`}
+                onClick={() => paginate(index + 1)}
+                disabled={isLoading}
+              >
+                {index + 1}
+              </button>
+            ))}
+            <button
+              className="join-item btn"
+              onClick={() => setCurrentPage(prev => 
+                Math.min(prev + 1, Math.ceil(totalNotices / noticesPerPage))
+              )}
+              disabled={
+                currentPage === Math.ceil(totalNotices / noticesPerPage) || 
+                isLoading
+              }
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Add Notice Modal */}
       {isModalOpen && (
         <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">{isEditing ? "Update Notice" : "Create New Notice"}</h3>
-            <form onSubmit={handleSubmitNotice} className="space-y-4">
-            <input
-                type="text"
-                placeholder="Notice Title"
-                className="input input-bordered w-full"
-                value={newNotice.title}
-                onChange={(e) =>
-                  setNewNotice((prev) => ({ ...prev, title: e.target.value }))
-                }
-                required
-              />
+          <div className="modal-box max-w-lg">
+            <h3 className="font-bold text-lg mb-2">
+              {isEditing ? "Update Notice" : "Create New Notice"}
+            </h3>
+            <form onSubmit={handleSubmitNotice} className="space-y-2">
+              {/* Title */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Title</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Notice Title"
+                  className="input input-bordered w-full"
+                  value={newNotice.title}
+                  onChange={(e) =>
+                    setNewNotice((prev) => ({ ...prev, title: e.target.value }))
+                  }
+                  required
+                />
+              </div>
 
-              <textarea
-                placeholder="Notice Description"
-                className="textarea textarea-bordered w-full"
-                value={newNotice.description}
-                onChange={(e) =>
-                  setNewNotice((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-              />
+              {/* Description */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Description</span>
+                </label>
+                <textarea
+                  placeholder="Notice Description"
+                  className="textarea textarea-bordered w-full"
+                  value={newNotice.description}
+                  onChange={(e) =>
+                    setNewNotice((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+              </div>
 
               {/* File Upload */}
               <div className="form-control">
@@ -374,95 +422,141 @@ const NoticeManagement = () => {
                 <input
                   type="file"
                   className="file-input file-input-bordered w-full"
-                  onChange={(e) => {
-                    // Limit to single file by taking only the first file
-                    const file = e.target.files[0];
-                    setNewNotice((prev) => ({
-                      ...prev,
-                      attachments: file ? [file] : [], // Ensure it's an array with single file or empty
-                    }));
-                  }}
+                  onChange={handleFileInputChange}
                   accept=".pdf,.jpg,.jpeg,.png"
                 />
               </div>
 
-              {/* Displayed Attachments */}
+              {/* Display Attachments */}
               {newNotice.attachments.length > 0 && (
-                <div className="mt-2">
-                  <h4 className="text-sm font-semibold mb-1">
-                    Uploaded Files:
-                  </h4>
-                  <ul className="list-disc pl-5">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Uploaded Files</span>
+                  </label>
+                  <ul className="list-disc pl-5 text-sm">
                     {newNotice.attachments.map((file, index) => (
-                      <li key={index} className="text-sm">
-                        {file.fileName} ({file.fileType})
+                      <li
+                        key={index}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span>
+                          {file.fileName || "File"} ({file.fileType || "unknown"})
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs text-error"
+                          onClick={() => {
+                            setNewNotice((prev) => ({
+                              ...prev,
+                              attachments: prev.attachments.filter(
+                                (_, i) => i !== index
+                              ),
+                            }));
+                          }}
+                        >
+                          <TrashIcon size={12} />
+                        </button>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {/* Tags Section */}
-              <div className="flex items-center space-x-2">
+              {/* Tags */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Tags</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add Tag"
+                    className="input input-bordered w-full"
+                    value={newNotice.currentTag}
+                    onChange={(e) =>
+                      setNewNotice((prev) => ({
+                        ...prev,
+                        currentTag: e.target.value,
+                      }))
+                    }
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn bg-blue-950 text-white"
+                    onClick={handleAddTag}
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {/* Show Tags */}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {newNotice.tags.map((tag) => (
+                    <div key={tag} className="badge badge-primary badge-lg">
+                      {tag}
+                      <button
+                        type="button"
+                        className="ml-2"
+                        onClick={() => handleRemoveTag(tag)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Deadline */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Deadline</span>
+                </label>
                 <input
-                  type="text"
-                  placeholder="Add Tag"
+                  type="date"
                   className="input input-bordered w-full"
-                  value={newNotice.currentTag}
+                  value={newNotice.deadline}
                   onChange={(e) =>
                     setNewNotice((prev) => ({
                       ...prev,
-                      currentTag: e.target.value,
+                      deadline: e.target.value,
                     }))
                   }
-                  onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                 />
+              </div>
+
+              {/* Buttons */}
+              <div className="modal-action mt-4">
                 <button
                   type="button"
-                  className="btn bg-blue-950 text-white"
-                  onClick={handleAddTag}
+                  className="btn btn-ghost"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isLoading}
                 >
-                  Add Tag
+                  Cancel
                 </button>
-              </div>
-
-              {/* Displayed Tags */}
-              <div className="flex flex-wrap gap-2 mt-2">
-                {newNotice.tags.map((tag) => (
-                  <div key={tag} className="badge badge-primary badge-lg">
-                    {tag}
-                    <button
-                      type="button"
-                      className="ml-2"
-                      onClick={() => handleRemoveTag(tag)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <input
-                type="date"
-                className="input input-bordered w-full"
-                value={newNotice.deadline}
-                onChange={(e) =>
-                  setNewNotice((prev) => ({
-                    ...prev,
-                    deadline: e.target.value,
-                  }))
-                }
-              />
-
-              
-              <div className="modal-action">
-                <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)} disabled={isLoading}>Cancel</button>
-                <button type="submit" className="btn bg-blue-950 text-white" disabled={isLoading}>{isLoading ? "Saving..." : isEditing ? "Update Notice" : "Create Notice"}</button>
+                <button
+                  type="submit"
+                  className="btn bg-blue-950 text-white"
+                  disabled={isLoading}
+                >
+                  {isLoading
+                    ? "Saving..."
+                    : isEditing
+                    ? "Update Notice"
+                    : "Create Notice"}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
       <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
