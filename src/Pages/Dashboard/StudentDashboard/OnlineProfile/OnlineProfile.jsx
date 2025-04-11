@@ -34,9 +34,12 @@ const OnlineProfile = () => {
                                 setProfileExists(true);
                             }
                         } catch (err) {
-                            // Profile doesn't exist yet
+                            // Silently handle case where profile doesn't exist
+                            console.log('No existing profile found - this is expected for new users');
                         }
                     }
+                } catch (error) {
+                    console.error("Error fetching student data:", error);
                 } finally {
                     setLoading(prev => ({ ...prev, profile: false }));
                 }
@@ -58,19 +61,30 @@ const OnlineProfile = () => {
             const studentRes = await axiosSecure.get('/students');
             const student = studentRes.data.find(s => s.userId === user._id);
             
-            if (student) {
-                const payload = { studentId: student._id, ...formData };
-                const endpoint = profileExists 
-                    ? `/onlineProfile/${student._id}`
-                    : '/onlineProfile';
-                const method = profileExists ? 'patch' : 'post';
-                
-                await axiosSecure[method](endpoint, payload);
-                toast.success(`Profile ${profileExists ? 'updated' : 'created'} successfully!`);
+            if (!student) {
+                toast.error("Student record not found");
+                return;
+            }
+
+            const payload = { studentId: student._id, ...formData };
+            
+            if (profileExists) {
+                // Update existing profile
+                await axiosSecure.patch(`/onlineProfile/${student._id}`, payload);
+                toast.success("Profile updated successfully!");
+            } else {
+                // Create new profile
+                await axiosSecure.post('/onlineProfile', payload);
+                toast.success("Profile created successfully!");
                 setProfileExists(true);
             }
         } catch (error) {
-            toast.error(`Error ${profileExists ? 'updating' : 'creating'} profile`);
+            console.error("Profile operation failed:", error);
+            toast.error(
+                profileExists 
+                    ? "Failed to update profile" 
+                    : "Failed to create profile"
+            );
         } finally {
             setLoading(prev => ({ ...prev, submit: false }));
         }

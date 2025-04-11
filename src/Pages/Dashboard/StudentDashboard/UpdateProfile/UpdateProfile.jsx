@@ -39,14 +39,18 @@ const UpdateProfile = () => {
                             permanentAddress: matchedStudent.permanentAddress || ''
                         }));
                     }
+                    // No else case needed - it's fine if no student is found (new user)
                 } catch (err) {
-                    toast.error("Error fetching student data.");
+                    if (err.response?.status !== 404) { // Only show error if it's not a 404
+                        toast.error("Error fetching student data.");
+                    }
                 }
             };
             fetchStudentData();
         }
     }, [loading, user, axiosSecure]);
 
+    
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
