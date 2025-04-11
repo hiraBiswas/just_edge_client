@@ -30,14 +30,7 @@ const InstructorDashboard = () => {
         try {
           setIsLoading(true);
           
-          // 1. Fetch all courses first
-          const coursesRes = await axiosSecure.get('/courses');
-          const coursesMap = coursesRes.data.reduce((map, course) => {
-            map[course._id] = course;
-            return map;
-          }, {});
-  
-          // 2. Get instructor's assigned batches
+          // 1. Get the instructor record first
           const instructorsRes = await axiosSecure.get('/instructors');
           const matchedInstructor = instructorsRes.data.find(
             (instructor) => instructor.userId === user._id
@@ -50,29 +43,36 @@ const InstructorDashboard = () => {
           }
           
           setInstructorData(matchedInstructor);
-  
-          // 3. Get batches assigned to this instructor
-          const batchesRes = await axiosSecure.get('/instructors-batches');
-          const instructorBatches = batchesRes.data.filter(
-            (batch) => batch.instructorId === matchedInstructor._id
-          );
-  
-          // 4. Get full batch details and attach course info
+      
+          // 2. Get batches assigned to this instructor
+          const batchesRes = await axiosSecure.get(`/instructors-batches?instructorId=${matchedInstructor._id}`);
+          
+          // 3. Get full batch details
           const batchDetails = await Promise.all(
-            instructorBatches.map(batch => 
+            batchesRes.data.map(batch => 
               axiosSecure.get(`/batches/${batch.batchId}`)
             )
           );
           
+          // 4. Get course info for these batches
+          const courseIds = [...new Set(batchDetails.map(res => res.data.course_id))];
+          const coursesRes = await axiosSecure.get('/courses', {
+            params: { ids: courseIds.join(',') }
+          });
+          
+          const coursesMap = coursesRes.data.reduce((map, course) => {
+            map[course._id] = course;
+            return map;
+          }, {});
+      
           // Combine batch data with course info
           const batchesWithCourses = batchDetails.map(res => ({
             ...res.data,
             course: coursesMap[res.data.course_id] || null
           }));
-  
-          const ongoingBatches = batchesWithCourses.filter(batch => batch.status === 'Ongoing');
+      
           setAssignedBatches(batchesWithCourses);
-  
+      
           // 5. Get routine for these batches
           if (batchesWithCourses.length > 0) {
             const routinePromises = batchesWithCourses.map(batch => 
@@ -86,10 +86,17 @@ const InstructorDashboard = () => {
                 const dayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                 return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
               });
-  
+      
+
+              console.log("Matched Instructor:", matchedInstructor);
+console.log("Assigned Batches Response:", batchesRes.data);
+console.log("Batch Details:", batchDetails);
+console.log("Final Batches with Courses:", batchesWithCourses); 
+
+
             setRoutineData(allRoutines);
           }
-  
+      
         } catch (error) {
           toast.error("Error fetching data.");
           console.error(error);
@@ -108,37 +115,35 @@ const InstructorDashboard = () => {
         try {
           const progressData = {};
           const today = new Date().toISOString().split("T")[0];
-
+  
           const classesRes = await axiosSecure.get("/classes");
-
+  
           for (const batch of assignedBatches.filter(
             (b) => b.status === "Ongoing"
           )) {
-            const classMatch =
-              batch.course?.courseDuration?.match(/\((\d+) classes/);
-            const totalClasses = classMatch ? parseInt(classMatch[1]) : 20;
-
+            // Use numberOfClass from course data as total classes
+            const totalClasses = batch.course?.numberOfClass || 27; // Default to 27 if not available
+  
             const completedClasses = classesRes.data.filter(
               (cls) => cls.batchId === batch._id && cls.date <= today
             ).length;
-
+  
             progressData[batch._id] = {
               completed: completedClasses,
               total: totalClasses,
               percentage: Math.round((completedClasses / totalClasses) * 100),
             };
           }
-
+  
           setClassProgress(progressData);
         } catch (error) {
           console.error("Error fetching class progress:", error);
         }
       };
-
+  
       fetchClassProgress();
     }
   }, [assignedBatches, loading, user, axiosSecure]);
-
   const convertTo12HourFormat = (time) => {
     let [hours, minutes] = time.split(':');
     hours = parseInt(hours, 10);
@@ -235,6 +240,8 @@ const InstructorDashboard = () => {
       });
     }
   };
+
+  
 
   return (
     <div className=" w-[1100px] mx-auto px-4 py-8">
@@ -409,6 +416,8 @@ const InstructorDashboard = () => {
                                     {batch.occupiedSeat}/{batch.seat}
                                   </span>
                                 </div>
+
+                                
 
                                 {batch.status === "Ongoing" &&
                                   classProgress[batch._id] && (

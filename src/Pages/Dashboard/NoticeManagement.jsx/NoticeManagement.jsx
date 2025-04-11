@@ -25,7 +25,7 @@ const NoticeManagement = () => {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [noticesPerPage] = useState(5);
+  const [noticesPerPage] = useState(10);
   const [totalNotices, setTotalNotices] = useState(0);
 
   // Custom notification system
@@ -272,7 +272,7 @@ const NoticeManagement = () => {
 
       {/* Loader */}
       {isLoading && (
-        <div className="flex justify-center my-8">
+        <div className="flex justify-center min-h-screen items-center my-8">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
       )}

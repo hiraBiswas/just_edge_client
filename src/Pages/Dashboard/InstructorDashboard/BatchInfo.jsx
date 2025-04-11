@@ -23,13 +23,13 @@ const BatchInfo = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
+  
         // 1. Fetch batch data
         const batchRes = await axiosSecure.get(`/batches/${id}`);
         setBatch(batchRes.data);
-
+  
         let matchedCourse = null;
-
+  
         // Fetch course data by filtering from all courses
         if (batchRes.data.course_id) {
           const coursesRes = await axiosSecure.get("/courses");
@@ -38,44 +38,44 @@ const BatchInfo = () => {
           );
           setCourse(matchedCourse);
         }
-
+  
         // 3. Get all instructors assigned to this batch
         const instructorsAssignmentRes = await axiosSecure.get(
           "/instructors-batches"
         );
         const filteredInstructorAssignments =
           instructorsAssignmentRes.data.filter((inst) => inst.batchId === id);
-
+  
         // 4. Fetch full instructor data from /instructors endpoint
         const allInstructorsRes = await axiosSecure.get("/instructors");
-
+  
         // 5. Get user data for each instructor to get complete instructor information
         const usersRes = await axiosSecure.get("/users");
-
+  
         // 6. Get all classes for this batch
         const classesRes = await axiosSecure.get("/classes");
         const batchClasses = classesRes.data.filter(
           (cls) => cls.batchId === id
         );
         setClasses(batchClasses);
-
+  
         // 7. Map instructor assignments with full instructor and user data
         const completeInstructorData = filteredInstructorAssignments.map(
           (assignment) => {
             const instructorRecord = allInstructorsRes.data.find(
               (instructor) => instructor._id === assignment.instructorId
             );
-
+  
             const userRecord = instructorRecord
               ? usersRes.data.find(
                   (user) => user._id === instructorRecord.userId
                 )
               : null;
-
+  
             const instructorClasses = batchClasses.filter(
               (cls) => cls.instructorId === assignment.instructorId
             );
-
+  
             return {
               ...assignment,
               instructorDetail: instructorRecord || {},
@@ -85,32 +85,30 @@ const BatchInfo = () => {
             };
           }
         );
-
+  
         setInstructors(completeInstructorData);
-
+  
         // 8. Calculate and set instructor statistics
         const instructorStats = completeInstructorData.map((instructor) => ({
           instructorId: instructor.instructorId,
           name: instructor.name,
           totalClasses: instructor.totalClasses,
         }));
-
+  
         setStats(instructorStats);
-
-        // Calculate course progress - FIXED: Use matchedCourse instead of courseRes
+  
+        // 9. Calculate course progress
         if (matchedCourse) {
-          const durationMatch =
-            matchedCourse.courseDuration.match(/(\d+) classes/);
-          const totalClasses = durationMatch ? parseInt(durationMatch[1]) : 0;
-
           setCourseProgress({
             completed: batchClasses.length,
-            total: totalClasses,
+            total: matchedCourse.numberOfClass,
             percentage:
-              totalClasses > 0
+              matchedCourse.numberOfClass > 0
                 ? Math.min(
                     100,
-                    Math.round((batchClasses.length / totalClasses) * 100)
+                    Math.round(
+                      (batchClasses.length / matchedCourse.numberOfClass) * 100
+                    )
                   )
                 : 0,
           });
@@ -122,7 +120,7 @@ const BatchInfo = () => {
         setLoading(false);
       }
     };
-
+  
     fetchData();
   }, [id, axiosSecure]);
 
@@ -176,6 +174,18 @@ const BatchInfo = () => {
   const showInstructorParticipation = instructors.length > 1;
   const totalClasses = classes.length;
 
+
+
+
+  // Calculate remaining classes
+  const remainingClasses = course ? Math.max(0, course.numberOfClass - classes.length) : 0;
+
+  console.log('Final calculation:', {
+    courseNumberOfClass: course?.numberOfClass,
+    classesLength: classes.length,
+    remainingClasses
+  });
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="space-y-6">
@@ -212,272 +222,222 @@ const BatchInfo = () => {
           </button>
         </div>
 
-   
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Students</p>
-                <p className="text-2xl font-bold text-gray-800">
-                  {batch?.occupiedSeat || 0}/{batch?.seat || 0}
-                </p>
+     {/* Stats Cards */}
+<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+  {/* Students Card */}
+  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 h-full flex flex-col">
+    <div className="flex items-center justify-between flex-grow">
+      <div>
+        <p className="text-sm font-medium text-gray-500">Students</p>
+        <p className="text-2xl font-bold text-gray-800">
+          {batch?.occupiedSeat || 0}/{batch?.seat || 0}
+        </p>
+      </div>
+      <div className="bg-blue-100 p-3 rounded-full">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-blue-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  {/* Completed Classes Card */}
+  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 h-full flex flex-col">
+    <div className="flex items-center justify-between flex-grow">
+      <div>
+        <p className="text-sm font-medium text-gray-500">Completed Classes</p>
+        <p className="text-2xl font-bold text-gray-800">
+          {classes?.length || 0}
+        </p>
+      </div>
+      <div className="bg-green-100 p-3 rounded-full">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-green-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  {/* Remaining Classes Card */}
+  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 h-full flex flex-col">
+    <div className="flex items-center justify-between flex-grow">
+      <div>
+        <p className="text-sm font-medium text-gray-500">Remaining Classes</p>
+        <p className="text-2xl font-bold text-gray-800">
+          {remainingClasses}
+        </p>
+      </div>
+      <div className="bg-orange-100 p-3 rounded-full">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-orange-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  {/* Progress Card */}
+  {showInstructorParticipation ? (
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 h-full flex flex-col">
+      <h2 className="text-lg font-semibold mb-2">Instructor Participation</h2>
+      {stats.length > 0 ? (
+        <div className="space-y-3 flex-grow flex flex-col">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {stats.map((stat, index) => (
+              <div key={index} className="flex items-center text-xs">
+                <div
+                  className="w-2 h-2 rounded-full mr-1"
+                  style={{
+                    backgroundColor: [
+                      "#3B82F6",
+                      "#10B981",
+                      "#8B5CF6",
+                      "#F59E0B",
+                      "#EF4444",
+                      "#EC4899",
+                      "#14B8A6",
+                      "#6366F1",
+                    ][index % 8],
+                  }}
+                ></div>
+                <span className="font-medium">{stat.name}</span>
+                <span className="text-gray-500 ml-1">({stat.totalClasses})</span>
               </div>
-              <div className="bg-blue-100 p-3 rounded-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-blue-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                  />
-                </svg>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Completed Classes
-                </p>
-                <p className="text-2xl font-bold text-gray-800">
-                  {classes?.length || 0}
-                </p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-            </div>
+          <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden mt-auto">
+            {stats.map((stat, index) => {
+              const previousWidth = stats
+                .slice(0, index)
+                .reduce(
+                  (sum, s) => sum + (s.totalClasses / totalClasses) * 100,
+                  0
+                );
+              const width =
+                totalClasses > 0 ? (stat.totalClasses / totalClasses) * 100 : 0;
+
+              return (
+                <div
+                  key={index}
+                  className="absolute top-0 h-full"
+                  style={{
+                    left: `${previousWidth}%`,
+                    width: `${width}%`,
+                    backgroundColor: [
+                      "#3B82F6",
+                      "#10B981",
+                      "#8B5CF6",
+                      "#F59E0B",
+                      "#EF4444",
+                      "#EC4899",
+                      "#14B8A6",
+                      "#6366F1",
+                    ][index % 8],
+                  }}
+                ></div>
+              );
+            })}
           </div>
-
-          {/* New Card for Remaining Classes - Always shown */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Remaining Classes
-                </p>
-                <p className="text-2xl font-bold text-gray-800">
-                  {(() => {
-                    if (!course) return "...";
-                    // Debug output to console
-                    console.log("Course data:", course);
-
-                    // Improved regex to match the pattern: "60 hours (20 classes of 3 hours duration)"
-                    const durationMatch =
-                      course.courseDuration.match(/\((\d+) classes/);
-                    console.log("Duration match:", durationMatch);
-
-                    const totalClassCount = durationMatch
-                      ? parseInt(durationMatch[1])
-                      : 0;
-                    console.log("Total class count:", totalClassCount);
-                    console.log("Classes length:", classes?.length || 0);
-
-                    return Math.max(
-                      0,
-                      totalClassCount - (classes?.length || 0)
-                    );
-                  })()}
-                </p>
-              </div>
-              <div className="bg-orange-100 p-3 rounded-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-orange-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-        
         </div>
+      ) : (
+        <div className="flex-grow flex items-center justify-center text-center py-2">
+          <div>
+            <svg
+              className="mx-auto h-8 w-8 text-gray-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            <p className="mt-1 text-sm text-gray-500">No instructor data</p>
+          </div>
+        </div>
+      )}
+    </div>
+  ) : (
+    course && (
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 h-full flex flex-col">
+        <h2 className="text-lg font-semibold mb-2">Course Progress</h2>
+        <div className="flex-grow flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-700">
+                {courseProgress.completed}/{courseProgress.total} classes
+              </span>
+              <span className="font-medium text-gray-700">
+                {courseProgress.percentage}%
+              </span>
+            </div>
+            <progress
+              className="progress progress-primary w-full h-2"
+              value={courseProgress.completed}
+              max={courseProgress.total}
+            ></progress>
+          </div>
+          {/* <p className="text-sm mt-2 text-gray-600">
+            {courseProgress.completed >= courseProgress.total ? (
+              <span className="text-green-600">Course completed!</span>
+            ) : (
+              <>{remainingClasses} classes remaining</>
+            )}
+          </p> */}
+        </div>
+      </div>
+    )
+  )}
+</div>
 
-      
-
-      
+    
 
         {/* Class Sessions Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex justify-between">
-           <div>
-           <h2 className="text-xl font-semibold text-gray-800">
+          <div className="p-4 border-b border-gray-100">
+            <h2 className="text-xl font-semibold text-gray-800">
               Class Sessions
             </h2>
             <p className="text-sm text-gray-600">
               History of conducted classes for this batch
             </p>
-           </div>
-
-
-      {/* Progress Section - Shows either instructor participation or course progress */}
-      {showInstructorParticipation ? (
-          /* Multiple Instructors - Show Participation */
-          <div className="p-1 mb-2">
-            {/* <h2 className="text-xl font-semibold mb-4">
-              Instructor Participation
-            </h2> */}
-            {stats.length > 0 ? (
-              <div className="space-y-6">
-                <div className="flex flex-wrap gap-3 mb-2">
-                  {stats.map((stat, index) => (
-                    <div key={index} className="flex items-center">
-                      <div
-                        className="w-3 h-3 rounded-full mr-2"
-                        style={{
-                          backgroundColor: [
-                            "#3B82F6",
-                            "#10B981",
-                            "#8B5CF6",
-                            "#F59E0B",
-                            "#EF4444",
-                            "#EC4899",
-                            "#14B8A6",
-                            "#6366F1",
-                          ][index % 8],
-                        }}
-                      ></div>
-                      <span className="text-sm font-medium">{stat.name}</span>
-                      <span className="text-sm text-gray-500 ml-1">
-                        ({stat.totalClasses})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-                  {stats.map((stat, index) => {
-                    const previousWidth = stats
-                      .slice(0, index)
-                      .reduce(
-                        (sum, s) => sum + (s.totalClasses / totalClasses) * 100,
-                        0
-                      );
-                    const width =
-                      totalClasses > 0
-                        ? (stat.totalClasses / totalClasses) * 100
-                        : 0;
-
-                    return (
-                      <div
-                        key={index}
-                        className="absolute top-0 h-full transition-all duration-500"
-                        style={{
-                          left: `${previousWidth}%`,
-                          width: `${width}%`,
-                          backgroundColor: [
-                            "#3B82F6",
-                            "#10B981",
-                            "#8B5CF6",
-                            "#F59E0B",
-                            "#EF4444",
-                            "#EC4899",
-                            "#14B8A6",
-                            "#6366F1",
-                          ][index % 8],
-                        }}
-                        title={`${stat.name}: ${stat.totalClasses} classes`}
-                      ></div>
-                    );
-                  })}
-                </div>
-
-     
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-                <p className="mt-2 text-gray-500">
-                  No instructor data available
-                </p>
-              </div>
-            )}
           </div>
-        ) : (
-          /* Single Instructor - Show Course Progress */
-          course && (
-            <div className="">
-            
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700 mr-4">
-                      Classes Completed: {courseProgress.completed} /{" "}
-                      {courseProgress.total}
-                    </span>
-                    <span className="text-sm font-medium text-gray-700">
-                      {courseProgress.percentage}%
-                    </span>
-                  </div>
-                  <progress
-                    className="progress progress-primary w-full h-3"
-                    value={courseProgress.completed}
-                    max={courseProgress.total}
-                  ></progress>
-                </div>
-                <div className="text-sm text-gray-600">
-               
-                  {courseProgress.completed >= courseProgress.total ? (
-                    <p className="text-green-600 font-medium">
-                      Course completed!
-                    </p>
-                  ) : (
-                    <p>
-                      
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        )}
-
-          </div>
-
-      
 
           {classes.length > 0 ? (
             <div className="overflow-x-auto">
@@ -541,7 +501,7 @@ const BatchInfo = () => {
               </div>
             </div>
           ) : (
-            <div className="text-center w-[1100px] py-10">
+            <div className="text-center py-10">
               <div className="flex flex-col items-center justify-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
