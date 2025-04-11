@@ -64,14 +64,14 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen w-[1100px]">
       {isLoading ? (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center min-h-screen">
           <span className="loading loading-ring loading-xl text-primary"></span>
         </div>
       ) : (
         <>
           {/* Progress Steps */}
           <div className="w-full mx-auto mb-2 mt-6 bg-white rounded-lg shadow-sm">
-            <ul className="steps w-full overflow-x-auto">
+            <ul className="steps w-full py-4 overflow-x-auto">
               {getStepStatus().map((step, index) => (
                 <li
                   key={index}

@@ -320,7 +320,7 @@ const CourseAssignment = () => {
   });
 
   return (
-    <div className="min-h-screen w-[1100px] p-4 lg:p-8">
+    <div className="min-h-screen mt-6 w-[1100px] ">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
@@ -425,7 +425,7 @@ const CourseAssignment = () => {
             <>
               <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="table w-full">
+                  <table className="table  w-full">
                     <thead className="bg-blue-950 text-white">
                       <tr>
                         <th className="w-10">

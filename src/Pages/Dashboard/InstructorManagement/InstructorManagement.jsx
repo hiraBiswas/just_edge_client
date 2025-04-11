@@ -70,9 +70,6 @@ const combinedData = React.useMemo(() => {
 }, [instructors, users]);
 
 
-
-  
-
   const totalPages = Math.ceil(combinedData.length / itemsPerPage);
   const currentItems = combinedData
     .filter((instructor) =>
@@ -83,8 +80,8 @@ const combinedData = React.useMemo(() => {
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="w-[1100px] mx-auto h-screen flex flex-col">
-      <div className="flex justify-end mt-4">
+    <div className="w-[1100px] mx-auto h-screen mt-6 flex flex-col">
+      <div className="flex justify-end ">
         <div className="flex justify-between items-center w-full mb-4">
           <div className="flex items-center">
             <input
@@ -125,7 +122,7 @@ const combinedData = React.useMemo(() => {
             </table>
           </div>
         ) : (
-          <table className="table w-[1000px] mx-auto mt-8">
+          <table className="table w-[1000px] mx-auto mt-4">
             <thead className="bg-blue-950">
               <tr className="text-lg text-white font-medium">
                 <th>SI</th>

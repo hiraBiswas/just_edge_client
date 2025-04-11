@@ -24,6 +24,11 @@ const EnrollmentRequests = () => {
     batch: null,
   });
   const [loadingRequests, setLoadingRequests] = useState(true);
+  const [allRequests, setAllRequests] = useState({
+    courseChange: [],
+    batchChange: [],
+  });
+  const [loadingRequestsStatus, setLoadingRequestsStatus] = useState(true);
 
   useEffect(() => {
     if (user?._id) {
@@ -196,7 +201,7 @@ const EnrollmentRequests = () => {
   console.log(enrolledCourseName);
   console.log(preferredCourseName);
 
-  const handleCourseChangeRequest = () => {
+  const handleCourseChangeRequest = async () => {
     if (!selectedCourse) {
       toast.error("Please select a course");
       return;
@@ -209,22 +214,25 @@ const EnrollmentRequests = () => {
       timestamp: new Date().toISOString(),
     };
 
-    axiosSecure
-      .post("/course-change-requests", courseRequest)
-      .then(() => {
-        toast.success("Course change request submitted successfully!");
-        document.getElementById("course_modal").close();
-        // Refresh pending requests
-        setPendingRequests((prev) => ({
-          ...prev,
-          hasAnyPending: true,
-          course: courseRequest,
-        }));
-      })
-      .catch((err) => {
-        console.error("Error submitting course change request:", err);
-        toast.error("Failed to submit course change request");
-      });
+    try {
+      await axiosSecure.post("/course-change-requests", courseRequest);
+      toast.success("Course change request submitted successfully!");
+      document.getElementById("course_modal").close();
+
+      // Refresh data
+      await fetchAllRequests();
+      setPendingRequests((prev) => ({
+        ...prev,
+        hasAnyPending: true,
+        course: courseRequest,
+      }));
+
+      // Reset selection
+      setSelectedCourse("");
+    } catch (err) {
+      console.error("Error submitting course change request:", err);
+      toast.error("Failed to submit course change request");
+    }
   };
 
   const handleSaveCourse = () => {
@@ -244,8 +252,11 @@ const EnrollmentRequests = () => {
       });
   };
 
-  const handleChangeBatch = () => {
-    if (!selectedBatch) return;
+  const handleChangeBatch = async () => {
+    if (!selectedBatch) {
+      toast.error("Please select a batch");
+      return;
+    }
 
     const batchRequest = {
       studentId: studentData._id,
@@ -254,27 +265,58 @@ const EnrollmentRequests = () => {
       timestamp: new Date().toISOString(),
     };
 
-    axiosSecure
-      .post("/batch-change-requests", batchRequest)
-      .then(() => {
-        toast.success("Batch change request submitted successfully!");
-        document.getElementById("batch_modal").close();
-        // Refresh pending requests
-        setPendingRequests((prev) => ({
-          ...prev,
-          hasAnyPending: true,
-          batch: batchRequest,
-        }));
-      })
-      .catch((err) => {
-        console.error("Error submitting batch change request:", err);
-        toast.error("Failed to submit batch change request!");
-      });
+    try {
+      await axiosSecure.post("/batch-change-requests", batchRequest);
+      toast.success("Batch change request submitted successfully!");
+      document.getElementById("batch_modal").close();
+
+      // Refresh data
+      await fetchAllRequests();
+      setPendingRequests((prev) => ({
+        ...prev,
+        hasAnyPending: true,
+        batch: batchRequest,
+      }));
+
+      // Reset selection
+      setSelectedBatch("");
+    } catch (err) {
+      console.error("Error submitting batch change request:", err);
+      toast.error("Failed to submit batch change request!");
+    }
   };
+
+  const fetchAllRequests = async () => {
+    try {
+      const [courseRes, batchRes] = await Promise.all([
+        axiosSecure.get("/course-change-requests"),
+        axiosSecure.get("/batch-change-requests"),
+      ]);
+
+      setAllRequests({
+        courseChange: courseRes.data.filter(
+          (req) => req.studentId === studentData?._id
+        ),
+        batchChange: batchRes.data.filter(
+          (req) => req.studentId === studentData?._id
+        ),
+      });
+    } catch (error) {
+      toast.error("Failed to load requests");
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  useEffect(() => {
+    if (studentData?._id) {
+      fetchAllRequests();
+    }
+  }, [studentData]);
 
   return (
     <div className=" w-[1100px] mx-auto">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mt-3 mb-2">
         <h1 className="text-xl font-bold text-gray-800">
           Enrollment Management
         </h1>
@@ -299,91 +341,212 @@ const EnrollmentRequests = () => {
         )}
       </div>
 
-      {/* Student Enrollment Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-indigo-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-            Enrollment Status
-          </h2>
+      {/* Request History Modal */}
+      <dialog id="request_history_modal" className="modal">
+        <div className="modal-box max-w-2xl">
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+              ✕
+            </button>
+          </form>
+          <h3 className="font-bold text-lg text-center mb-4">My Request History</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Only show preferred course if not enrolled */}
-            {!studentData?.enrolled_batch && (
-              <div
-                className="bg-gray-50 p-4 rounded-lg border border-gray-100 
-                  transition duration-150 ease-in-out
-                  hover:bg-white hover:shadow-sm hover:border-gray-200"
-              >
+          {loadingRequests ? (
+            <div className="flex justify-center py-8">
+              <span className="loading loading-spinner loading-lg"></span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Course Change Requests */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Course Change Requests
+                </h4>
+                {allRequests.courseChange.length > 0 ? (
+                  <div className="space-y-2">
+                    {allRequests.courseChange.map((request, index) => (
+                      <div
+                        key={`course-req-${index}`}
+                        className={`p-3 rounded-lg border ${
+                          request.status === "Approved"
+                            ? "bg-green-50 border-green-200"
+                            : request.status === "Rejected"
+                            ? "bg-red-50 border-red-200"
+                            : "bg-yellow-50 border-yellow-200"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">
+                              {courses.find(
+                                (c) => c._id === request.requestedCourse
+                              )?.courseName || "Unknown Course"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(request.timestamp).toLocaleString()}
+                            </p>
+                            {request.status === "Rejected" &&
+                              request.reason && (
+                                <p className="text-sm text-red-600 mt-1">
+                                  <strong>Reason:</strong> {request.reason}
+                                </p>
+                              )}
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === "Approved"
+                                ? "bg-green-100 text-green-800"
+                                : request.status === "Rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {request.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No course change requests found
+                  </p>
+                )}
+              </div>
+
+              {/* Batch Change Requests */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Batch Change Requests
+                </h4>
+                {allRequests.batchChange.length > 0 ? (
+                  <div className="space-y-2">
+                    {allRequests.batchChange.map((request, index) => (
+                      <div
+                        key={`batch-req-${index}`}
+                        className={`p-3 rounded-lg border ${
+                          request.status === "Approved"
+                            ? "bg-green-50 border-green-200"
+                            : request.status === "Rejected"
+                            ? "bg-red-50 border-red-200"
+                            : "bg-yellow-50 border-yellow-200"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">
+                              {batches.find(
+                                (b) => b._id === request.requestedBatch
+                              )?.batchName || "Unknown Batch"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(request.timestamp).toLocaleString()}
+                            </p>
+                            {request.status === "Rejected" &&
+                              request.reason && (
+                                <p className="text-sm text-red-600 mt-1">
+                                  <strong>Reason:</strong> {request.reason}
+                                </p>
+                              )}
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === "Approved"
+                                ? "bg-green-100 text-green-800"
+                                : request.status === "Rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {request.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No batch change requests found
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </dialog>
+
+    {/* Student Enrollment Card */}
+<div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+  <div className="p-6">
+    <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6 text-indigo-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+        />
+      </svg>
+      Enrollment Status
+    </h2>
+
+    {loadingRequests ? (
+      <div className="flex justify-center py-4">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    ) : (
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Show preferred course if not enrolled */}
+          {!studentData?.enrolled_batch && (
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
+              <p className="text-sm font-medium text-gray-500 mb-1">
+                Preferred Course
+              </p>
+              <p className="text-lg font-semibold text-gray-800">
+                {preferredCourseName}
+              </p>
+            </div>
+          )}
+
+          {/* Show enrolled details if enrolled */}
+          {studentData?.enrolled_batch && (
+            <>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
                 <p className="text-sm font-medium text-gray-500 mb-1">
-                  Preferred Course
+                  Enrolled Course
                 </p>
-                <p className="text-lg font-semibold text-gray-800">
-                  {preferredCourseName}
+                <p className="text-lg font-semibold truncate text-gray-800">
+                  {enrolledCourseName}
                 </p>
               </div>
-            )}
 
-            {/* Show enrolled course and batch if enrolled */}
-            {studentData?.enrolled_batch && (
-              <>
-                <>
-                  <div
-                    className="bg-gray-50 p-4 rounded-lg border border-gray-100 
-                  transition duration-150 ease-in-out
-                  hover:bg-white hover:shadow-sm hover:border-gray-200"
-                  >
-                    <p className="text-sm font-medium text-gray-500 mb-1">
-                      Enrolled Course
-                    </p>
-                    <p className="text-lg font-semibold truncate text-gray-800">
-                      {enrolledCourseName}
-                    </p>
-                  </div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  Enrolled Batch
+                </p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {enrolledBatchName}
+                </p>
+              </div>
 
-                  <div
-                    className="bg-gray-50 p-4 rounded-lg border border-gray-100 
-                  transition duration-150 ease-in-out
-                  hover:bg-white hover:shadow-sm hover:border-gray-200"
-                  >
-                    <p className="text-sm font-medium text-gray-500 mb-1">
-                      Enrolled Batch
-                    </p>
-                    <p className="text-lg font-semibold text-gray-800">
-                      {enrolledBatchName}
-                    </p>
-                  </div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  Status
+                </p>
+                <p className="text-lg font-semibold text-green-600">Active</p>
+              </div>
+            </>
+          )}
+        </div>
 
-                  <div
-                    className="bg-gray-50 p-4 rounded-lg border border-gray-100 
-                  transition duration-150 ease-in-out
-                  hover:bg-white hover:shadow-sm hover:border-gray-200"
-                  >
-                    <p className="text-sm font-medium text-gray-500 mb-1">
-                      Status
-                    </p>
-                    <p className="text-lg font-semibold text-green-600">
-                      Active
-                    </p>
-                  </div>
-                </>
-              </>
-            )}
-          </div>
-
+        <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex flex-wrap gap-3">
             {studentData?.enrolled_batch ? (
               <>
@@ -469,47 +632,175 @@ const EnrollmentRequests = () => {
               </button>
             )}
           </div>
-        </div>
 
-        {/* Pending Request Banner */}
-        {/* {pendingRequests.hasAnyPending && (
-          <div className="bg-blue-50 border-t border-blue-100 p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
+          {/* View Requests Button (only for enrolled students) */}
+          {studentData?.enrolled_batch && (
+            <button
+              className="btn btn-ghost text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 gap-2"
+              onClick={() => {
+                fetchAllRequests();
+                document.getElementById("request_history_modal").showModal();
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                />
+              </svg>
+              View Requests
+            </button>
+          )}
+        </div>
+      </>
+    )}
+  </div>
+</div>
+
+      {/* Request History Modal */}
+      <dialog id="request_history_modal" className="modal">
+        <div className="modal-box max-w-2xl">
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+              ✕
+            </button>
+          </form>
+          <h3 className="font-bold text-lg mb-4">My Request History</h3>
+
+          {loadingRequests ? (
+            <div className="flex justify-center py-8">
+              <span className="loading loading-spinner loading-lg"></span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Course Change Requests */}
               <div>
-                <h3 className="font-medium text-blue-800">Pending Request</h3>
-                <ul className="mt-1 text-sm text-blue-700 space-y-1">
-                  {pendingRequests.course && (
-                    <li className="flex items-center gap-2">
-                      <span className="font-medium">Course Change:</span> 
-                      <span>{getRequestDetails("course")}</span>
-                      <span className="text-xs opacity-75">
-                        ({new Date(pendingRequests.course.timestamp).toLocaleString()})
-                      </span>
-                    </li>
-                  )}
-                  {pendingRequests.batch && (
-                    <li className="flex items-center gap-2">
-                      <span className="font-medium">Batch Change:</span> 
-                      <span>{getRequestDetails("batch")}</span>
-                      <span className="text-xs opacity-75">
-                        ({new Date(pendingRequests.batch.timestamp).toLocaleString()})
-                      </span>
-                    </li>
-                  )}
-                </ul>
-                <p className="mt-2 text-xs text-blue-600">
-                  Please wait for admin approval before making another request.
-                </p>
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Course Change Requests
+                </h4>
+                {allRequests.courseChange.length > 0 ? (
+                  <div className="space-y-2">
+                    {allRequests.courseChange.map((request, index) => (
+                      <div
+                        key={`course-req-${index}`}
+                        className={`p-3 rounded-lg border ${
+                          request.status === "Approved"
+                            ? "bg-green-50 border-green-200"
+                            : request.status === "Rejected"
+                            ? "bg-red-50 border-red-200"
+                            : "bg-yellow-50 border-yellow-200"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">
+                              {courses.find(
+                                (c) => c._id === request.requestedCourse
+                              )?.courseName || "Unknown Course"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(request.timestamp).toLocaleString()}
+                            </p>
+                            {request.status === "Rejected" &&
+                              request.reason && (
+                                <p className="text-sm text-red-600 mt-1">
+                                  <strong>Reason:</strong> {request.reason}
+                                </p>
+                              )}
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === "Approved"
+                                ? "bg-green-100 text-green-800"
+                                : request.status === "Rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {request.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No course change requests found
+                  </p>
+                )}
+              </div>
+
+              {/* Batch Change Requests */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Batch Change Requests
+                </h4>
+                {allRequests.batchChange.length > 0 ? (
+                  <div className="space-y-2">
+                    {allRequests.batchChange.map((request, index) => (
+                      <div
+                        key={`batch-req-${index}`}
+                        className={`p-3 rounded-lg border ${
+                          request.status === "Approved"
+                            ? "bg-green-50 border-green-200"
+                            : request.status === "Rejected"
+                            ? "bg-red-50 border-red-200"
+                            : "bg-yellow-50 border-yellow-200"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">
+                              {batches.find(
+                                (b) => b._id === request.requestedBatch
+                              )?.batchName || "Unknown Batch"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(request.timestamp).toLocaleString()}
+                            </p>
+                            {request.status === "Rejected" &&
+                              request.reason && (
+                                <p className="text-sm text-red-600 mt-1">
+                                  <strong>Reason:</strong> {request.reason}
+                                </p>
+                              )}
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === "Approved"
+                                ? "bg-green-100 text-green-800"
+                                : request.status === "Rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {request.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No batch change requests found
+                  </p>
+                )}
               </div>
             </div>
-          </div>
-        )} */}
-      </div>
+          )}
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
 
       {/* Batch Details Section */}
       {studentData?.enrolled_batch && (

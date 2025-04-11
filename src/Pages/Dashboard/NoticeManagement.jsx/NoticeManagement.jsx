@@ -52,6 +52,7 @@ const NoticeManagement = () => {
     }
   };
 
+  
   useEffect(() => {
     fetchNotices();
   }, []);
@@ -278,7 +279,7 @@ const NoticeManagement = () => {
       )}
 
       {/* Notices Table */}
-      <div className="overflow-x-auto w-[900px] mx-auto">
+      <div className="overflow-x-auto w-[1100px] mx-auto">
         <table className="table table-zebra w-full">
           <thead className="bg-blue-950 text-white">
             <tr>
@@ -335,42 +336,27 @@ const NoticeManagement = () => {
       </div>
 
       {/* Pagination */}
-      {notices.length > 0 && (
-        <div className="flex justify-center mt-4">
-          <div className="join">
-            <button
-              className="join-item btn"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1 || isLoading}
-            >
-              «
-            </button>
-            {Array.from({ length: Math.ceil(totalNotices / noticesPerPage) }).map((_, index) => (
-              <button
-                key={index}
-                className={`join-item btn ${currentPage === index + 1 ? 'btn-active' : ''}`}
-                onClick={() => paginate(index + 1)}
-                disabled={isLoading}
-              >
-                {index + 1}
-              </button>
-            ))}
-            <button
-              className="join-item btn"
-              onClick={() => setCurrentPage(prev => 
-                Math.min(prev + 1, Math.ceil(totalNotices / noticesPerPage))
-              )}
-              disabled={
-                currentPage === Math.ceil(totalNotices / noticesPerPage) || 
-                isLoading
-              }
-            >
-              »
-            </button>
-          </div>
-        </div>
-      )}
-
+{notices.length > 0 && (
+  <div className="flex justify-end gap-2 my-4">
+    <button
+      className="btn btn-outline"
+      disabled={currentPage === 1 || isLoading}
+      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+    >
+      Previous
+    </button>
+    <span className="flex items-center px-4">
+      Page {currentPage} of {Math.ceil(totalNotices / noticesPerPage)}
+    </span>
+    <button
+      className="btn btn-outline"
+      disabled={currentPage === Math.ceil(totalNotices / noticesPerPage) || isLoading}
+      onClick={() => setCurrentPage(prev => prev + 1)}
+    >
+      Next
+    </button>
+  </div>
+)}
       {/* Add Notice Modal */}
       {isModalOpen && (
         <div className="modal modal-open">
