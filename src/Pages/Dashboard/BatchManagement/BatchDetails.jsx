@@ -62,7 +62,7 @@ const BatchDetails = () => {
           axiosSecure.get("/students"),
           axiosSecure.get("/users"),
           axiosSecure.get(`/batches/${batchId}`),
-          axiosSecure.get(`/routine`, { params: { batchId } }),
+          axiosSecure.get(`/routine/${batchId}`),
           axiosSecure.get("/instructors"),
           axiosSecure.get("/instructors-batches"),
         ]);

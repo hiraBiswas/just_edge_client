@@ -297,9 +297,35 @@ const UpdateRoutine = ({
   };
 
   // Delete a routine entry
-  const handleDeleteRoutine = (index) => {
-    const updatedRoutines = routines.filter((_, i) => i !== index);
-    setRoutines(updatedRoutines);
+  const handleDeleteRoutine = async (index) => {
+    const routineToDelete = routines[index];
+    
+    // If it's a new routine (no _id), just remove from state
+    if (!routineToDelete._id) {
+      const updatedRoutines = [...routines];
+      updatedRoutines.splice(index, 1);
+      setRoutines(updatedRoutines);
+      return;
+    }
+  
+    try {
+      setLoadingSubmit(true); // Show loading state
+      
+      // Call API to delete the routine
+      await axiosSecure.delete(`/routine/${routineToDelete._id}`);
+      
+      // Remove from local state
+      const updatedRoutines = [...routines];
+      updatedRoutines.splice(index, 1);
+      setRoutines(updatedRoutines);
+      
+      toast.success("Routine deleted successfully");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete routine");
+    } finally {
+      setLoadingSubmit(false);
+    }
   };
 
   // Submit updated routine data
