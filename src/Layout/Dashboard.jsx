@@ -12,7 +12,18 @@ import { VscCombine } from "react-icons/vsc";
 import { MdAssignmentInd } from "react-icons/md";
 import { ImProfile } from "react-icons/im";
 import { AiOutlineProfile } from "react-icons/ai";
-import "./dashboard.css";
+import {
+  Users, 
+  BookOpenCheck, 
+  BarChart4,
+  FileText,
+  Bell,
+  Bookmark,
+  UserCheck,
+  RefreshCw,
+  PlusCircle
+} from "lucide-react";
+import "./dashboard.css"
 
 const Dashboard = () => {
   const [isAdmin, isAdminLoading] = useAdmin();
@@ -37,6 +48,14 @@ const Dashboard = () => {
     );
   }
 
+
+  const navLinkClass = ({ isActive }) => 
+    `flex items-center gap-3 p-3 rounded-lg transition-colors ${
+      isActive 
+        ? 'bg-blue-800 text-white' 
+        : 'hover:bg-blue-900 hover:text-sky-200'
+    }`;
+
   return (
     <div className="flex">
       <div className="drawer lg:drawer-open">
@@ -53,160 +72,50 @@ const Dashboard = () => {
           </label>
         </div>
         <div className="drawer-side">
-          <label
-            htmlFor="my-drawer-2"
-            aria-label="close sidebar"
-            className="drawer-overlay"
-          ></label>
-          <ul className="p-4 w-80 min-h-full bg-blue-950 text-white text-lg lg:text-xl font-semibold mr-5">
-            <Link to="/">
-              <h3 className="text-2xl font-bold text-white pb-5">JUST_EDGE</h3>
-            </Link>
+          <label htmlFor="my-drawer-2" aria-label="close sidebar" className="drawer-overlay"></label>
+          <ul className="p-4 w-80 min-h-full bg-blue-950 text-white space-y-1">
+            <li className="mb-4">
+              <Link to="/" className="text-2xl font-bold text-white hover:text-sky-200">
+                JUST_EDGE
+              </Link>
+            </li>
 
-            {/* Admin routes */}
             {isAdmin ? (
               <>
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-1">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/adminDashboard"
-                  >
-                    <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" />{" "}
-                    Dashboard
-                  </NavLink>
-                </li>
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-1">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/courseManagement"
-                  >
-                    <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" />{" "}
-                    Course Management
-                  </NavLink>
-                </li>
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-1">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/instructorManagement"
-                  >
-                    <MdSpaceDashboard className="text-xl text-white hover:text-amber-500" />{" "}
-                    Instructor Management
-                  </NavLink>
-                </li>
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-1">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/batchManagement"
-                  >
-                    <VscCombine className="text-xl text-white hover:text-amber-500" />{" "}
-                    Batch Management
-                  </NavLink>
-                </li>
-                <li className="hover:text-sky-200 flex flex-row py-1">
-                  <NavLink
-                    className="hover:text-sky-200 flex items-center gap-3"
-                    to="/dashboard/courseAssignment"
-                  >
-                    <MdAssignmentInd className="text-xl text-white hover:text-sky-200" />
-                    Batch Assignment
-                  </NavLink>
-                </li>
-
-                <li className="hover:text-sky-200 flex flex-row py-1">
-                  <NavLink
-                    className="hover:text-sky-200 flex items-center gap-3"
-                    to="/dashboard/noticeManagement"
-                  >
-                    <MdAssignmentInd className="text-xl text-white hover:text-sky-200" />
-                    Notice Management
-                  </NavLink>
-                </li>
+                <li><NavLink className={navLinkClass} to="/dashboard/adminDashboard"><BarChart4 /> Dashboard</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/courseManagement"><BookOpenCheck /> Course Management</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/instructorManagement"><UserCheck /> Instructor Management</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/batchManagement"><Users /> Batch Management</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/courseAssignment"><Bookmark /> Batch Assignment</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/noticeManagement"><Bell /> Notice Management</NavLink></li>
               </>
             ) : isInstructor ? (
-              // Instructor-related routes
               <>
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    end
-                    to="/dashboard/instructorDashboard"
-                  >
-                    <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
-                    Dashboard
-                  </NavLink>
-                </li>
-             
-
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/resultUpload"
-                  >
-                    <MdSpaceDashboard className="text-xl text-white hover:text-blue-600" />{" "}
-                    Result
-                  </NavLink>
-                </li>
+                <li><NavLink className={navLinkClass} end to="/dashboard/instructorDashboard"><BarChart4 /> Dashboard</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/resultUpload"><FileText /> Result</NavLink></li>
               </>
             ) : (
-              // Default routes for normal users
               <>
-                <li className="hover:text-sky-200 flex flex-row py-2 pb-3">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/studentDashboard"
-                  >
-                    <MdPending className="text-xl text-white hover:text-blue-600" />{" "}
-                  Dashboard
-                  </NavLink>
-                </li>
-
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/profileAndDocument"
-                  >
-                    <ImProfile className="text-xl text-white hover:text-blue-600" />{" "}
-                    Profile and Document Update
-                  </NavLink>
-                </li>
-
-                <li className="hover:text-sky-200 flex flex-row pt-3 py-2">
-                  <NavLink
-                    className="hover:text-sky-200 flex justify-center items-center gap-3"
-                    to="/dashboard/resultDisplay"
-                  >
-                    <ImProfile className="text-xl text-white hover:text-blue-600" />{" "}
-                    Result
-                  </NavLink>
-                </li>
-          
-            
+                <li><NavLink className={navLinkClass} to="/dashboard/studentDashboard"><BarChart4 /> Dashboard</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/profileAndDocument"><ImProfile /> Profile and Document</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/resultDisplay"><FileText /> Result</NavLink></li>
               </>
             )}
 
-            <hr />
-            <Link
-              className="hover:text-sky-200 flex flex-row gap-3 items-center mt-4 pb-2"
-              to="/"
-            >
-              <AiFillHome className="text-xl text-white hover:text-blue-600" />
-              <h3 className="font-semibold">Home</h3>
-            </Link>
-
-            <Link className="flex items-center gap-3">
-              <div className="flex items-center gap-3">
-                <IoIosLogOut className="text-xl text-white hover:text-sky-200" />
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleSignOut();
-                  }}
-                  className="text-white font-semibold hover:text-sky-200"
-                >
-                  Logout
-                </button>
-              </div>
-            </Link>
+            <li className="pt-4 mt-4 border-t border-blue-800">
+              <Link to="/" className={navLinkClass({ isActive: false })}>
+                <AiFillHome /> Home
+              </Link>
+            </li>
+            
+            <li>
+              <button 
+                onClick={handleSignOut}
+                className={`${navLinkClass({ isActive: false })} w-full text-left`}
+              >
+                <IoIosLogOut /> Logout
+              </button>
+            </li>
           </ul>
         </div>
       </div>
