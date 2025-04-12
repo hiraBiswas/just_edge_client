@@ -4,7 +4,7 @@ import useAxiosSecure from "./../../../hooks/useAxiosSecure";
 import CreateRoutine from "./CreateRoutine";
 import UpdateRoutine from "./UpdateRoutine";
 import { RxCross2 } from "react-icons/rx";
-
+import { toast } from "react-hot-toast";
 
 const BatchDetails = () => {
   const { id: batchId } = useParams();
@@ -135,6 +135,31 @@ const BatchDetails = () => {
     }
   };
 
+  const handleAssignInstructor = async (instructorId) => {
+    try {
+      const response = await axiosSecure.post("/instructors-batches", {
+        instructorId,
+        batchId,
+      });
+
+      if (response.data) {
+        // Refresh the instructor list
+        const instructorsBatchesResponse = await axiosSecure.get(
+          "/instructors-batches"
+        );
+        setInstructorBatches(instructorsBatchesResponse.data);
+        toast.success("Instructor assigned successfully");
+        document.getElementById("assign_instructor_modal").close();
+      }
+    } catch (error) {
+      console.error("Error assigning instructor:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to assign instructor to batch"
+      );
+    }
+  };
+
   const handleRoutineUpdate = (updatedRoutines) => {
     if (!Array.isArray(updatedRoutines)) {
       console.error("Updated routines is not an array:", updatedRoutines);
@@ -160,6 +185,14 @@ const BatchDetails = () => {
         }, {})
       ).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
     : [];
+
+  // Get available instructors (not already assigned to this batch)
+  const availableInstructors = instructors.filter((instructor) => {
+    return !instructorBatches.some(
+      (ib) =>
+        ib.instructorId === instructor._id && ib.batchId === batchId
+    );
+  });
 
   if (loading) {
     return (
@@ -228,12 +261,28 @@ const BatchDetails = () => {
         </div>
       </div>
 
-        {/* Instructors Section */}
-        <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-100">
+      {/* Instructors Section */}
+      <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-100">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Assigned Instructors
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Assigned Instructors
+            </h2>
+            <button
+              onClick={() =>
+                document.getElementById("assign_instructor_modal").showModal()
+              }
+              className="btn btn-sm btn-primary"
+              disabled={availableInstructors.length === 0}
+              title={
+                availableInstructors.length === 0
+                  ? "No available instructors to assign"
+                  : "Assign Instructor"
+              }
+            >
+              Assign Instructor
+            </button>
+          </div>
           {filteredInstructorBatches && filteredInstructorBatches.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="table w-full">
@@ -253,8 +302,13 @@ const BatchDetails = () => {
                       instructorBatch.instructorId
                     );
                     return (
-                      <tr key={instructorBatch._id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 text-md text-black px-4">{instructorName}</td>
+                      <tr
+                        key={instructorBatch._id}
+                        className="border-b border-gray-100 hover:bg-gray-50"
+                      >
+                        <td className="py-3 text-md text-black px-4">
+                          {instructorName}
+                        </td>
                         <td className="py-3 text-md text-black  px-4 text-right">
                           <button
                             className="btn btn-sm btn-error text-white"
@@ -279,6 +333,66 @@ const BatchDetails = () => {
         </div>
       </section>
 
+      {/* Assign Instructor Modal */}
+      <dialog id="assign_instructor_modal" className="modal">
+        <div className="modal-box">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg">Assign Instructor</h3>
+            <button
+              onClick={() =>
+                document.getElementById("assign_instructor_modal").close()
+              }
+              className="btn btn-sm btn-circle"
+            >
+              <RxCross2 />
+            </button>
+          </div>
+          {availableInstructors.length > 0 ? (
+            <div>
+              <div className="form-control w-full mb-4">
+                <label className="label">
+                  <span className="label-text">Select Instructor</span>
+                </label>
+                <select
+                  id="instructorSelect"
+                  className="select select-bordered w-full"
+                >
+                  {availableInstructors.map((instructor) => {
+                    const user = users.find(
+                      (u) => u._id === instructor.userId
+                    );
+                    return (
+                      <option
+                        key={instructor._id}
+                        value={instructor._id}
+                      >
+                        {user ? user.name : "Unknown Instructor"}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div className="modal-action">
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const select = document.getElementById("instructorSelect");
+                    const instructorId = select.value;
+                    handleAssignInstructor(instructorId);
+                  }}
+                >
+                  Assign
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p>No available instructors to assign.</p>
+            </div>
+          )}
+        </div>
+      </dialog>
+
       {/* Routine Section */}
       <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-100">
         <div className="flex justify-between items-center p-6 pb-0">
@@ -296,21 +410,23 @@ const BatchDetails = () => {
             </button>
           ) : (
             <button
-            onClick={() =>
-              document.getElementById("create_routine_modal").showModal()
-            }
-            className={`btn btn-sm btn-primary ${
-              filteredInstructorBatches.length === 0 ? "btn-disabled cursor-not-allowed" : ""
-            }`}
-            disabled={filteredInstructorBatches.length === 0}
-            title={
-              filteredInstructorBatches.length === 0
-                ? "Please assign an instructor first"
-                : "Create Routine"
-            }
-          >
-            Create Routine
-          </button>
+              onClick={() =>
+                document.getElementById("create_routine_modal").showModal()
+              }
+              className={`btn btn-sm btn-primary ${
+                filteredInstructorBatches.length === 0
+                  ? "btn-disabled cursor-not-allowed"
+                  : ""
+              }`}
+              disabled={filteredInstructorBatches.length === 0}
+              title={
+                filteredInstructorBatches.length === 0
+                  ? "Please assign an instructor first"
+                  : "Create Routine"
+              }
+            >
+              Create Routine
+            </button>
           )}
         </div>
 
@@ -333,7 +449,10 @@ const BatchDetails = () => {
               </thead>
               <tbody>
                 {sortedRoutines.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr
+                    key={index}
+                    className="border-b border-gray-100 hover:bg-gray-50"
+                  >
                     <td className="py-3 px-4 text-black">{item.day}</td>
                     <td className="py-3 text-black px-4">
                       {formatTime(item.startTime)} - {formatTime(item.endTime)}
@@ -349,8 +468,6 @@ const BatchDetails = () => {
           </div>
         )}
       </section>
-
-    
 
       {/* Students Section */}
       <section className="bg-white rounded-lg shadow-sm border border-gray-100">
@@ -390,9 +507,14 @@ const BatchDetails = () => {
                   </thead>
                   <tbody>
                     {filteredStudents.map((student, index) => (
-                      <tr key={student._id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <tr
+                        key={student._id}
+                        className="border-b border-gray-100 hover:bg-gray-50"
+                      >
                         <td className="py-3 px-4 text-center">{index + 1}</td>
-                        <td className="py-3 px-4">{getUserName(student.userId)}</td>
+                        <td className="py-3 px-4">
+                          {getUserName(student.userId)}
+                        </td>
                         <td className="py-3 px-4">{student.studentID}</td>
                         <td className="py-3 px-4">{student.department}</td>
                         <td className="py-3 px-4">{student.institution}</td>
@@ -457,6 +579,7 @@ const BatchDetails = () => {
           {/* UpdateRoutine Component */}
           <UpdateRoutine
             batchId={batchId}
+            routines={sortedRoutines} 
             closeModal={() => {
               document.getElementById("update_routine_modal").close();
             }}
@@ -467,7 +590,6 @@ const BatchDetails = () => {
           />
         </div>
       </dialog>
-
     </div>
   );
 };

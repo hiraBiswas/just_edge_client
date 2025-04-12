@@ -24,7 +24,12 @@ const hasTimeOverlap = (start1, end1, start2, end2) => {
   );
 };
 
-const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
+const UpdateRoutine = ({
+  batchId,
+  closeModal,
+  routines: propRoutines,
+  onRoutineUpdate,
+}) => {
   const [routines, setRoutines] = useState([]);
   const [loadingFetch, setLoadingFetch] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -41,23 +46,49 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
   };
 
   useEffect(() => {
+    // Initialize with propRoutines if they exist
+    if (propRoutines && propRoutines.length > 0) {
+      setRoutines(propRoutines);
+      return;
+    }
+
     const fetchData = async () => {
       setLoadingFetch(true);
       setError(null);
       try {
-        // Fetch routine data
+        // 1. First fetch routine data
         const routineResponse = await axiosSecure.get(`/routine/${batchId}`);
-        setRoutines(routineResponse.data || []);
 
-        // Fetch batch data to get assigned instructors
+        // Handle different response formats (array or object with schedule property)
+        let routinesData = [];
+        if (Array.isArray(routineResponse.data)) {
+          routinesData = routineResponse.data;
+        } else if (routineResponse.data?.schedule) {
+          routinesData = routineResponse.data.schedule;
+        }
+
+        // Ensure we have at least one routine entry
+        if (routinesData.length === 0) {
+          routinesData = [
+            {
+              day: "",
+              startTime: "",
+              endTime: "",
+            },
+          ];
+        }
+
+        setRoutines(routinesData);
+
+        // 2. Fetch batch data for instructor information
         const batchResponse = await axiosSecure.get(`/batches/${batchId}`);
         setBatchData(batchResponse.data);
 
-        // Fetch all users first
+        // 3. Fetch all users for instructor names
         const usersResponse = await axiosSecure.get("/users");
         setUsers(usersResponse.data);
 
-        // Then fetch instructor details if there are any
+        // 4. Fetch instructor details if any assigned to this batch
         if (batchResponse.data.instructorIds?.length > 0) {
           const instructorsResponse = await axiosSecure.get("/instructors", {
             params: { ids: batchResponse.data.instructorIds.join(",") },
@@ -73,9 +104,31 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
 
           setInstructors(instructorsWithNames);
         }
+
+        // 5. Additional validation: Check if any existing routines need adjustment
+        const validatedRoutines = routinesData.map((routine) => {
+          // Ensure each routine has all required fields
+          return {
+            ...routine,
+            day: routine.day || "",
+            startTime: routine.startTime || "",
+            endTime: routine.endTime || "",
+          };
+        });
+
+        setRoutines(validatedRoutines);
       } catch (err) {
+        console.error("Fetch error:", err);
         setError(err.message);
-        toast.error("Failed to fetch data");
+        toast.error("Failed to fetch routine data");
+        // Set default empty routine if fetch fails
+        setRoutines([
+          {
+            day: "",
+            startTime: "",
+            endTime: "",
+          },
+        ]);
       } finally {
         setLoadingFetch(false);
       }
@@ -84,7 +137,7 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
     if (batchId) {
       fetchData();
     }
-  }, [batchId, axiosSecure]);
+  }, [batchId, axiosSecure, propRoutines]);
 
   // Validate all conditions before allowing changes
   const validateRoutine = async (updatedRoutines) => {
@@ -167,10 +220,10 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
   const handleChange = async (index, field, value) => {
     const updatedRoutines = [...routines];
     updatedRoutines[index][field] = value;
-  
+
     // Track if we should prevent state update
     let shouldPreventUpdate = false;
-  
+
     // Day uniqueness validation (only when day changes)
     if (field === "day") {
       const isDuplicate = updatedRoutines.some(
@@ -178,12 +231,12 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
       );
       if (isDuplicate) {
         toast.error("This batch already has a class scheduled for this day", {
-          id: "day-duplicate-error" // Same ID prevents duplicate toasts
+          id: "day-duplicate-error", // Same ID prevents duplicate toasts
         });
         shouldPreventUpdate = true;
       }
     }
-  
+
     // Time validation (only when both times exist)
     if (
       !shouldPreventUpdate &&
@@ -191,18 +244,18 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
       updatedRoutines[index].day
     ) {
       const { startTime, endTime } = updatedRoutines[index];
-      
+
       // Only validate if both times are present
       if (startTime && endTime) {
         // Skip validation if this field is being cleared
         if (!value) return;
-  
+
         const start = timeToMinutes(startTime);
         const end = timeToMinutes(endTime);
-  
+
         if (end <= start) {
           toast.error("End time must be after start time", {
-            id: "time-error" // Same ID prevents duplicate toasts
+            id: "time-error", // Same ID prevents duplicate toasts
           });
           shouldPreventUpdate = true;
         } else {
@@ -211,14 +264,14 @@ const UpdateRoutine = ({ batchId, closeModal, onRoutineUpdate }) => {
         }
       }
     }
-  
+
     if (shouldPreventUpdate) {
       return;
     }
-  
+
     // Update state
     setRoutines(updatedRoutines);
-  
+
     // Full validation only when all fields are complete
     if (
       updatedRoutines[index].day &&

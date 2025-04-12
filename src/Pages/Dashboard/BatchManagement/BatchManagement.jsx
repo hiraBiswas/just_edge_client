@@ -105,55 +105,7 @@ const BatchManagement = () => {
     fetchBatches();
   }, [axiosSecure]);
 
-  const handleAssignInstructor = async (batchId, userId) => {
-    try {
-      const { data: instructors } = await axiosSecure.get("/instructors");
-      const matchedInstructor = instructors.find(
-        (instructor) => instructor.userId === userId
-      );
 
-      if (!matchedInstructor) {
-        toast.error("Instructor not found!");
-        return;
-      }
-
-      const instructorId = matchedInstructor._id;
-      const response = await axiosSecure.post("/instructors-batches", {
-        instructorId,
-        batchId,
-      });
-
-      if (response.status === 201) {
-        const instructorName = instructorMap[userId] || "Unknown";
-
-        toast.success("Instructor assigned successfully!");
-
-        // Fetch the updated batches data from the backend
-        const updatedBatchesResponse = await axiosSecure.get("/batches");
-        const updatedBatches = updatedBatchesResponse.data.map((batch) => {
-          const instructorNames = batch.instructors || [];
-          return {
-            ...batch,
-            instructors: instructorNames,
-          };
-        });
-
-        setBatches(updatedBatches); // Update the state with the latest batch data
-        setInstructorSelection((prev) => ({
-          ...prev,
-          [batchId]: "", // Reset the instructor selection
-        }));
-      }
-    } catch (error) {
-      if (error.response && error.response.status === 409) {
-        toast.error(
-          error.response.data.message || "Instructor already assigned."
-        );
-      } else {
-        toast.error("Error assigning instructor.");
-      }
-    }
-  };
 
   const refreshBatches = async () => {
     try {
@@ -316,35 +268,7 @@ const BatchManagement = () => {
 
                       <td>
                         <div className="flex items-center justify-between gap-4">
-                          <select
-                            className="select select-bordered select-sm"
-                            value={instructorSelection[batch._id] || ""}
-                            onChange={(e) => {
-                              const selectedUserId = e.target.value;
-                              setInstructorSelection((prev) => ({
-                                ...prev,
-                                [batch._id]: selectedUserId,
-                              }));
-                              if (selectedUserId) {
-                                handleAssignInstructor(
-                                  batch._id,
-                                  selectedUserId
-                                );
-                              }
-                            }}
-                          >
-                            <option value="" disabled>
-                              Assign Instructor
-                            </option>
-                            {combinedInstructors.map((instructor) => (
-                              <option
-                                key={instructor.userId}
-                                value={instructor.userId}
-                              >
-                                {instructor.name}
-                              </option>
-                            ))}
-                          </select>
+                    
 
                           <Link to={`/dashboard/batchDetails/${batch._id}`}>
                             <FaEye className="w-4 h-4" />

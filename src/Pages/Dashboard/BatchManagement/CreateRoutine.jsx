@@ -502,10 +502,16 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
 
       // Check for successful status code (2xx) instead of response.data.success
       if (response.status >= 200 && response.status < 300) {
-        console.log("Batch submission successful");
+        console.log("Routine submission successful");
         toast.success(response.data.message || "Routine created successfully!");
         onSuccess(); // Refresh routines
-        closeModal(); // Close modal
+
+        
+            // Delay closing the modal to allow toast to be visible
+            setTimeout(() => {
+              closeModal(); // Close modal after delay
+            }, 2000); // 2 seconds delay
+      
       } else {
         throw new Error(response.data.message || "Failed to create routine");
       }
@@ -641,11 +647,11 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
           top: "20px",
           left: "50%",
           transform: "translateX(-50%)",
-          zIndex: 10000, // Higher than modal's z-index
+          zIndex: 10000, 
         }}
         toastOptions={{
           style: {
-            zIndex: 10000, // Ensure individual toasts also have high z-index
+            zIndex: 10000, 
           },
         }}
       />
