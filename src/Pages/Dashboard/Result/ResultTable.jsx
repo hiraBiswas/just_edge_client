@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { useQuery, useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import UploadResult from "./UploadResult";
 import { Toaster, toast } from "react-hot-toast";
 import { AuthContext } from "../../../Providers/AuthProvider";
@@ -29,15 +29,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 3,
   },
-
   performance: {
-    fontSize: 7, // Match with table header
-    fontWeight: "bold", // Valid value
+    fontSize: 7,
+    fontWeight: "bold",
     textAlign: "left",
     marginBottom: 1,
   },
-  
-
   subtitle: {
     fontSize: 10,
     textAlign: "center",
@@ -47,8 +44,6 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textAlign: "right",
   },
-
-  // ✅ Table
   table: {
     width: "100%",
     borderStyle: "solid",
@@ -83,8 +78,6 @@ const styles = StyleSheet.create({
   wideCell: {
     flex: 1.2,
   },
-
-  // ✅ Clean footer (removed border)
   footer: {
     textAlign: "center",
     marginTop: 15,
@@ -92,15 +85,13 @@ const styles = StyleSheet.create({
     color: "#555555",
     paddingTop: 5,
   },
-
-  // ✅ Updated summary section (no box borders)
   summarySection: {
     marginTop: 10,
     flexDirection: "row",
     justifyContent: "space-around",
   },
   summaryBox: {
-    padding: 0, // No padding box
+    padding: 0,
     width: "45%",
   },
   summaryTitle: {
@@ -117,21 +108,6 @@ const styles = StyleSheet.create({
   },
 });
 
-
-// In the PDF component, update the header row to:
-<View style={[styles.tableRow, styles.tableHeader]}>
-  <Text style={[styles.tableCell, styles.header, styles.wideCell]}>Student Name</Text>
-  <Text style={[styles.tableCell, styles.header]}>Student ID</Text>
-  <Text style={[styles.tableCell, styles.header]}>Assignment</Text>
-  <Text style={[styles.tableCell, styles.header]}>Mid Term</Text>
-  <Text style={[styles.tableCell, styles.header]}>Project</Text>
-  <Text style={[styles.tableCell, styles.header]}>Final Exam</Text>
-  <Text style={[styles.tableCell, styles.header]}>Attendance</Text>
-  <Text style={[styles.tableCell, styles.header]}>Total</Text>
-  <Text style={[styles.tableCell, styles.header]}>Status</Text>
-</View>
-
-
 const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
   const totalStudents = students.length;
   const studentsWithResults = students.filter((student) =>
@@ -144,14 +120,26 @@ const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
     );
     if (!studentResults) return false;
 
-    const total =
-      Number(studentResults.Assignment || 0) +
-      Number(studentResults.Mid_Term || 0) +
-      Number(studentResults.Project || 0) +
-      Number(studentResults.Final_Exam || 0) +
-      Number(studentResults.Attendance || 0);
+    // Check if any field is null
+    const hasNullField =
+      studentResults.Assignment === null ||
+      studentResults.Mid_Term === null ||
+      studentResults.Project === null ||
+      studentResults.Final_Exam === null ||
+      studentResults.Attendance === null;
 
-    return total >= 40;
+    // If any field is null, the student fails regardless of total
+    if (hasNullField) return false;
+
+    // Calculate total treating null values as 0 (though we've already checked for nulls above)
+    const total =
+      (studentResults.Assignment || 0) +
+      (studentResults.Mid_Term || 0) +
+      (studentResults.Project || 0) +
+      (studentResults.Final_Exam || 0) +
+      (studentResults.Attendance || 0);
+
+    return total >= 60;
   }).length;
 
   const failCount = studentsWithResults - passCount;
@@ -169,25 +157,26 @@ const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
   return (
     <Document>
       <Page style={styles.page}>
-        {/* Header */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>Result Summary</Text>
           <Text style={styles.subtitle}>Batch: {selectedBatchName}</Text>
           <Text style={styles.dateText}>Report Date: {currentDate}</Text>
         </View>
 
-        {/* Summary Info */}
-        <View >
-          <Text style={styles.performance}>Total Students: {totalStudents}</Text>
+        <View>
+          <Text style={styles.performance}>
+            Total Students: {totalStudents}
+          </Text>
           <Text style={styles.performance}>Pass: {passCount}</Text>
           <Text style={styles.performance}>Fail: {failCount}</Text>
-      
+          <Text style={styles.performance}>Pass Rate: {passRate}%</Text>
         </View>
 
-        {/* Table */}
         <View style={styles.table}>
           <View style={[styles.tableRow, styles.tableHeader]}>
-            <Text style={[styles.tableCell, styles.header, styles.wideCell]}>Student Name</Text>
+            <Text style={[styles.tableCell, styles.header, styles.wideCell]}>
+              Student Name
+            </Text>
             <Text style={[styles.tableCell, styles.header]}>Student ID</Text>
             <Text style={[styles.tableCell, styles.header]}>Assignment</Text>
             <Text style={[styles.tableCell, styles.header]}>Mid Term</Text>
@@ -199,36 +188,58 @@ const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
           </View>
 
           {students.map((student) => {
-            const result = allResults.find(r => r.studentID === student.studentID);
+            const result = allResults.find(
+              (r) => r.studentID === student.studentID
+            );
 
+            // Display values (for showing in the table)
             const assignment = result?.Assignment ?? "-";
             const midTerm = result?.Mid_Term ?? "-";
             const project = result?.Project ?? "-";
             const finalExam = result?.Final_Exam ?? "-";
             const attendance = result?.Attendance ?? "-";
 
-            const total =
-              assignment !== "-" &&
-              midTerm !== "-" &&
-              project !== "-" &&
-              finalExam !== "-" &&
-              attendance !== "-"
-                ? Number(assignment) + Number(midTerm) + Number(project) + Number(finalExam) + Number(attendance)
-                : "-";
+            // Check if student has any results
+            const hasResults = result !== undefined;
 
-            const status =
-              total !== "-" && total >= 40 ? "Pass" : total !== "-" ? "Fail" : "N/A";
+            // Check if any field is null
+            const hasNullField =
+              hasResults &&
+              (result.Assignment === null ||
+                result.Mid_Term === null ||
+                result.Project === null ||
+                result.Final_Exam === null ||
+                result.Attendance === null);
+
+            // Calculate total (counting null values as 0)
+            const total = hasResults
+              ? (result.Assignment || 0) +
+                (result.Mid_Term || 0) +
+                (result.Project || 0) +
+                (result.Final_Exam || 0) +
+                (result.Attendance || 0)
+              : 0;
+
+            // Status determination
+            let status = "Fail";
+            if (hasResults && !hasNullField && total >= 60) {
+              status = "Pass";
+            }
 
             return (
               <View key={student.studentID} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.wideCell]}>{student.name}</Text>
+                <Text style={[styles.tableCell, styles.wideCell]}>
+                  {student.name}
+                </Text>
                 <Text style={styles.tableCell}>{student.studentID}</Text>
                 <Text style={styles.tableCell}>{assignment}</Text>
                 <Text style={styles.tableCell}>{midTerm}</Text>
                 <Text style={styles.tableCell}>{project}</Text>
                 <Text style={styles.tableCell}>{finalExam}</Text>
                 <Text style={styles.tableCell}>{attendance}</Text>
-                <Text style={styles.tableCell}>{total !== "-" ? total : "N/A"}</Text>
+                <Text style={styles.tableCell}>
+                  {hasResults ? total : "N/A"}
+                </Text>
                 <Text style={styles.tableCell}>{status}</Text>
               </View>
             );
@@ -239,15 +250,22 @@ const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
   );
 };
 
-
 const ResultTable = () => {
   const axiosSecure = useAxiosSecure();
-  const queryClient = useQueryClient(); // Initialize QueryClient
+  const queryClient = useQueryClient();
   const [batchId, setBatchId] = useState("");
   const [selectedBatchName, setSelectedBatchName] = useState("");
   const [editStudent, setEditStudent] = useState(null);
   const [editedExams, setEditedExams] = useState([]);
   const { user } = useContext(AuthContext);
+
+  const MAX_MARKS = {
+    Attendance: 10,
+    Mid_Term: 25,
+    Assignment: 10,
+    Project: 25,
+    Final_Exam: 30,
+  };
 
   // Fetch batches
   const { data: batches = [], isLoading: batchesLoading } = useQuery({
@@ -321,19 +339,11 @@ const ResultTable = () => {
     const editableFields = Object.keys(studentResults)
       .filter(
         (key) => !["_id", "batchId", "studentID", "createdAt"].includes(key)
-      ) // Keep only marks fields
-      .map((key) => ({ field: key, value: studentResults[key] ?? "" })); // Preserve empty fields
+      )
+      .map((key) => ({ field: key, value: studentResults[key] ?? "" }));
 
     setEditedExams(editableFields);
     document.getElementById("edit_modal").showModal();
-  };
-
-  const MAX_MARKS = {
-    Attendance: 10,
-    Mid_Term: 25,
-    Assignment: 10,
-    Project: 25,
-    Final_Exam: 30,
   };
 
   // Handle Exam Change
@@ -350,7 +360,7 @@ const ResultTable = () => {
           MAX_MARKS[fieldName]
         }!`,
         {
-          duration: 3000, // 3 seconds
+          duration: 3000,
           position: "top-center",
         }
       );
@@ -374,7 +384,7 @@ const ResultTable = () => {
 
       if (res.status === 200) {
         toast.success("Student's marks deleted successfully!");
-        queryClient.invalidateQueries(["results"]); // Refresh the table
+        queryClient.invalidateQueries(["results"]);
       } else {
         throw new Error("Failed to delete marks");
       }
@@ -391,7 +401,7 @@ const ResultTable = () => {
         studentID: editStudent.studentID,
         batchId: editStudent.batchId,
         ...editedExams.reduce((acc, exam) => {
-          acc[exam.field] = exam.value; // Convert array back to object with field names
+          acc[exam.field] = exam.value;
           return acc;
         }, {}),
       };
@@ -400,10 +410,9 @@ const ResultTable = () => {
 
       if (res.status === 200) {
         toast.success("Results updated successfully!");
-        queryClient.invalidateQueries(["results"]); // Refresh results
-
-        setEditStudent(null); // Clear edit state
-        document.getElementById("edit_modal").close(); // Close modal
+        queryClient.invalidateQueries(["results"]);
+        setEditStudent(null);
+        document.getElementById("edit_modal").close();
       } else {
         throw new Error("Unexpected response from server");
       }
@@ -423,14 +432,12 @@ const ResultTable = () => {
 
   return (
     <div className="p-6 bg-base-100 w-[1100px] mx-auto mt-5">
-      {/* Upload Button with Aligned Text */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Upload or View Marks</h2>
         <UploadResult />
       </div>
 
-      {/* Batch Selection */}
-      <div className="mb-6 bg-white flex items-center gap-3  ">
+      <div className="mb-6 bg-white flex items-center gap-3">
         <label className="block font-medium">Select Batch:</label>
         <select
           value={batchId}
@@ -451,14 +458,12 @@ const ResultTable = () => {
         </select>
       </div>
 
-      {/* Loading states */}
       {batchId && (studentsLoading || resultsLoading) && (
         <div className="text-center py-20">
           <span className="loading loading-ring loading-xl"></span>
         </div>
       )}
 
-      {/* Render Results Table for Each Batch */}
       {batchId &&
         students.length > 0 &&
         !studentsLoading &&
@@ -498,8 +503,7 @@ const ResultTable = () => {
                   <th className="px-4 py-2 text-center">Final Exam</th>
                   <th className="px-4 py-2 text-center">Attendance</th>
                   <th className="px-4 py-2 text-center">Total</th>
-                  <th className="px-4 py-2 text-center">Status</th>{" "}
-                  {/* New Status Column */}
+                  <th className="px-4 py-2 text-center">Status</th>
                   <th className="px-4 py-2 text-center">Action</th>
                 </tr>
               </thead>
@@ -515,28 +519,32 @@ const ResultTable = () => {
                   const finalExamMarks = studentResults?.Final_Exam ?? "-";
                   const attendanceMarks = studentResults?.Attendance ?? "-";
 
-                  // Check if all marks are available
-                  const allMarksAvailable =
-                    assignmentMarks !== "-" &&
-                    midTermMarks !== "-" &&
-                    projectMarks !== "-" &&
-                    finalExamMarks !== "-" &&
-                    attendanceMarks !== "-";
+                  // Check if student has any results
+                  const hasResults = studentResults !== undefined;
 
-                  const total = allMarksAvailable
-                    ? Number(assignmentMarks) +
-                      Number(midTermMarks) +
-                      Number(projectMarks) +
-                      Number(finalExamMarks) +
-                      Number(attendanceMarks)
-                    : "-";
+                  // Check if any field is null
+                  const hasNullField =
+                    hasResults &&
+                    (studentResults.Assignment === null ||
+                      studentResults.Mid_Term === null ||
+                      studentResults.Project === null ||
+                      studentResults.Final_Exam === null ||
+                      studentResults.Attendance === null);
 
-                  // Determine status
-                  const status = allMarksAvailable
-                    ? total >= 40
-                      ? "Pass"
-                      : "Fail"
-                    : ""; // Empty if any mark is missing
+                  // Calculate total (counting null values as 0)
+                  const total = hasResults
+                    ? (studentResults.Assignment || 0) +
+                      (studentResults.Mid_Term || 0) +
+                      (studentResults.Project || 0) +
+                      (studentResults.Final_Exam || 0) +
+                      (studentResults.Attendance || 0)
+                    : 0;
+
+                  // Status determination
+                  let status = "Fail";
+                  if (hasResults && !hasNullField && total >= 60) {
+                    status = "Pass";
+                  }
 
                   return (
                     <tr
@@ -562,7 +570,7 @@ const ResultTable = () => {
                         {attendanceMarks}
                       </td>
                       <td className="px-4 py-2 border text-center font-medium">
-                        {total !== "-" ? total : "N/A"}
+                        {hasResults ? total : "N/A"}
                       </td>
                       <td
                         className={`px-4 py-2 border text-center font-semibold ${
@@ -572,20 +580,24 @@ const ResultTable = () => {
                         {status}
                       </td>
                       <td className="px-4 py-2 border flex gap-2 text-center">
-                        <button
-                          className="bg-blue-950 text-white px-2 py-1 rounded-sm text-sm mr-1"
-                          onClick={() => openEditModal(studentResults)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="bg-red-500 text-white px-2 py-1 rounded-sm text-sm"
-                          onClick={() =>
-                            handleDeleteStudent(studentResults?._id)
-                          }
-                        >
-                          Delete
-                        </button>
+                        {studentResults && (
+                          <>
+                            <button
+                              className="bg-blue-950 text-white px-2 py-1 rounded-sm text-sm mr-1"
+                              onClick={() => openEditModal(studentResults)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="bg-red-500 text-white px-2 py-1 rounded-sm text-sm"
+                              onClick={() =>
+                                handleDeleteStudent(studentResults._id)
+                              }
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   );
@@ -613,7 +625,6 @@ const ResultTable = () => {
               <strong>Student ID:</strong> {editStudent.studentID}
             </p>
 
-            {/* Editable Marks Fields */}
             {editedExams.map((exam, index) => (
               <div
                 key={index}
@@ -625,8 +636,10 @@ const ResultTable = () => {
                 <input
                   type="number"
                   className="input input-bordered w-32"
-                  value={exam.value}
+                  value={exam.value ?? ""}
                   onChange={(e) => handleExamChange(index, e.target.value)}
+                  min="0"
+                  max={MAX_MARKS[exam.field]}
                 />
               </div>
             ))}
@@ -642,7 +655,6 @@ const ResultTable = () => {
         </dialog>
       )}
 
-      {/* No data message */}
       {batchId &&
         !studentsLoading &&
         !resultsLoading &&

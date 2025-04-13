@@ -6,65 +6,44 @@ const useInstructor = () => {
   const { user, loading } = useAuth();
   const axiosSecure = useAxiosSecure();
 
-  // Ensure query runs only when user is loaded and authenticated
-  const isQueryEnabled = !loading && user !== null;
-
-  const { data: isInstructor, isLoading: isInstructorLoading, error } = useQuery({
-    queryKey: [user?.email, 'isInstructor'],
-    enabled: isQueryEnabled,
+  const { data: isInstructor = false, isLoading: isInstructorLoading } = useQuery({
+    queryKey: ['isInstructor', user?.email],
+    enabled: !!user?.email && !loading,
     queryFn: async () => {
-      if (!user) {
-        console.log('No user found, returning false');
-        return false;
-      }
-      
       try {
-        console.log('Fetching instructor status for email:', user.email);
+        // Option 1: Fetch by email
         const res = await axiosSecure.get(`/users/instructor/${user.email}`);
         
-        // Debug logging
-        console.log('API Response:', res.data);
-        console.log('User type from response:', res.data?.type);
-        console.log('Is type instructor?', res.data?.type === 'instructor');
-        
-        // Check if we're getting the full user object or just the type
+        // If the endpoint returns the full user object
         if (res.data?.type === 'instructor') {
           return true;
         }
         
-        // If we're getting just a boolean response
+        // If the endpoint returns a boolean directly
         if (typeof res.data === 'boolean') {
           return res.data;
         }
         
-        // If we're getting the instructor status in a different format
-        if (res.data?.isInstructor) {
-          return true;
+        // If the endpoint returns an object with isInstructor property
+        if (typeof res.data?.isInstructor === 'boolean') {
+          return res.data.isInstructor;
         }
+
+        // Option 2: Alternative approach - fetch user data directly
+        const userRes = await axiosSecure.get(`/users/${user.email}`);
+        return userRes.data?.type === 'instructor';
         
-        console.log('No instructor status found in response, returning false');
-        return false;
-        
-      } catch (err) {
-        console.error('Error fetching instructor status:', err);
-        console.error('Error details:', {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status
-        });
+      } catch (error) {
+        console.error("Error checking instructor status:", error);
         return false;
       }
     },
-    cacheTime: 1000 * 60 * 5, // 5 minutes
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    // Cache settings
+    staleTime: 60 * 1000, // 1 minute
+    cacheTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Debug log the final result
-  console.log('Final isInstructor value:', isInstructor);
-  console.log('Loading state:', isInstructorLoading);
-  console.log('Error state:', error);
-
-  return [isInstructor, isInstructorLoading, error];
+  return [isInstructor, isInstructorLoading];
 };
 
 export default useInstructor;

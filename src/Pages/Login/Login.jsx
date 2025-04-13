@@ -1,8 +1,7 @@
 import { useContext, useState } from "react";
 import { useLocation, useNavigate, NavLink } from "react-router-dom";
 import { AuthContext } from "../../Providers/AuthProvider";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import toast, { Toaster } from 'react-hot-toast';
 import { IoEye, IoEyeOff } from "react-icons/io5"; // Import eye icons
 
 const Login = () => {
@@ -111,7 +110,10 @@ const Login = () => {
           </div>
         </div>
       </div>
-      <ToastContainer />
+      <Toaster
+  position="top-center"
+  reverseOrder={false}
+/>
     </div>
   );
 };
