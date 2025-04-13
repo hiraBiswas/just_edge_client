@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { AuthContext } from "../../../../Providers/AuthProvider";
 import useAxiosSecure from "../../../../hooks/useAxiosSecure";
 import toast from "react-hot-toast";
@@ -23,6 +23,46 @@ const InstructorDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [classProgress, setClassProgress] = useState({});
   const [routineData, setRoutineData] = useState([]);
+  const [elapsedTimes, setElapsedTimes] = useState({});
+  const [activeSessions, setActiveSessions] = useState({});
+  const [timeRemaining, setTimeRemaining] = useState({});
+  const MAX_CLASS_DURATION = 3 * 60 * 60 * 1000; // 3 hours
+  const WARNING_THRESHOLD = 30 * 60 * 1000; // 30 minute warning
+
+  // Define endSession with useCallback at the top level, not inside an effect
+  const endSession = useCallback(async (batchId, autoEnded = false) => {
+    try {
+      // End the session logic
+      setActiveSessions(prev => {
+        const newSessions = { ...prev };
+        delete newSessions[batchId];
+        return newSessions;
+      });
+      
+      setTimeRemaining(prev => {
+        const newRemaining = { ...prev };
+        delete newRemaining[batchId];
+        return newRemaining;
+      });
+      
+      if (autoEnded) {
+        toast.warning("Class time limit reached. Session ended automatically.");
+      } else {
+        toast.success("Class session ended successfully");
+      }
+      
+      // You can add API call here to record session end if needed
+      // await axiosSecure.post("/class-sessions/end", {
+      //   batchId,
+      //   instructorId: instructorData?._id,
+      //   endTime: new Date().toISOString()
+      // });
+      
+    } catch (err) {
+      console.error("Error ending session:", err);
+      toast.error("Failed to end session. Please try again.");
+    }
+  }, [axiosSecure]); // Add any dependencies needed
 
   useEffect(() => {
     if (!loading && user) {
@@ -99,7 +139,6 @@ const InstructorDashboard = () => {
                 return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
               });
 
-
             setRoutineData(allRoutines);
           }
         } catch (error) {
@@ -149,6 +188,33 @@ const InstructorDashboard = () => {
       fetchClassProgress();
     }
   }, [assignedBatches, loading, user, axiosSecure]);
+
+  // Setup the timer effect for session tracking
+  useEffect(() => {
+    if (Object.keys(activeSessions).length === 0) return;
+
+    const timer = setInterval(() => {
+      const now = new Date();
+      const updates = {};
+      
+      for (const [batchId, session] of Object.entries(activeSessions)) {
+        const elapsed = now - new Date(session.startTime);
+        const remaining = MAX_CLASS_DURATION - elapsed;
+        
+        if (remaining <= 0) {
+          endSession(batchId, true);
+          continue;
+        }
+        
+        updates[batchId] = remaining;
+      }
+      
+      setTimeRemaining(updates);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeSessions, endSession]); // Include endSession as a dependency
+
   const convertTo12HourFormat = (time) => {
     let [hours, minutes] = time.split(":");
     hours = parseInt(hours, 10);
@@ -156,6 +222,35 @@ const InstructorDashboard = () => {
     if (hours > 12) hours -= 12;
     if (hours === 0) hours = 12;
     return `${hours}:${minutes} ${suffix}`;
+  };
+
+  const formatDuration = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    return [
+      hours > 0 ? `${hours}h` : '',
+      minutes > 0 ? `${minutes}m` : '',
+      `${secs}s`
+    ].filter(Boolean).join(' ');
+  };
+
+  const handleToggleChange = async (batchId) => {
+    try {
+      if (activeSessions[batchId]) {
+        await endSession(batchId);
+      } else {
+        setActiveSessions(prev => ({
+          ...prev,
+          [batchId]: { startTime: new Date().toISOString() }
+        }));
+        toast("Class session started", { icon: "⏱️" });
+      }
+    } catch (err) {
+      console.error("Error handling toggle:", err);
+      toast.error("Failed to record class. Please try again.");
+    }
   };
 
   if (isLoading) {
@@ -198,54 +293,7 @@ const InstructorDashboard = () => {
     },
   ];
 
-  const handleToggleChange = async (batchId) => {
-    try {
-      const today = new Date().toISOString().split("T")[0];
-
-      if (toggleStates[batchId]) {
-        setSubmitting(true);
-
-        await axiosSecure.post("/classes", {
-          instructorId: instructorData._id,
-          batchId,
-          startTime: toggleStates[batchId].startTime,
-          endTime: new Date().toISOString(),
-          date: today,
-        });
-
-        setDisabledToggles((prev) => ({
-          ...prev,
-          [batchId]: true,
-        }));
-
-        setToggleStates((prev) => {
-          const newState = { ...prev };
-          delete newState[batchId];
-          return newState;
-        });
-
-        toast.success("Class session recorded successfully!");
-        setSubmitting(false);
-      } else {
-        setToggleStates((prev) => ({
-          ...prev,
-          [batchId]: { startTime: new Date().toISOString() },
-        }));
-        toast("Class session started. Don't forget to end it!", { icon: "⏱️" });
-      }
-    } catch (err) {
-      console.error("Error handling toggle:", err);
-      toast.error("Failed to record class. Please try again.");
-      setSubmitting(false);
-
-      setToggleStates((prev) => {
-        const newState = { ...prev };
-        delete newState[batchId];
-        return newState;
-      });
-    }
-  };
-
+  
   return (
     <div className=" w-[1100px] mx-auto px-4 py-8">
       <div className="space-y-8">
@@ -469,23 +517,31 @@ const InstructorDashboard = () => {
                                   </p>
                                 </div>
                                 {batch.status === "Ongoing" && (
-                                  <label
-                                    className="inline-flex items-center cursor-pointer"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="toggle toggle-primary toggle-sm"
-                                      checked={!!toggleStates[batch._id]}
-                                      onChange={() =>
-                                        handleToggleChange(batch._id)
-                                      }
-                                      disabled={
-                                        disabledToggles[batch._id] || submitting
-                                      }
-                                    />
-                                  </label>
-                                )}
+  <label className="inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
+    <div className="flex flex-col items-end mr-2">
+      {activeSessions[batch._id] && (
+        <span className={`text-xs ${
+          timeRemaining[batch._id] <= WARNING_THRESHOLD 
+            ? "text-orange-500" 
+            : "text-gray-500"
+        }`}>
+          {timeRemaining[batch._id] <= WARNING_THRESHOLD
+            ? `Ends in ${Math.ceil(timeRemaining[batch._id] / (60 * 1000))}m`
+            : `${Math.floor(
+                (MAX_CLASS_DURATION - timeRemaining[batch._id]) / (60 * 1000)
+              )}m elapsed`}
+        </span>
+      )}
+    </div>
+    <input
+      type="checkbox"
+      className="toggle toggle-primary toggle-sm"
+      checked={!!activeSessions[batch._id]}
+      onChange={() => handleToggleChange(batch._id)}
+      disabled={disabledToggles[batch._id] || submitting}
+    />
+  </label>
+)}
                               </div>
 
                               <div className="mt-3 space-y-2">

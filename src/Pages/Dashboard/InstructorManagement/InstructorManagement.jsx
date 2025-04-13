@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import toast, { Toaster } from 'react-hot-toast';
 import { FaEyeSlash } from "react-icons/fa6";
 import { IoEyeSharp } from "react-icons/io5";
 import useAxiosPublic from "../../../hooks/useAxiosPublic";
@@ -184,6 +183,10 @@ const combinedData = React.useMemo(() => {
           Next
         </button>
       </div>
+      <Toaster
+  position="top-center"
+  reverseOrder={false}
+/>
     </div>
   );
 };

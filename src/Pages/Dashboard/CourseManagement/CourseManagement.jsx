@@ -5,7 +5,7 @@ import { MdEdit } from "react-icons/md";
 import { FaEye, FaFileArchive, FaRegFileArchive } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
-import "react-toastify/dist/ReactToastify.css";
+
 
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);

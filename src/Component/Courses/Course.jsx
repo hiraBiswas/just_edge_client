@@ -2,8 +2,7 @@ import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../Providers/AuthProvider";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import toast, { Toaster } from 'react-hot-toast';
 import { FaGraduationCap, FaClock, FaUser } from "react-icons/fa";
 import { RiGraduationCapFill } from "react-icons/ri";
 
@@ -87,6 +86,10 @@ const Course = ({ course }) => {
                     Enroll Now
                 </button> */}
       </div>
+      <Toaster
+  position="top-center"
+  reverseOrder={false}
+/>
     </div>
   );
 };

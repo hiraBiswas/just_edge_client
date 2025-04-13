@@ -1,7 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import useAxiosPublic from "../hooks/useAxiosPublic";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from "react-router-dom";
 
 
@@ -98,7 +97,7 @@ const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={authInfo}>
       {children}
-      <ToastContainer />
+      <Toaster />
     </AuthContext.Provider>
   );
 };
