@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from "react-hot-toast";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { Link } from "react-router-dom";
 
@@ -95,16 +95,22 @@ const PendingInstructor = () => {
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="flex w-[1100px] flex-col min-h-screen">
+    <div className="flex w-full max-w-[1050px] flex-col min-h-screen mx-auto px-4">
       <div className="breadcrumbs text-sm mt-6">
         <ul className="flex space-x-2 text-gray-600">
           <li>
-            <Link to="/dashboard" className="text-blue-900 text-xl font-medium hover:underline">
+            <Link
+              to="/dashboard"
+              className="text-blue-900 text-xl font-medium hover:underline"
+            >
               Dashboard
             </Link>
           </li>
           <li>
-            <Link to="/dashboard/instructorManagement" className="text-blue-900 text-xl font-medium hover:underline">
+            <Link
+              to="/dashboard/instructorManagement"
+              className="text-blue-900 text-xl font-medium hover:underline"
+            >
               Instructor Management
             </Link>
           </li>
@@ -113,115 +119,144 @@ const PendingInstructor = () => {
           </li>
         </ul>
       </div>
-      <ToastContainer />
-      
-      {loading ? (
-        <div className="animate-pulse w-full mt-6 mx-auto">
-          <table className="table w-[1100px] mx-auto">
-            <thead className="bg-gray-200">
-              <tr className="text-lg font-medium">
-                <th>SI</th>
-                <th>Profile</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Contact</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-      ) : combinedData.length === 0 ? (
-        <div className="flex flex-col items-center justify-center mt-12">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-20 w-20 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-            />
-          </svg>
-          <h3 className="text-xl font-medium text-gray-600 mt-4">
-            No Pending Instructor Requests
-          </h3>
-          <p className="text-gray-500 mt-2">
-            There are currently no instructor applications waiting for approval.
-          </p>
-        </div>
-      ) : (
-        <>
-          <table className="table w-[1000px] mx-auto mt-8">
-            <thead className="bg-blue-950">
-              <tr className="text-lg text-white font-medium">
-                <th>SI</th>
-                <th>Profile</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Contact</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentItems.map((instructor, index) => (
-                <tr key={instructor._id}>
-                  <td>{index + 1}</td>
-                  <td>
-                    <img
-                      src={instructor.image || "https://via.placeholder.com/150"}
-                      alt={instructor.name}
-                      className="w-12 h-12 rounded-full"
-                    />
-                  </td>
-                  <td>{instructor.name}</td>
-                  <td>{instructor.email}</td>
-                  <td>{instructor.contact}</td>
-                  <td>
+      <Toaster position="top-center" reverseOrder={false} />
+
+      <div className="bg-white rounded-lg mt-6 shadow-lg border border-gray-100 w-full overflow-hidden">
+  {loading ? (
+    <div className="animate-pulse w-full">
+      <table className="w-full">
+        <thead className="bg-blue-950">
+          <tr>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">Index</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">Profile</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">Name</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">Email</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">Contact</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tr-lg">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {[...Array(itemsPerPage)].map((_, index) => (
+            <tr key={index} className="hover:bg-blue-50">
+              <td className="px-4 py-3 whitespace-nowrap">
+                <div className="h-5 bg-gray-100 rounded w-8"></div>
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <div className="h-12 w-12 bg-gray-100 rounded-full"></div>
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <div className="h-5 bg-gray-100 rounded w-32"></div>
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <div className="h-5 bg-gray-100 rounded w-48"></div>
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <div className="h-5 bg-gray-100 rounded w-24"></div>
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <div className="flex items-center gap-4">
+                  <div className="h-8 w-20 bg-gray-100 rounded"></div>
+                  <div className="h-8 w-20 bg-gray-100 rounded"></div>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="w-[1050px]  overflow-x-auto">
+      <table className="w-[1050px]">
+        {/* Table Header - always shown */}
+        <thead className="bg-blue-950">
+          <tr>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">Index</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">Profile</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">Name</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">Email</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">Contact</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tr-lg">Action</th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-gray-200">
+          {combinedData.length > 0 ? (
+            currentItems.map((instructor, index) => (
+              <tr key={instructor._id} className="hover:bg-blue-50 transition-colors duration-150">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {(currentPage - 1) * itemsPerPage + index + 1}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <img
+                    src={instructor.image || "https://via.placeholder.com/150"}
+                    alt={instructor.name}
+                    className="w-12 h-12 rounded-full"
+                  />
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {instructor.name}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {instructor.email}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {instructor.contact}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  <div className="flex items-center gap-4">
                     <button
-                      className="btn btn-outline btn-success btn-xs mr-2"
                       onClick={() => handleApprove(instructor._id)}
+                      className="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors"
                     >
                       Approve
                     </button>
                     <button
-                      className="btn btn-outline btn-error btn-xs"
                       onClick={() => handleReject(instructor._id)}
+                      className="text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors"
                     >
                       Reject
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Pagination - Only show if there are items */}
-          {combinedData.length > 0 && (
-            <div className="flex justify-end join my-4 mt-auto">
-              <button
-                className="join-item btn"
-                disabled={currentPage === 1}
-                onClick={() => handlePageChange(currentPage - 1)}
-              >
-                Previous
-              </button>
-              <button className="join-item btn">{`Page ${currentPage}`}</button>
-              <button
-                className="join-item btn"
-                disabled={currentPage === totalPages}
-                onClick={() => handlePageChange(currentPage + 1)}
-              >
-                Next
-              </button>
-            </div>
+                  </div>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={6} className="py-12 text-center">
+       
+                <h3 className="text-xl font-medium text-gray-600 mt-4">
+                  No Pending Instructor Requests
+                </h3>
+             
+              </td>
+            </tr>
           )}
-        </>
+        </tbody>
+      </table>
+    </div>
+  )}
+  </div>
+
+      {/* Pagination - Only show if there are items */}
+      {combinedData.length > 0 && (
+        <div className="flex justify-end join my-4 mt-auto">
+          <button
+            className="join-item btn"
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            Previous
+          </button>
+          <button className="join-item btn">{`Page ${currentPage}`}</button>
+          <button
+            className="join-item btn"
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
       )}
-        <Toaster />
     </div>
   );
 };

@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 const Banner = () => {
     const [studentCount, setStudentCount] = useState(0);
     const [classCount, setClassCount] = useState(0);
-    const [backgroundImage, setBackgroundImage] = useState('');
 
     useEffect(() => {
         const fetchCounts = async () => {
@@ -11,13 +10,6 @@ const Banner = () => {
                 setStudentCount(350);
                 setClassCount(21);
             }, 500);
-        };
-
-        // Preload background image
-        const img = new Image();
-        img.src = "https://i.ibb.co/Nmqs5s5/banner2.jpg";
-        img.onload = () => {
-            setBackgroundImage(img.src);
         };
 
         fetchCounts();
@@ -29,7 +21,6 @@ const Banner = () => {
         useEffect(() => {
             const target = count;
             const duration = 1000;
-
             const stepTime = Math.abs(Math.floor(duration / target));
 
             let currentCount = 0;
@@ -54,21 +45,25 @@ const Banner = () => {
     };
 
     return (
-        <div
-            className="hero min-h-[400px] lg:min-h-[650px] bg-cover bg-center"
+        <div 
+            className="hero min-h-[400px] lg:min-h-[650px]"
             style={{
-                backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
-                backgroundColor: backgroundImage ? 'transparent' : 'gray'
+                backgroundImage: "url(https://static.just.edu.bd/images/public/teacher/1609076174506_2048.jpeg)",
+                backgroundSize: "cover",
+                backgroundPosition: "center"
             }}
         >
-            <div className="hero-overlay bg-gray-500 bg-opacity-70"></div>
-            <div className="hero-content text-neutral-content text-center">
-                <div className='flex items-center justify-end gap-8 md:gap-20 lg:gap-52'>
-                    <div className="max-w-md md-12 lg:mt-20">
+            <div className="hero-overlay bg-opacity-70"></div>
+            
+            <div className="hero-content text-neutral-content">
+                <div className="flex flex-col lg:flex-row items-center justify-between w-full max-w-6xl gap-16 lg:gap-44"> {/* Increased gap */}
+                    {/* Text content - now with more spacing from logo */}
+                    <div className="max-w-md lg:max-w-lg">
                         <h1 className="mb-5 text-2xl text-white font-bold lg:text-5xl">JUST EDGE:</h1>
                         <p className="mb-5 text-white font-semibold lg:text-2xl">
                             Building Tomorrow's Digital Economy at Jashore University
                         </p>
+                        
                         <div className='h-24 w-full bg-white text-black rounded-xl drop-shadow-xl flex items-center justify-around mt-8 lg:mt-12 lg:h-32 lg:rounded-3xl'>
                             <Counter count={studentCount} label="Students" />
                             <div className="border-l-2 border-gray-300 h-16"></div>
@@ -76,8 +71,13 @@ const Banner = () => {
                         </div>
                     </div>
 
-                    <div className='mt-24'>
-                        <img className='h-96 w-96' src="/logo.png" alt="" />
+                    {/* Logo image with more spacing */}
+                    <div className='mt-12 lg:mt-0'>
+                        <img 
+                            className='h-64 w-64 lg:h-96 lg:w-96 object-contain' 
+                            src="/logo.png" 
+                            alt="JUST EDGE Logo" 
+                        />
                     </div>
                 </div>
             </div>

@@ -508,8 +508,15 @@ const CourseAssignment = () => {
                   </table>
                 </div>
 
-                {/* Pagination */}
-                <div className="flex justify-center p-4 border-t border-gray-200">
+            
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+          {/* Pagination */}
+          <div className="flex justify-end p-4 border-t border-gray-200">
                   <div className="join">
                     <button
                       className="join-item btn"
@@ -530,11 +537,6 @@ const CourseAssignment = () => {
                     </button>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
-        </>
-      )}
 
       {/* Student Details Modal */}
       <dialog id="studentModal" className="modal">

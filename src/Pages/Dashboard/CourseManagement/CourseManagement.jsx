@@ -6,7 +6,6 @@ import { FaEye, FaFileArchive, FaRegFileArchive } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
 
-
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true); // Loading state for skeleton
@@ -77,9 +76,9 @@ const CourseManagement = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-[1100px] mx-auto">
-      <div className="overflow-x-auto mt-8 grow">
-        <div className="flex justify-between items-center w-full mb-4">
+    <div className="flex flex-col h-screen w-[1050px] mx-auto">
+      <div className="overflow-x-auto mt-6 grow">
+        <div className="flex justify-between items-center w-full ">
           <div className="flex items-center">
             <input
               className="input input-bordered"
@@ -109,26 +108,51 @@ const CourseManagement = () => {
           </div>
         </div>
 
-        {/* Table Section with Skeleton Loader */}
-        <div className="overflow-x-auto">
+        {/* Table Section with Skeleton Loader - Modified for proper width */}
+        <div className="bg-white rounded-lg mt-6 shadow-lg border border-gray-100 w-full">
           {loading ? (
-            <div className="animate-pulse w-full mt-8 mx-auto">
-              <table className="table w-[1000px] mx-auto">
-                <thead className="bg-gray-200">
-                  <tr className="text-lg font-medium">
-                    <th>#</th>
-                    <th>Course Name</th>
-                    <th>Level</th>
-                    <th>Qualification</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Full-width Skeleton Rows */}
+            <div className="animate-pulse w-full overflow-hidden">
+              <table className="w-full">
+              <thead className="bg-blue-950">
+          <tr>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">
+              #
+            </th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+              Course Name
+            </th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+              Level
+            </th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+              Qualification
+            </th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tr-lg">
+              Action
+            </th>
+          </tr>
+        </thead>
+                <tbody className="divide-y divide-gray-200">
                   {[...Array(itemsPerPage)].map((_, index) => (
-                    <tr key={index}>
-                      <td colSpan="5">
-                        <div className="h-10 bg-gray-100 rounded-lg"></div>
+                    <tr key={index} className="hover:bg-blue-50">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="h-5 bg-gray-100 rounded w-8"></div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="h-5 bg-gray-100 rounded w-48"></div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="h-5 bg-gray-100 rounded w-24"></div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-5 bg-gray-100 rounded w-36"></div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-4">
+                          <div className="h-5 w-5 bg-gray-100 rounded-full"></div>
+                          <div className="h-5 w-5 bg-gray-100 rounded-full"></div>
+                          <div className="h-5 w-5 bg-gray-100 rounded-full"></div>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -136,42 +160,92 @@ const CourseManagement = () => {
               </table>
             </div>
           ) : (
-            <table className="table w-[1000px] mt-8">
-              <thead className="bg-blue-950 text-white">
-                <tr className="text-lg font-medium">
-                  <th>#</th>
-                  <th>Course Name</th>
-                  <th>Level</th>
-                  <th>Qualification</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentItems.map((course, index) => (
-                  <tr
-                    key={course._id}
-                    className={course.isDeleted ? "opacity-50" : ""}
-                  >
-                    <th>{(currentPage - 1) * itemsPerPage + index + 1}</th>
-                    <td>{course.courseName}</td>
-                    <td>{course.level}</td>
-                    <td>{course.minimumQualification}</td>
-                    <td className="flex items-center justify-center gap-4">
-                      <Link to={`/dashboard/courseDetails/${course._id}`}>
-                        <FaEye className="text-blue-950 cursor-pointer hover:scale-105" />
-                      </Link>
-                      <Link to={`/dashboard/courseUpdate/${course._id}`}>
-                        <MdEdit className="text-green-600 cursor-pointer hover:scale-105" />
-                      </Link>
-                      <FaRegFileArchive
-                        className="text-red-600 cursor-pointer hover:scale-105"
-                        onClick={() => handleArchive(course._id)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full">
+              <thead className="bg-blue-950">
+          <tr>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">
+              #
+            </th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+              Course Name
+            </th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+              Level
+            </th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+              Qualification
+            </th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tr-lg">
+              Action
+            </th>
+          </tr>
+        </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {currentItems.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="px-4 py-8 text-center text-gray-500 text-sm"
+                      >
+                        No courses available. Create a new course to get started.
+                      </td>
+                    </tr>
+                  ) : (
+                    currentItems.map((course, index) => (
+                      <tr
+                        key={course._id}
+                        className={`hover:bg-blue-50 transition-colors duration-150 ${
+                          course.isDeleted ? "opacity-50" : ""
+                        }`}
+                      >
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                          {(currentPage - 1) * itemsPerPage + index + 1}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {course.courseName}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                          {course.level}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 max-w-xs truncate">
+                          {course.minimumQualification || (
+                            <span className="text-gray-400 italic">
+                              Not specified
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                          <div className="flex items-center justify-center gap-4">
+                            <Link
+                              to={`/dashboard/courseDetails/${course._id}`}
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                              title="View Details"
+                            >
+                              <FaEye className="w-5 h-5" />
+                            </Link>
+                            <Link
+                              to={`/dashboard/courseUpdate/${course._id}`}
+                              className="text-green-600 hover:text-green-800 transition-colors"
+                              title="Edit Course"
+                            >
+                              <MdEdit className="w-5 h-5" />
+                            </Link>
+                            <button
+                              onClick={() => handleArchive(course._id)}
+                              className="text-red-600 hover:text-red-800 transition-colors"
+                              title="Archive Course"
+                            >
+                              <FaRegFileArchive className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

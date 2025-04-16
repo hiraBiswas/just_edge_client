@@ -30,39 +30,43 @@ const InstructorDashboard = () => {
   const WARNING_THRESHOLD = 30 * 60 * 1000; // 30 minute warning
 
   // Define endSession with useCallback at the top level, not inside an effect
-  const endSession = useCallback(async (batchId, autoEnded = false) => {
-    try {
-      // End the session logic
-      setActiveSessions(prev => {
-        const newSessions = { ...prev };
-        delete newSessions[batchId];
-        return newSessions;
-      });
-      
-      setTimeRemaining(prev => {
-        const newRemaining = { ...prev };
-        delete newRemaining[batchId];
-        return newRemaining;
-      });
-      
-      if (autoEnded) {
-        toast.warning("Class time limit reached. Session ended automatically.");
-      } else {
-        toast.success("Class session ended successfully");
+  const endSession = useCallback(
+    async (batchId, autoEnded = false) => {
+      try {
+        // End the session logic
+        setActiveSessions((prev) => {
+          const newSessions = { ...prev };
+          delete newSessions[batchId];
+          return newSessions;
+        });
+
+        setTimeRemaining((prev) => {
+          const newRemaining = { ...prev };
+          delete newRemaining[batchId];
+          return newRemaining;
+        });
+
+        if (autoEnded) {
+          toast.warning(
+            "Class time limit reached. Session ended automatically."
+          );
+        } else {
+          toast.success("Class session ended successfully");
+        }
+
+        // You can add API call here to record session end if needed
+        // await axiosSecure.post("/class-sessions/end", {
+        //   batchId,
+        //   instructorId: instructorData?._id,
+        //   endTime: new Date().toISOString()
+        // });
+      } catch (err) {
+        console.error("Error ending session:", err);
+        toast.error("Failed to end session. Please try again.");
       }
-      
-      // You can add API call here to record session end if needed
-      // await axiosSecure.post("/class-sessions/end", {
-      //   batchId,
-      //   instructorId: instructorData?._id,
-      //   endTime: new Date().toISOString()
-      // });
-      
-    } catch (err) {
-      console.error("Error ending session:", err);
-      toast.error("Failed to end session. Please try again.");
-    }
-  }, [axiosSecure]); // Add any dependencies needed
+    },
+    [axiosSecure]
+  ); // Add any dependencies needed
 
   useEffect(() => {
     if (!loading && user) {
@@ -196,19 +200,19 @@ const InstructorDashboard = () => {
     const timer = setInterval(() => {
       const now = new Date();
       const updates = {};
-      
+
       for (const [batchId, session] of Object.entries(activeSessions)) {
         const elapsed = now - new Date(session.startTime);
         const remaining = MAX_CLASS_DURATION - elapsed;
-        
+
         if (remaining <= 0) {
           endSession(batchId, true);
           continue;
         }
-        
+
         updates[batchId] = remaining;
       }
-      
+
       setTimeRemaining(updates);
     }, 1000);
 
@@ -228,12 +232,14 @@ const InstructorDashboard = () => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     return [
-      hours > 0 ? `${hours}h` : '',
-      minutes > 0 ? `${minutes}m` : '',
-      `${secs}s`
-    ].filter(Boolean).join(' ');
+      hours > 0 ? `${hours}h` : "",
+      minutes > 0 ? `${minutes}m` : "",
+      `${secs}s`,
+    ]
+      .filter(Boolean)
+      .join(" ");
   };
 
   const handleToggleChange = async (batchId) => {
@@ -241,9 +247,9 @@ const InstructorDashboard = () => {
       if (activeSessions[batchId]) {
         await endSession(batchId);
       } else {
-        setActiveSessions(prev => ({
+        setActiveSessions((prev) => ({
           ...prev,
-          [batchId]: { startTime: new Date().toISOString() }
+          [batchId]: { startTime: new Date().toISOString() },
         }));
         toast("Class session started", { icon: "⏱️" });
       }
@@ -293,7 +299,6 @@ const InstructorDashboard = () => {
     },
   ];
 
-  
   return (
     <div className=" w-[1100px] mx-auto px-4 py-8">
       <div className="space-y-8">
@@ -517,31 +522,47 @@ const InstructorDashboard = () => {
                                   </p>
                                 </div>
                                 {batch.status === "Ongoing" && (
-  <label className="inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
-    <div className="flex flex-col items-end mr-2">
-      {activeSessions[batch._id] && (
-        <span className={`text-xs ${
-          timeRemaining[batch._id] <= WARNING_THRESHOLD 
-            ? "text-orange-500" 
-            : "text-gray-500"
-        }`}>
-          {timeRemaining[batch._id] <= WARNING_THRESHOLD
-            ? `Ends in ${Math.ceil(timeRemaining[batch._id] / (60 * 1000))}m`
-            : `${Math.floor(
-                (MAX_CLASS_DURATION - timeRemaining[batch._id]) / (60 * 1000)
-              )}m elapsed`}
-        </span>
-      )}
-    </div>
-    <input
-      type="checkbox"
-      className="toggle toggle-primary toggle-sm"
-      checked={!!activeSessions[batch._id]}
-      onChange={() => handleToggleChange(batch._id)}
-      disabled={disabledToggles[batch._id] || submitting}
-    />
-  </label>
-)}
+                                  <label
+                                    className="inline-flex items-center cursor-pointer"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="flex flex-col items-end mr-2">
+                                      {activeSessions[batch._id] && (
+                                        <span
+                                          className={`text-xs ${
+                                            timeRemaining[batch._id] <=
+                                            WARNING_THRESHOLD
+                                              ? "text-orange-500"
+                                              : "text-gray-500"
+                                          }`}
+                                        >
+                                          {timeRemaining[batch._id] <=
+                                          WARNING_THRESHOLD
+                                            ? `Ends in ${Math.ceil(
+                                                timeRemaining[batch._id] /
+                                                  (60 * 1000)
+                                              )}m`
+                                            : `${Math.floor(
+                                                (MAX_CLASS_DURATION -
+                                                  timeRemaining[batch._id]) /
+                                                  (60 * 1000)
+                                              )}m elapsed`}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <input
+                                      type="checkbox"
+                                      className="toggle toggle-primary toggle-sm"
+                                      checked={!!activeSessions[batch._id]}
+                                      onChange={() =>
+                                        handleToggleChange(batch._id)
+                                      }
+                                      disabled={
+                                        disabledToggles[batch._id] || submitting
+                                      }
+                                    />
+                                  </label>
+                                )}
                               </div>
 
                               <div className="mt-3 space-y-2">

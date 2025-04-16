@@ -392,16 +392,17 @@ const ChangeRequests = () => {
 
   const handleRejectCourse = async (requestId) => {
     try {
-      const reason = window.prompt("Please enter rejection reason (optional):") || "";
-      
+      const reason =
+        window.prompt("Please enter rejection reason (optional):") || "";
+
       // If user clicks cancel in the prompt
       if (reason === null) return;
-  
+
       const response = await axiosSecure.patch(
         `/api/course-change-requests/${requestId}/reject`,
         { reason }
       );
-  
+
       if (response.data.success) {
         toast.success(response.data.message);
         fetchAllCourseRequests(); // Refresh the list
@@ -410,7 +411,7 @@ const ChangeRequests = () => {
       }
     } catch (error) {
       console.error("Rejection error:", error);
-      
+
       if (error.response) {
         if (error.response.status === 404) {
           toast.error("Request not found - it may have already been processed");
@@ -418,7 +419,9 @@ const ChangeRequests = () => {
         } else if (error.response.status === 400) {
           toast.error("Invalid request ID");
         } else {
-          toast.error(error.response.data.message || "Failed to reject request");
+          toast.error(
+            error.response.data.message || "Failed to reject request"
+          );
         }
       } else {
         toast.error("Network error - please check your connection");
@@ -428,7 +431,7 @@ const ChangeRequests = () => {
 
   return (
     <div className="p-4 w-[1100px] mx-auto">
-      <h1 className="text-2xl font-bold lg:text-3xl text-center text-gray-800 mb-6">
+      <h1 className="text-xl font-bold lg:text-xl text-center text-gray-800 mb-6">
         Change Requests Management
       </h1>
 
@@ -498,7 +501,9 @@ const ChangeRequests = () => {
 
                 <div className="flex justify-end gap-3 pt-2">
                   <button
-                    onClick={() => document.getElementById("swap_modal").close()}
+                    onClick={() =>
+                      document.getElementById("swap_modal").close()
+                    }
                     className="btn btn-ghost"
                   >
                     Cancel
@@ -548,7 +553,9 @@ const ChangeRequests = () => {
               Assign New Batch
             </h3>
             <button
-              onClick={() => document.getElementById("batch_assign_modal").close()}
+              onClick={() =>
+                document.getElementById("batch_assign_modal").close()
+              }
               className="text-gray-500 hover:text-gray-700"
             >
               ✕
@@ -571,7 +578,9 @@ const ChangeRequests = () => {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Available Batches</span>
+                <span className="label-text font-medium">
+                  Available Batches
+                </span>
               </label>
               <select
                 className="select select-bordered w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -591,7 +600,9 @@ const ChangeRequests = () => {
 
             <div className="flex justify-end gap-3 pt-2">
               <button
-                onClick={() => document.getElementById("batch_assign_modal").close()}
+                onClick={() =>
+                  document.getElementById("batch_assign_modal").close()
+                }
                 className="btn btn-ghost"
               >
                 Cancel
@@ -627,7 +638,7 @@ const ChangeRequests = () => {
                 onClick={() => setActiveTab(value)}
                 className={`px-4 py-2 font-medium text-gray-600 ${
                   activeTab === value
-                    ? "text-blue-600 border-b-2 border-blue-500"
+                    ? "text-blue-950 border-b-2 border-blue-950"
                     : "hover:text-gray-800"
                 }`}
               >
@@ -646,11 +657,10 @@ const ChangeRequests = () => {
                     {pendingRequests.length} Pending
                   </span>
                 </div>
-                
+
                 {loading ? (
                   <div className="flex flex-col items-center justify-center h-40">
-                    <span className="loading loading-spinner loading-lg text-blue-500"></span>
-                    <p className="mt-3 text-gray-500">Loading requests...</p>
+                    <span className="loading loading-ring loading-xl"></span>
                   </div>
                 ) : error ? (
                   <div className="alert alert-error shadow-lg">
@@ -661,93 +671,141 @@ const ChangeRequests = () => {
                   </div>
                 ) : pendingRequests.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No pending batch change requests found.</p>
+                    <p className="text-gray-500">
+                      No pending batch change requests found.
+                    </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
+                  <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-blue-950">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg">
+                            Index
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                             Student
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                             Current Batch
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                             Requested Batch
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                             Availability
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-white uppercase tracking-wider rounded-tr-lg">
                             Actions
                           </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {pendingRequests.map((req) => {
-                          const swapCandidates = findSwapCandidates(req);
-                          const canSwap = swapCandidates.length > 0;
+                        {pendingRequests.length > 0 ? (
+                          pendingRequests.map((req, index) => {
+                            const swapCandidates = findSwapCandidates(req);
+                            const canSwap = swapCandidates.length > 0;
 
-                          return (
-                            <tr key={req._id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="font-medium text-gray-900">
-                                  {req.studentInfo?.name || "Unknown"}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <span className="px-2 py-1 bg-gray-100 rounded-full text-sm">
-                                  {req.currentBatchInfo?.batchName || "N/A"}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <span className="px-2 py-1 bg-blue-100 rounded-full text-sm">
-                                  {req.requestedBatchInfo?.batchName || "N/A"}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {req.seatsAvailable ? (
-                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                                    Available
+                            return (
+                              <tr key={req._id} className="hover:bg-blue-50">
+                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+                                  {index + 1}
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {req.studentInfo?.name || "Unknown"}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {req.studentInfo?.email || ""}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {req.currentBatchInfo?.batchName || "N/A"}
                                   </span>
-                                ) : (
-                                  <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                                    Full
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {req.requestedBatchInfo?.batchName || "N/A"}
                                   </span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-right space-x-2">
-                                {req.seatsAvailable && (
-                                  <button
-                                    onClick={() => handleApprove(req._id)}
-                                    className="btn btn-sm btn-success"
-                                  >
-                                    Approve
-                                  </button>
-                                )}
-
-                                {canSwap && (
-                                  <button
-                                    onClick={() => openSwapModal(req)}
-                                    className="btn btn-sm btn-warning"
-                                    title="Swap with another student"
-                                  >
-                                    <FaExchangeAlt />
-                                  </button>
-                                )}
-
-                                <button
-                                  onClick={() => handleReject(req._id)}
-                                  className="btn btn-sm btn-error"
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  {req.seatsAvailable ? (
+                                    <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                      Available
+                                    </span>
+                                  ) : (
+                                    <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                      Full
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                  <div className="flex justify-end space-x-2">
+                                    {req.seatsAvailable && (
+                                      <button
+                                        onClick={() => handleApprove(req._id)}
+                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                      >
+                                        Approve
+                                      </button>
+                                    )}
+                                    {canSwap && (
+                                      <button
+                                        onClick={() => openSwapModal(req)}
+                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                                        title="Swap with another student"
+                                      >
+                                        <FaExchangeAlt className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleReject(req._id)}
+                                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan="6"
+                              className="px-4 py-6 text-center text-gray-500"
+                            >
+                              <div className="flex flex-col items-center justify-center">
+                                <svg
+                                  className="w-12 h-12 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  xmlns="http://www.w3.org/2000/svg"
                                 >
-                                  Reject
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  ></path>
+                                </svg>
+                                <p className="mt-2 text-sm font-medium text-gray-600">
+                                  No pending batch change requests found
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  When students request batch changes, they'll
+                                  appear here
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -765,11 +823,10 @@ const ChangeRequests = () => {
                     {pendingCourseRequests.length} Pending
                   </span>
                 </div>
-                
+
                 {loading ? (
                   <div className="flex flex-col items-center justify-center h-40">
-                    <span className="loading loading-spinner loading-lg text-blue-500"></span>
-                    <p className="mt-3 text-gray-500">Loading requests...</p>
+                    <span className="loading loading-ring loading-xl"></span>
                   </div>
                 ) : error ? (
                   <div className="alert alert-error shadow-lg">
@@ -780,91 +837,136 @@ const ChangeRequests = () => {
                   </div>
                 ) : pendingCourseRequests.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No pending course change requests found.</p>
+                    <p className="text-gray-500">
+                      No pending course change requests found.
+                    </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
+                  <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-blue-950">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg">
                             #
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                             Student
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                             Current Course
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                             Requested Course
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                             Availability
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-white uppercase tracking-wider rounded-tr-lg">
                             Actions
                           </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {pendingCourseRequests.map((req, index) => (
-                          <tr key={req._id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 whitespace-nowrap text-gray-500">
-                              {index + 1}
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="font-medium text-gray-900">
-                                {req.studentInfo?.name || "Unknown"}
+                        {pendingCourseRequests.length > 0 ? (
+                          pendingCourseRequests.map((req, index) => (
+                            <tr key={req._id} className="hover:bg-blue-50">
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {index + 1}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0 h-10 w-10"></div>
+                                  <div className="">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {req.studentInfo?.name || "Unknown"}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      {req.studentInfo?.email || ""}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                  {req.currentCourseInfo?.courseName || "N/A"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                  {req.requestedCourseInfo?.courseName || "N/A"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                {req.hasAvailableBatches ? (
+                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Available
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    Unavailable
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex justify-end space-x-2">
+                                  <button
+                                    onClick={() => openBatchAssignModal(req)}
+                                    className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${
+                                      req.hasAvailableBatches
+                                        ? "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+                                        : "bg-gray-400 cursor-not-allowed"
+                                    } focus:outline-none focus:ring-2 focus:ring-offset-2`}
+                                    disabled={!req.hasAvailableBatches}
+                                    title={
+                                      !req.hasAvailableBatches
+                                        ? "No batches available"
+                                        : "Assign batch"
+                                    }
+                                  >
+                                    Assign Batch
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectCourse(req._id)}
+                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan="6"
+                              className="px-4 py-6 text-center text-gray-500"
+                            >
+                              <div className="flex flex-col items-center justify-center">
+                                <svg
+                                  className="w-12 h-12 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  ></path>
+                                </svg>
+                                <p className="mt-2 text-sm font-medium text-gray-600">
+                                  No pending course change requests found
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  When students request course changes, they'll
+                                  appear here
+                                </p>
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <span className="px-2 py-1 bg-gray-100 rounded-full text-sm">
-                                {req.currentCourseInfo?.courseName || "N/A"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <span className="px-2 py-1 bg-blue-100 rounded-full text-sm">
-                                {req.requestedCourseInfo?.courseName || "N/A"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              {req.hasAvailableBatches ? (
-                                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                                  Available
-                                </span>
-                              ) : (
-                                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                                  Unavailable
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-right space-x-2">
-                              <button
-                                onClick={() => openBatchAssignModal(req)}
-                                className={`btn btn-sm ${
-                                  req.hasAvailableBatches
-                                    ? "btn-primary"
-                                    : "btn-disabled"
-                                }`}
-                                disabled={!req.hasAvailableBatches}
-                                title={
-                                  !req.hasAvailableBatches
-                                    ? "No batches available"
-                                    : ""
-                                }
-                              >
-                                Assign Batch
-                              </button>
-                              <button
-                                onClick={() => handleRejectCourse(req._id)}
-                                className="btn btn-sm btn-error"
-                              >
-                                Reject
-                              </button>
-                            </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>

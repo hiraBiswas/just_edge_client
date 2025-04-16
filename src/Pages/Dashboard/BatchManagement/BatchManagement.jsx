@@ -105,8 +105,6 @@ const BatchManagement = () => {
     fetchBatches();
   }, [axiosSecure]);
 
-
-
   const refreshBatches = async () => {
     try {
       const response = await axiosSecure.get("/batches");
@@ -180,7 +178,7 @@ const BatchManagement = () => {
 
   return (
     <div className="flex flex-col mx-auto">
-      <div className="overflow-x-auto mt-8 grow">
+      <div className="overflow-x-auto mt-6 grow">
         <div className="flex justify-between">
           <div className="join">
             <div>
@@ -216,24 +214,50 @@ const BatchManagement = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto w-[1100px]">
+        <div className="overflow-x-auto bg-white rounded-lg mt-6 shadow-lg border border-gray-100">
           {loading || usersLoading || instructorsLoading ? (
-            <div className="animate-pulse w-full mt-8 mx-auto">
-              <table className="table w-[1000px] mx-auto">
-                <thead className="bg-gray-200">
+            <div className="animate-pulse w-[1050px]">
+              <table className="w-[1050px]">
+                <thead className="bg-blue-950">
                   <tr>
-                    <th>Index</th>
-                    <th>Batch</th>
-                    <th>Status</th>
-                    <th>Instructor</th>
-                    <th>Action</th>
+                    <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Index
+                    </th>
+                    <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Batch
+                    </th>
+                    <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Instructor
+                    </th>
+                    <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Action
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-200">
                   {[...Array(itemsPerPage)].map((_, index) => (
-                    <tr key={index}>
-                      <td colSpan="5">
-                        <div className="h-8 bg-gray-100 rounded-lg"></div>
+                    <tr key={index} className="hover:bg-blue-50">
+                      <td className="px-8 py-3 whitespace-nowrap">
+                        <div className="h-5 bg-gray-100 rounded w-8"></div>
+                      </td>
+                      <td className="px-8 py-3 whitespace-nowrap">
+                        <div className="h-5 bg-gray-100 rounded w-32"></div>
+                      </td>
+                      <td className="px-8 py-3 whitespace-nowrap">
+                        <div className="h-5 bg-gray-100 rounded w-20"></div>
+                      </td>
+                      <td className="px-8 py-3">
+                        <div className="h-5 bg-gray-100 rounded w-40"></div>
+                      </td>
+                      <td className="px-8 py-3 whitespace-nowrap">
+                        <div className="flex items-center space-x-6">
+                          <div className="h-5 w-5 bg-gray-100 rounded-full"></div>
+                          <div className="h-5 w-5 bg-gray-100 rounded-full"></div>
+                          <div className="h-5 w-5 bg-gray-100 rounded-full"></div>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -241,48 +265,92 @@ const BatchManagement = () => {
               </table>
             </div>
           ) : (
-            <table className="table w-[1100px] mt-8">
-              <thead className="bg-blue-950 text-white text-lg">
+            <table className="w-[1050px]">
+              <thead className="bg-blue-950">
                 <tr>
-                  <th>Index</th>
-                  <th>Batch</th>
-                  <th>Status</th>
-                  <th>Instructor</th>
-                  <th>Action</th>
+                  <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                    Index
+                  </th>
+                  <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                    Batch
+                  </th>
+                  <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                    Instructor
+                  </th>
+                  <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                    Action
+                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200">
                 {currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center text-gray-500">
-                      No batches available.
+                    <td
+                      colSpan="5"
+                      className="px-8 py-8 text-center text-gray-500 text-sm"
+                    >
+                      No batches available. Create a new batch to get started.
                     </td>
                   </tr>
                 ) : (
                   currentItems.map((batch, index) => (
-                    <tr key={batch._id}>
-                      <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                      <td>{batch.batchName}</td>
-                      <td>{batch.status}</td>
-                      <td>{batch.instructors.join(", ") || "Unassigned"}</td>
-
-                      <td>
-                        <div className="flex items-center justify-between gap-4">
-                    
-
-                          <Link to={`/dashboard/batchDetails/${batch._id}`}>
-                            <FaEye className="w-4 h-4" />
+                    <tr
+                      key={batch._id}
+                      className="hover:bg-blue-50 transition-colors duration-150"
+                    >
+                      <td className="px-8 py-3 whitespace-nowrap text-sm text-gray-700">
+                        {(currentPage - 1) * itemsPerPage + index + 1}
+                      </td>
+                      <td className="px-8 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {batch.batchName}
+                      </td>
+                      <td className="px-8 py-3 whitespace-nowrap text-sm">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            batch.status === "Active"
+                              ? "bg-green-100 text-green-800"
+                              : batch.status === "Inactive"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {batch.status}
+                        </span>
+                      </td>
+                      <td className="px-8 py-3 text-sm text-gray-700 max-w-xs truncate">
+                        {batch.instructors.join(", ") || (
+                          <span className="text-gray-400 italic">
+                            Unassigned
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-8 py-3 whitespace-nowrap text-sm text-gray-700">
+                        <div className="flex items-center space-x-6">
+                          <Link
+                            to={`/dashboard/batchDetails/${batch._id}`}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="View Details"
+                          >
+                            <FaEye className="w-5 h-5" />
                           </Link>
                           <button
                             onClick={() => {
                               setSelectedBatchId(batch._id);
                               setShowUpdateModal(true);
                             }}
+                            className="text-green-600 hover:text-green-800 transition-colors"
+                            title="Edit Batch"
                           >
-                            <MdEdit className="w-4 h-4" />
+                            <MdEdit className="w-5 h-5" />
                           </button>
-                          <button>
-                            <FaFileArchive className="w-4 h-4" />
+                          <button
+                            className="text-gray-500 hover:text-gray-700 transition-colors"
+                            title="Archive Batch"
+                          >
+                            <FaFileArchive className="w-5 h-5" />
                           </button>
                         </div>
                       </td>
