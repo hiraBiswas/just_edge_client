@@ -1,27 +1,18 @@
 import React, { useState, useEffect } from "react";
-import {
-  Users,
-  AlertTriangle,
-  Calendar as CalendarIcon,
-  FileText,
-  Bell,
+import { 
+  Users, 
+  UserCheck, 
+  Calendar, 
   BookOpenCheck,
-  UserCheck,
-  Calendar,
-  CheckCircle,
-  Clock,
   BookOpen,
   User,
-  CalendarDays,
   Users as UsersIcon,
+  CheckCircle,
+  Clock,
+  Bell,
+  AlertTriangle
 } from "lucide-react";
-import {
-  Tabs,
-  TabsHeader,
-  TabsBody,
-  Tab,
-  TabPanel,
-} from "@material-tailwind/react";
+import { Tabs, TabsHeader, TabsBody, Tab, TabPanel } from "@material-tailwind/react";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { toast } from "react-hot-toast";
 
@@ -41,8 +32,7 @@ const AdminDashboard = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [notices, setNotices] = useState([]);
-  const [upcomingDeadlines, setUpcomingDeadlines] = useState([]);
-  const [latestNotices, setLatestNotices] = useState([]);
+  const [batchStats, setBatchStats] = useState({});
 
   const fetchCompletedClasses = async (batchId) => {
     try {
@@ -51,6 +41,21 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Error fetching classes:", error);
       return 0;
+    }
+  };
+
+  const fetchBatchStats = async (batchId) => {
+    try {
+      const res = await axiosSecure.get(`/results/batch/${batchId}/stats`);
+      return res.data;
+    } catch (error) {
+      console.error("Error fetching batch stats:", error);
+      return {
+        batchId,
+        totalStudents: 0,
+        passCount: 0,
+        failCount: 0
+      };
     }
   };
 
@@ -101,6 +106,17 @@ const AdminDashboard = () => {
         ),
       };
 
+      // Fetch stats for completed batches
+      const statsPromises = organizedBatches.completed.map(batch => 
+        fetchBatchStats(batch._id)
+      );
+      const statsResults = await Promise.all(statsPromises);
+      
+      const statsMap = statsResults.reduce((acc, stat) => {
+        if (stat) acc[stat.batchId] = stat;
+        return acc;
+      }, {});
+
       setStats({
         students: studentsRes.data?.length || 0,
         instructors: instructorsRes.data?.length || 0,
@@ -108,13 +124,24 @@ const AdminDashboard = () => {
         courses: coursesRes.data?.length || 0,
       });
 
+      setBatchStats(statsMap);
       setBatchData(organizedBatches);
       fetchNotices();
+
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchNotices = async () => {
+    try {
+      const res = await axiosSecure.get("/notice");
+      setNotices(res.data || []);
+    } catch (error) {
+      console.error("Error fetching notices:", error);
     }
   };
 
@@ -169,59 +196,19 @@ const AdminDashboard = () => {
     },
   ];
 
-  const fetchNotices = async () => {
-    try {
-      const res = await axiosSecure.get("/notice");
-      const allNotices = res.data || [];
-      console.log();
-
-      // Filter notices with deadlines
-      const withDeadlines = allNotices.filter((notice) => notice.deadline);
-
-      // Get upcoming deadlines (not passed yet)
-      const today = new Date();
-      const upcoming = withDeadlines
-        .filter((notice) => new Date(notice.deadline) >= today)
-        .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
-      // Get latest 3 notices
-      const latest = [...allNotices]
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 3);
-
-      setNotices(allNotices);
-      setUpcomingDeadlines(upcoming);
-      setLatestNotices(latest);
-    } catch (error) {
-      console.error("Error fetching notices:", error);
-    }
-  };
-
-  // Format date function
-  const formatDate = (dateString) => {
-    const options = {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
   return (
-    <div className="min-h-screen w-[1100px] bg-gray-50 mt-2 p-6">
-      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+    <div className="min-h-screen w-[1100px]  mt-2 p-6">
+ 
 
       {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <span className="loading loading-spinner loading-lg"></span>
+        <div className="flex justify-center items-center min-h-screen">
+          <span className="loading loading-ring loading-xl"></span>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {statCards.map((stat, index) => (
-              <div key={index} className="bg-white rounded-lg shadow p-6">
+              <div key={index} className="bg-white rounded-lg hover:shadow-md transition shadow p-6">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-gray-500 text-sm font-medium">
@@ -275,6 +262,8 @@ const AdminDashboard = () => {
                           const course = courses.find(
                             (c) => c._id === batch.course_id
                           );
+                          const stats = batchStats[batch._id];
+
                           return (
                             <div
                               key={batch._id}
@@ -317,28 +306,57 @@ const AdminDashboard = () => {
                                 <div className="flex items-center gap-2">
                                   <UsersIcon className="w-4 h-4 text-gray-500" />
                                   <span>
-                                    {batch.occupiedSeat || 0}/{batch.seat}{" "}
-                                    students
+                                    {batch.occupiedSeat || 0}/{batch.seat} students
                                   </span>
                                 </div>
 
-                                {(batch.status === "Ongoing" ||
-                                  batch.status === "Completed") && (
-                                  <div className="">
+                                {batch.status === "Completed" && stats ? (
+                                  <div className="mt-3">
                                     <div className="flex justify-between text-xs mb-1">
-                                      <span>Progress:</span>
-                                      <span>
-                                        {batch.completedClassesCount || 0}/
-                                        {course?.numberOfClass || 27} classes
+                                      <span className="text-gray-600">Results:</span>
+                                      <div className="flex gap-2">
+                                        <span className="text-green-600 font-medium">
+                                          {stats.passCount} Passed
+                                        </span>
+                                        <span className="text-red-600 font-medium">
+                                          {stats.failCount} Failed
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div 
+                                        className="bg-green-500 h-2 rounded-full" 
+                                        style={{ 
+                                          width: `${(stats.passCount / stats.totalStudents) * 100}%` 
+                                        }}
+                                      />
+                                      <div 
+                                        className="bg-red-500 h-2 rounded-full -mt-2" 
+                                        style={{ 
+                                          width: `${(stats.failCount / stats.totalStudents) * 100}%`,
+                                          marginLeft: `${(stats.passCount / stats.totalStudents) * 100}%`
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="text-right text-xs text-gray-500 mt-1">
+                                      {stats.totalStudents} students total
+                                    </div>
+                                  </div>
+                                ) : batch.status === "Ongoing" && batch.completedClassesCount ? (
+                                  <div className="mt-3">
+                                    <div className="flex justify-between text-xs mb-1">
+                                      <span className="text-gray-600">Progress:</span>
+                                      <span className="font-medium">
+                                        {batch.completedClassesCount}/{course?.numberOfClass || 27} classes
                                       </span>
                                     </div>
                                     <progress
                                       className="progress progress-primary w-full h-2"
-                                      value={batch.completedClassesCount || 0}
+                                      value={batch.completedClassesCount}
                                       max={course?.numberOfClass || 27}
-                                    ></progress>
+                                    />
                                   </div>
-                                )}
+                                ) : null}
                               </div>
                             </div>
                           );
@@ -357,7 +375,6 @@ const AdminDashboard = () => {
 
           {/* Notices Section */}
           <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mt-8">
-            {/* Latest Notices */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -365,16 +382,16 @@ const AdminDashboard = () => {
                   Latest Notices
                 </h2>
                 <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                  {latestNotices.length}
+                  {notices.length}
                 </span>
               </div>
 
-              {latestNotices.length > 0 ? (
-                <div className="space-y-4">
-                  {latestNotices.map((notice) => (
+              {notices.length > 0 ? (
+                <div className="space-y-4 ">
+                  {notices.slice(0, 3).map((notice) => (
                     <div
                       key={notice._id}
-                      className="border-l-4 border-blue-500 pl-4 py-2"
+                      className="border-l-4 border-blue-500 pl-4 py-2 hover:shadow-md transition"
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -383,22 +400,7 @@ const AdminDashboard = () => {
                             {notice.description}
                           </p>
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {formatDate(notice.createdAt)}
-                        </div>
                       </div>
-                      {notice.tags?.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {notice.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="bg-gray-100 text-gray-800 text-xs px-2 py-0.5 rounded"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>

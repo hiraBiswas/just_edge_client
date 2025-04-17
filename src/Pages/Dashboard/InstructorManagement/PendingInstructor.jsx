@@ -96,35 +96,35 @@ const PendingInstructor = () => {
 
   return (
     <div className="flex w-full max-w-[1050px] flex-col min-h-screen mx-auto px-4">
-      <div className="breadcrumbs text-sm mt-6">
-        <ul className="flex space-x-2 text-gray-600">
-          <li>
-            <Link
-              to="/dashboard"
-              className="text-blue-900 text-xl font-medium hover:underline"
-            >
-              Dashboard
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/dashboard/instructorManagement"
-              className="text-blue-900 text-xl font-medium hover:underline"
-            >
-              Instructor Management
-            </Link>
-          </li>
-          <li className="text-gray-700 text-xl font-medium">
-            Pending Instructor
-          </li>
-        </ul>
-      </div>
+ <div className="breadcrumbs text-md mt-4">
+  <ul className="flex items-center space-x-2 text-gray-600">
+    <li>
+      <Link
+        to="/dashboard"
+        className="text-blue-600 hover:underline font-medium"
+      >
+        Dashboard
+      </Link>
+    </li>
+    <li>
+      <Link
+        to="/dashboard/instructorManagement"
+        className="text-blue-600 hover:underline font-medium"
+      >
+        Instructor Management
+      </Link>
+    </li>
+    <li className="text-gray-500 font-medium">
+      Pending Instructor
+    </li>
+  </ul>
+</div>
       <Toaster position="top-center" reverseOrder={false} />
 
       <div className="bg-white rounded-lg mt-6 shadow-lg border border-gray-100 w-full overflow-hidden">
   {loading ? (
     <div className="animate-pulse w-full">
-      <table className="w-full">
+      <table className="w-[1050px]">
         <thead className="bg-blue-950">
           <tr>
             <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">Index</th>

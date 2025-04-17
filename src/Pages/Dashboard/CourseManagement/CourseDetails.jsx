@@ -36,32 +36,35 @@ const CourseDetails = () => {
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className="p-6 bg-white w-[1100px] h-[600px] mx-auto mt-10 flex flex-col gap-6">
-      {/* Breadcrumb Navigation */}
-      <div className="breadcrumbs text-sm mb-4">
-        <ul className="flex space-x-2 text-gray-600">
-          <li>
-            <Link
-              to="/dashboard"
-              className="text-blue-900 text-xl font-medium hover:underline"
-            >
-              Dashboard
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/dashboard/courseManagement"
-              className="text-blue-900 text-xl font-medium hover:underline"
-            >
-              Course Management
-            </Link>
-          </li>
-          <li className="text-gray-700 text-xl font-medium">Course Details</li>
-          <li className="text-gray-700 text-xl font-medium">
-            {course.courseName}
-          </li>
-        </ul>
-      </div>
+    <div className=" bg-white w-[1050px] h-[600px] mx-auto p-4 flex flex-col gap-6">
+{/* Breadcrumb Navigation */}
+<div className="breadcrumbs text-md mb-6">
+  <ul className="flex items-center space-x-2 text-gray-600">
+    <li>
+      <Link
+        to="/dashboard"
+        className="text-blue-600 hover:underline font-medium"
+      >
+        Dashboard
+      </Link>
+    </li>
+  
+    <li>
+      <Link
+        to="/dashboard/courseManagement"
+        className="text-blue-600 hover:underline font-medium"
+      >
+        Course Management
+      </Link>
+    </li>
+  
+    <li className="text-gray-500 font-medium">Course Details</li>
+  
+    <li className="text-gray-500 font-medium">
+      {course.courseName}
+    </li>
+  </ul>
+</div>
 
       {/* Course Details */}
       <div className="flex rounded-sm shadow-md gap-12 mt-12 p-8">

@@ -10,6 +10,7 @@ import useAxiosSecure from "../../../../hooks/useAxiosSecure";
 import { toast } from "react-hot-toast";
 import { FaExchangeAlt, FaInfoCircle } from "react-icons/fa";
 import { HiOutlineCheckCircle, HiOutlineXCircle } from "react-icons/hi";
+import { Link } from "react-router-dom";
 
 const tabsData = [
   { label: "Batch Change", value: "batch" },
@@ -431,6 +432,30 @@ const ChangeRequests = () => {
 
   return (
     <div className="p-4 w-[1100px] mx-auto">
+      <div className="breadcrumbs text-md mt-4 mb-4">
+        <ul className="flex items-center space-x-2 text-gray-600">
+          <li>
+            <Link
+              to="/dashboard"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Dashboard
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              to="/dashboard/courseAssignment"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Batch Assignment
+            </Link>
+          </li>
+          <li className="text-gray-500 font-medium">Change Requests</li>
+        </ul>
+      </div>
+
+
       <h1 className="text-xl font-bold lg:text-xl text-center text-gray-800 mb-6">
         Change Requests Management
       </h1>
@@ -649,8 +674,8 @@ const ChangeRequests = () => {
           <TabsBody>
             <TabPanel value="batch">
               <div className="card bg-white shadow-sm p-4 border border-gray-100 rounded-lg">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-800">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-md font-semibold text-gray-800">
                     Pending Batch Change Requests
                   </h2>
                   <span className="badge badge-primary">
@@ -815,8 +840,8 @@ const ChangeRequests = () => {
 
             <TabPanel value="course">
               <div className="card bg-white shadow-sm p-4 border border-gray-100 rounded-lg">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-800">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-sm font-semibold text-gray-800">
                     Pending Course Change Requests
                   </h2>
                   <span className="badge badge-primary">
@@ -958,10 +983,6 @@ const ChangeRequests = () => {
                                 </svg>
                                 <p className="mt-2 text-sm font-medium text-gray-600">
                                   No pending course change requests found
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  When students request course changes, they'll
-                                  appear here
                                 </p>
                               </div>
                             </td>

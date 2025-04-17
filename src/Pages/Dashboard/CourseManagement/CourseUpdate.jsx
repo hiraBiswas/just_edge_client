@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import useAxiosPublic from "../../../hooks/useAxiosPublic";
 
@@ -118,34 +118,31 @@ const UpdateCourse = () => {
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className="p-6 bg-white w-[1100px] mx-auto mt-5 rounded-lg shadow-sm">
-      <nav className="text-gray-600 mb-6" aria-label="Breadcrumb">
-        <ol className="list-none p-0 inline-flex space-x-2">
-          <li className="flex items-center">
-            <a
-              href="/dashboard"
-              className="text-blue-900 text-lg font-medium hover:underline"
+    <div className="p-4  w-[1050px] mx-auto mt-5 ">
+      <div className="breadcrumbs text-md mb-6">
+        <ul className="flex items-center space-x-2 text-gray-600">
+          <li>
+            <Link
+              to="/dashboard"
+              className="text-blue-600 hover:underline font-medium"
             >
               Dashboard
-            </a>
-            <span className="mx-2 text-gray-400">/</span>
+            </Link>
           </li>
-          <li className="flex items-center">
-            <a
-              href="/dashboard/courseManagement"
-              className="text-blue-900 text-lg font-medium hover:underline"
+          <li>
+            <Link
+              to="/dashboard/courseManagement"
+              className="text-blue-600 hover:underline font-medium"
             >
               Course Management
-            </a>
-            <span className="mx-2 text-gray-400">/</span>
+            </Link>
           </li>
-          <li className="text-gray-800 font-medium text-lg">Update Course</li>
-          <span className="mx-2 text-gray-400">/</span>
-          <li className="text-gray-800 font-medium text-lg">
+          <li className="text-gray-500 font-medium">Update Course</li>
+          <li className="text-gray-500 font-medium truncate max-w-xs">
             {course.courseName}
           </li>
-        </ol>
-      </nav>
+        </ul>
+      </div>
 
       <div className="w-full max-w-lg mx-auto bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <h2 className="text-xl font-semibold mb-4 text-center">

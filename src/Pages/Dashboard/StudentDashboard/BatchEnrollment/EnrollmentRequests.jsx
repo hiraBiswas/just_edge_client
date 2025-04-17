@@ -314,6 +314,9 @@ const EnrollmentRequests = () => {
     }
   }, [studentData]);
 
+  const currentBatchStatus =
+    batches.find((b) => b._id === studentData?.enrolled_batch)?.status || "";
+
   return (
     <div className=" w-[1100px] mx-auto">
       <div className="flex justify-between items-center mt-3 mb-2">
@@ -349,7 +352,9 @@ const EnrollmentRequests = () => {
               ✕
             </button>
           </form>
-          <h3 className="font-bold text-lg text-center mb-4">My Request History</h3>
+          <h3 className="font-bold text-lg text-center mb-4">
+            My Request History
+          </h3>
 
           {loadingRequests ? (
             <div className="flex justify-center py-8">
@@ -475,195 +480,221 @@ const EnrollmentRequests = () => {
         </div>
       </dialog>
 
-    {/* Student Enrollment Card */}
-<div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-  <div className="p-6">
-    <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6 text-indigo-600"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-        />
-      </svg>
-      Enrollment Status
-    </h2>
+      {/* Student Enrollment Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+        <div className="p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-indigo-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            Enrollment Status
+          </h2>
 
-    {loadingRequests ? (
-      <div className="flex justify-center py-4">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
-    ) : (
-      <>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Show preferred course if not enrolled */}
-          {!studentData?.enrolled_batch && (
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
-              <p className="text-sm font-medium text-gray-500 mb-1">
-                Preferred Course
-              </p>
-              <p className="text-lg font-semibold text-gray-800">
-                {preferredCourseName}
-              </p>
+          {loadingRequests ? (
+            <div className="flex justify-center py-4">
+              <span className="loading loading-spinner loading-lg"></span>
             </div>
-          )}
-
-          {/* Show enrolled details if enrolled */}
-          {studentData?.enrolled_batch && (
+          ) : (
             <>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
-                <p className="text-sm font-medium text-gray-500 mb-1">
-                  Enrolled Course
-                </p>
-                <p className="text-lg font-semibold truncate text-gray-800">
-                  {enrolledCourseName}
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {/* Show preferred course if not enrolled */}
+                {!studentData?.enrolled_batch && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
+                    <p className="text-sm font-medium text-gray-500 mb-1">
+                      Preferred Course
+                    </p>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {preferredCourseName}
+                    </p>
+                  </div>
+                )}
+
+                {/* Show enrolled details if enrolled */}
+                {studentData?.enrolled_batch && (
+                  <>
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
+                      <p className="text-sm font-medium text-gray-500 mb-1">
+                        Enrolled Course
+                      </p>
+                      <p className="text-lg font-semibold truncate text-gray-800">
+                        {enrolledCourseName}
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
+                      <p className="text-sm font-medium text-gray-500 mb-1">
+                        Enrolled Batch
+                      </p>
+                      <p className="text-lg font-semibold text-gray-800">
+                        {enrolledBatchName}
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
+                      <p className="text-sm font-medium text-gray-500 mb-1">
+                        Status
+                      </p>
+                      <p
+                        className={`text-lg font-semibold ${
+                          currentBatchStatus === "Completed"
+                            ? "text-gray-800"
+                            : currentBatchStatus === "Upcoming"
+                            ? "text-gray-800"
+                            : currentBatchStatus === "Ongoing"
+                            ? "text-gray-800"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {currentBatchStatus || "N/A"}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
-                <p className="text-sm font-medium text-gray-500 mb-1">
-                  Enrolled Batch
-                </p>
-                <p className="text-lg font-semibold text-gray-800">
-                  {enrolledBatchName}
-                </p>
-              </div>
+              <div className="flex flex-wrap justify-between items-center gap-3">
+                <div className="flex flex-wrap gap-3">
+                  {studentData?.enrolled_batch ? (
+                    <>
+                      <button
+                        className={`btn btn-primary gap-2 ${
+                          pendingRequests.hasAnyPending ||
+                          currentBatchStatus === "Completed"
+                            ? "btn-disabled"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          !pendingRequests.hasAnyPending &&
+                          document.getElementById("course_modal").showModal()
+                        }
+                        disabled={
+                          pendingRequests.hasAnyPending ||
+                          currentBatchStatus === "Completed"
+                        }
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                          />
+                        </svg>
+                        Change Course
+                      </button>
+                      <button
+                        className={`btn btn-outline btn-primary gap-2 ${
+                          pendingRequests.hasAnyPending ||
+                          currentBatchStatus === "Completed"
+                            ? "btn-disabled"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          !pendingRequests.hasAnyPending &&
+                          document.getElementById("batch_modal").showModal()
+                        }
+                        disabled={
+                          pendingRequests.hasAnyPending ||
+                          currentBatchStatus === "Completed"
+                        }
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                          />
+                        </svg>
+                        Change Batch
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className={`btn btn-warning gap-2 ${
+                        pendingRequests.hasAnyPending ? "btn-disabled" : ""
+                      }`}
+                      onClick={() =>
+                        !pendingRequests.hasAnyPending &&
+                        document.getElementById("my_modal_3").showModal()
+                      }
+                      disabled={pendingRequests.hasAnyPending}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                      Change Preferred Course
+                    </button>
+                  )}
+                </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-150 ease-in-out hover:bg-white hover:shadow-sm hover:border-gray-200">
-                <p className="text-sm font-medium text-gray-500 mb-1">
-                  Status
-                </p>
-                <p className="text-lg font-semibold text-green-600">Active</p>
+                {/* View Requests Button (only for enrolled students) */}
+                {studentData?.enrolled_batch && (
+                  <button
+                    className="btn btn-ghost text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 gap-2"
+                    onClick={() => {
+                      fetchAllRequests();
+                      document
+                        .getElementById("request_history_modal")
+                        .showModal();
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                      />
+                    </svg>
+                    View Requests
+                  </button>
+                )}
               </div>
             </>
           )}
         </div>
-
-        <div className="flex flex-wrap justify-between items-center gap-3">
-          <div className="flex flex-wrap gap-3">
-            {studentData?.enrolled_batch ? (
-              <>
-                <button
-                  className={`btn btn-primary gap-2 ${
-                    pendingRequests.hasAnyPending ? "btn-disabled" : ""
-                  }`}
-                  onClick={() =>
-                    !pendingRequests.hasAnyPending &&
-                    document.getElementById("course_modal").showModal()
-                  }
-                  disabled={pendingRequests.hasAnyPending}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
-                  Change Course
-                </button>
-                <button
-                  className={`btn btn-outline btn-primary gap-2 ${
-                    pendingRequests.hasAnyPending ? "btn-disabled" : ""
-                  }`}
-                  onClick={() =>
-                    !pendingRequests.hasAnyPending &&
-                    document.getElementById("batch_modal").showModal()
-                  }
-                  disabled={pendingRequests.hasAnyPending}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                    />
-                  </svg>
-                  Change Batch
-                </button>
-              </>
-            ) : (
-              <button
-                className={`btn btn-warning gap-2 ${
-                  pendingRequests.hasAnyPending ? "btn-disabled" : ""
-                }`}
-                onClick={() =>
-                  !pendingRequests.hasAnyPending &&
-                  document.getElementById("my_modal_3").showModal()
-                }
-                disabled={pendingRequests.hasAnyPending}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-                Change Preferred Course
-              </button>
-            )}
-          </div>
-
-          {/* View Requests Button (only for enrolled students) */}
-          {studentData?.enrolled_batch && (
-            <button
-              className="btn btn-ghost text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 gap-2"
-              onClick={() => {
-                fetchAllRequests();
-                document.getElementById("request_history_modal").showModal();
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                />
-              </svg>
-              View Requests
-            </button>
-          )}
-        </div>
-      </>
-    )}
-  </div>
-</div>
+      </div>
 
       {/* Request History Modal */}
       <dialog id="request_history_modal" className="modal">

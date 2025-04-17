@@ -363,24 +363,26 @@ const BatchManagement = () => {
         </div>
       </div>
 
-      <div className="flex justify-end join my-4">
-        <button
-          className="join-item btn"
-          disabled={currentPage === 1}
-          onClick={() => handlePageChange(currentPage - 1)}
-        >
-          Previous
-        </button>
-        <button className="join-item btn">{`Page ${currentPage}`}</button>
-
-        <button
-          className="join-item btn"
-          disabled={currentPage === totalPages}
-          onClick={() => handlePageChange(currentPage + 1)}
-        >
-          Next
-        </button>
-      </div>
+{/* Pagination - Only show if there are more items than itemsPerPage */}
+{filteredBatches.length > itemsPerPage && (
+  <div className="flex justify-end join my-4">
+    <button
+      className="join-item btn"
+      disabled={currentPage === 1}
+      onClick={() => handlePageChange(currentPage - 1)}
+    >
+      Previous
+    </button>
+    <button className="join-item btn">{`Page ${currentPage}`}</button>
+    <button
+      className="join-item btn"
+      disabled={currentPage === totalPages}
+      onClick={() => handlePageChange(currentPage + 1)}
+    >
+      Next
+    </button>
+  </div>
+)}
 
       {/* Create Batch Modal */}
       <dialog

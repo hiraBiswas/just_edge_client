@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { PlusIcon, TrashIcon, EyeIcon, PencilIcon } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
+import { Link } from "react-router-dom";
 
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
 const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
@@ -231,27 +232,17 @@ const NoticeManagement = () => {
   };
 
   return (
-    <div className="w-[1100px] m-6">
-      {notification && (
-        <div
-          className={`toast toast-end ${
-            notification.type === "error"
-              ? "text-error"
-              : notification.type === "warning"
-              ? "text-warning"
-              : "text-success"
-          }`}
-        >
-          <div className="alert">
-            <span>{notification.message}</span>
-          </div>
-        </div>
-      )}
+    <div className=" w-[1050px] mx-auto p-4">
 
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Notice Management</h2>
+
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Notice Management</h1>
+          <p className="text-gray-600">Create and manage notices for students</p>
+        </div>
         <button
-          className="btn bg-blue-950 text-white"
+          className="btn bg-blue-950 text-white hover:bg-blue-800"
           onClick={() => {
             setIsEditing(false);
             setEditingNoticeId(null);
@@ -271,92 +262,188 @@ const NoticeManagement = () => {
         </button>
       </div>
 
-      {/* Loader */}
+      {/* Skeleton Loader */}
       {isLoading && (
-        <div className="flex justify-center min-h-screen items-center my-8">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      )}
-
-      {/* Notices Table */}
-      <div className="overflow-x-auto w-[1100px] mx-auto">
-        <table className="table table-zebra w-full">
-          <thead className="bg-blue-950 text-white">
-            <tr>
-              <th>SI</th>
-              <th>Title</th>
-              <th>Tags</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {notices.length === 0 && !isLoading ? (
+        <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-blue-950">
               <tr>
-                <td colSpan="5" className="text-center py-4">No notices available</td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg">
+                  #
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  Title
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  Tags
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tr-lg">
+                  Actions
+                </th>
               </tr>
-            ) : (
-              currentNotices.map((notice, index) => (
-                <tr key={notice._id || index}>
-                  <td>{indexOfFirstNotice + index + 1}</td>
-                  <td>{notice.title}</td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {notice.tags?.map((tag) => (
-                        <span key={tag} className="badge badge-sm">
-                          {tag}
-                        </span>
-                      ))}
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {[...Array(5)].map((_, index) => (
+                <tr key={index} className="hover:bg-blue-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="h-4 bg-gray-200 rounded w-6"></div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex space-x-2">
+                      <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                      <div className="h-6 bg-gray-200 rounded-full w-12"></div>
                     </div>
                   </td>
-                  <td>
-                    {new Date(notice.createdAt).toLocaleDateString()}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
                   </td>
-                  <td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex space-x-2">
-                      <button 
-                        className="btn btn-ghost btn-sm" 
-                        onClick={() => handleEditNotice(notice)}
-                      >
-                        <PencilIcon size={16} />
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-sm text-error"
-                        onClick={() => handleDeleteNotice(notice._id)}
-                      >
-                        <TrashIcon size={16} />
-                      </button>
+                      <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                      <div className="h-8 w-8 bg-gray-200 rounded"></div>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {/* Pagination */}
-{notices.length > 0 && (
-  <div className="flex justify-end gap-2 my-4">
-    <button
-      className="btn btn-outline"
-      disabled={currentPage === 1 || isLoading}
-      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-    >
-      Previous
-    </button>
-    <span className="flex items-center px-4">
-      Page {currentPage} of {Math.ceil(totalNotices / noticesPerPage)}
-    </span>
-    <button
-      className="btn btn-outline"
-      disabled={currentPage === Math.ceil(totalNotices / noticesPerPage) || isLoading}
-      onClick={() => setCurrentPage(prev => prev + 1)}
-    >
-      Next
-    </button>
-  </div>
-)}
+      {/* Loaded State */}
+      {!isLoading && (
+        <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-blue-950">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg">
+                    #
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Title
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Tags
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tr-lg">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {notices.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                      <div className="flex flex-col items-center justify-center">
+                        <svg
+                          className="w-12 h-12 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                        <p className="mt-2 text-sm font-medium text-gray-600">
+                          No notices available
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Create your first notice to get started
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  currentNotices.map((notice, index) => (
+                    <tr key={notice._id} className="hover:bg-blue-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {indexOfFirstNotice + index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {notice.title}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {notice.tags?.map((tag) => (
+                            <span key={tag} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(notice.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleEditNotice(notice)}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Edit"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNotice(notice._id)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Delete"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalNotices > noticesPerPage && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+              <div className="text-sm text-gray-700">
+                Showing <span className="font-medium">{indexOfFirstNotice + 1}</span> to{" "}
+                <span className="font-medium">
+                  {Math.min(indexOfLastNotice, totalNotices)}
+                </span>{" "}
+                of <span className="font-medium">{totalNotices}</span> notices
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  disabled={currentPage === Math.ceil(totalNotices / noticesPerPage)}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Add Notice Modal */}
       {isModalOpen && (
         <div className="modal modal-open">

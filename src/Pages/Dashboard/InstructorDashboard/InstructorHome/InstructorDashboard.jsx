@@ -26,8 +26,20 @@ const InstructorDashboard = () => {
   const [elapsedTimes, setElapsedTimes] = useState({});
   const [activeSessions, setActiveSessions] = useState({});
   const [timeRemaining, setTimeRemaining] = useState({});
+  const [batchStats, setBatchStats] = useState({});
   const MAX_CLASS_DURATION = 3 * 60 * 60 * 1000; // 3 hours
   const WARNING_THRESHOLD = 30 * 60 * 1000; // 30 minute warning
+
+    // Filter batches by status
+    const ongoingBatches = assignedBatches.filter(
+      (batch) => batch.status === "Ongoing"
+    );
+    const upcomingBatches = assignedBatches.filter(
+      (batch) => batch.status === "Upcoming"
+    );
+    const completedBatches = assignedBatches.filter(
+      (batch) => batch.status === "Completed"
+    );
 
   // Define endSession with useCallback at the top level, not inside an effect
   const endSession = useCallback(
@@ -67,6 +79,24 @@ const InstructorDashboard = () => {
     },
     [axiosSecure]
   ); // Add any dependencies needed
+
+  useEffect(() => {
+    if (completedBatches.length > 0) {
+      const fetchBatchStats = async () => {
+        try {
+          const stats = {};
+          for (const batch of completedBatches) {
+            const res = await axiosSecure.get(`/results/batch/${batch._id}/stats`);
+            stats[batch._id] = res.data;
+          }
+          setBatchStats(stats);
+        } catch (error) {
+          console.error("Error fetching batch statistics:", error);
+        }
+      };
+      fetchBatchStats();
+    }
+  }, [completedBatches, axiosSecure]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -267,16 +297,7 @@ const InstructorDashboard = () => {
     );
   }
 
-  // Filter batches by status
-  const ongoingBatches = assignedBatches.filter(
-    (batch) => batch.status === "Ongoing"
-  );
-  const upcomingBatches = assignedBatches.filter(
-    (batch) => batch.status === "Upcoming"
-  );
-  const completedBatches = assignedBatches.filter(
-    (batch) => batch.status === "Completed"
-  );
+
 
   const tabs = [
     {
@@ -488,120 +509,122 @@ const InstructorDashboard = () => {
                         }`}
                       >
                         {batches.length > 0 ? (
-                          batches.map((batch) => (
-                            <div
-                              key={batch._id}
-                              className="border rounded-lg p-4 hover:shadow-md transition border-gray-100"
-                              onClick={() =>
-                                navigate(
-                                  `/dashboard/batch-details/${batch._id}`
-                                )
-                              }
-                            >
-                              <div className="flex justify-between items-start gap-3">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-bold text-gray-800">
-                                      {batch.batchName}
-                                    </h3>
-                                    <span
-                                      className={`text-xs px-2 py-0.5 rounded-full ${
-                                        batch.status === "Ongoing"
-                                          ? "bg-green-100 text-green-800"
-                                          : batch.status === "Upcoming"
-                                          ? "bg-blue-100 text-blue-800"
-                                          : "bg-gray-100 text-gray-800"
-                                      }`}
-                                    >
-                                      {batch.status}
-                                    </span>
-                                  </div>
-                                  <p className="text-gray-600 text-sm">
-                                    {batch.course?.courseName ||
-                                      "No course info"}
-                                  </p>
+                  batches.map((batch) => (
+                    <div 
+                      key={batch._id} 
+                      className="border rounded-lg p-4 hover:shadow-md transition border-gray-100 hover:border-blue-200"
+                      onClick={() => navigate(`/dashboard/batch-details/${batch._id}`)}
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-gray-800">
+                              {batch.batchName}
+                            </h3>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              batch.status === "Ongoing" ? "bg-green-100 text-green-800" :
+                              batch.status === "Upcoming" ? "bg-blue-100 text-blue-800" :
+                              "bg-purple-100 text-purple-800"
+                            }`}>
+                              {batch.status}
+                            </span>
+                          </div>
+                          
+                          <p className="text-gray-600 text-sm mb-3">
+                            {batch.course?.courseName || "No course info"}
+                          </p>
+                          
+                          {/* Students count - Moved up */}
+                          <div className="mb-3 pb-3 border-b border-gray-100 flex justify-between text-sm">
+                            <span className="text-gray-500">Students enrolled:</span>
+                            <span className="font-medium">
+                              {batch.occupiedSeat}/{batch.seat}
+                            </span>
+                          </div>
+                          
+                          {/* Results/Progress Section */}
+                          {batch.status === "Completed" && batchStats[batch._id] ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-600">Final Results</span>
+                                <div className="flex gap-2">
+                                  <span className="text-sm font-medium text-green-600">
+                                    {batchStats[batch._id].passCount} Passed
+                                  </span>
+                                  <span className="text-sm font-medium text-red-600">
+                                    {batchStats[batch._id].failCount} Failed
+                                  </span>
                                 </div>
-                                {batch.status === "Ongoing" && (
-                                  <label
-                                    className="inline-flex items-center cursor-pointer"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div className="flex flex-col items-end mr-2">
-                                      {activeSessions[batch._id] && (
-                                        <span
-                                          className={`text-xs ${
-                                            timeRemaining[batch._id] <=
-                                            WARNING_THRESHOLD
-                                              ? "text-orange-500"
-                                              : "text-gray-500"
-                                          }`}
-                                        >
-                                          {timeRemaining[batch._id] <=
-                                          WARNING_THRESHOLD
-                                            ? `Ends in ${Math.ceil(
-                                                timeRemaining[batch._id] /
-                                                  (60 * 1000)
-                                              )}m`
-                                            : `${Math.floor(
-                                                (MAX_CLASS_DURATION -
-                                                  timeRemaining[batch._id]) /
-                                                  (60 * 1000)
-                                              )}m elapsed`}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <input
-                                      type="checkbox"
-                                      className="toggle toggle-primary toggle-sm"
-                                      checked={!!activeSessions[batch._id]}
-                                      onChange={() =>
-                                        handleToggleChange(batch._id)
-                                      }
-                                      disabled={
-                                        disabledToggles[batch._id] || submitting
-                                      }
-                                    />
-                                  </label>
-                                )}
                               </div>
-
-                              <div className="mt-3 space-y-2">
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-500">
-                                    Students:
-                                  </span>
-                                  <span className="font-medium">
-                                    {batch.occupiedSeat}/{batch.seat}
-                                  </span>
-                                </div>
-
-                                {batch.status === "Ongoing" &&
-                                  classProgress[batch._id] && (
-                                    <div>
-                                      <div className="flex justify-between text-sm mb-1">
-                                        <span className="text-gray-500">
-                                          Progress:
-                                        </span>
-                                        <span className="font-medium">
-                                          {classProgress[batch._id].completed}/
-                                          {classProgress[batch._id].total}{" "}
-                                          classes (
-                                          {classProgress[batch._id].percentage}
-                                          %)
-                                        </span>
-                                      </div>
-                                      <progress
-                                        className="progress progress-primary w-full h-2"
-                                        value={
-                                          classProgress[batch._id].completed
-                                        }
-                                        max={classProgress[batch._id].total}
-                                      ></progress>
-                                    </div>
-                                  )}
+                              <div className="w-full bg-gray-100 rounded-full h-2.5">
+                                <div 
+                                  className="bg-green-500 h-2.5 rounded-full" 
+                                  style={{ 
+                                    width: `${(batchStats[batch._id].passCount / batchStats[batch._id].totalStudents) * 100}%` 
+                                  }}
+                                ></div>
+                                <div 
+                                  className="bg-red-500 h-2.5 rounded-full -mt-2.5" 
+                                  style={{ 
+                                    width: `${(batchStats[batch._id].failCount / batchStats[batch._id].totalStudents) * 100}%`,
+                                    marginLeft: `${(batchStats[batch._id].passCount / batchStats[batch._id].totalStudents) * 100}%`
+                                  }}
+                                ></div>
                               </div>
                             </div>
-                          ))
+                          ) : batch.status === "Ongoing" && classProgress[batch._id] ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-600">Class Progress</span>
+                                <span className="text-sm font-medium text-blue-600">
+                                  {classProgress[batch._id].completed}/{classProgress[batch._id].total} classes
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-100 rounded-full h-2.5">
+                                <div 
+                                  className="bg-blue-500 h-2.5 rounded-full" 
+                                  style={{ 
+                                    width: `${classProgress[batch._id].percentage}%` 
+                                  }}
+                                ></div>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-xs font-medium text-gray-500">
+                                  {classProgress[batch._id].percentage}% completed
+                                </span>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                        
+                        {/* Class session toggle (for ongoing batches) */}
+                        {batch.status === "Ongoing" && (
+                          <label className="inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-col items-end mr-2">
+                              {activeSessions[batch._id] && (
+                                <span className={`text-xs ${
+                                  timeRemaining[batch._id] <= WARNING_THRESHOLD 
+                                    ? "text-orange-500" 
+                                    : "text-gray-500"
+                                }`}>
+                                  {timeRemaining[batch._id] <= WARNING_THRESHOLD
+                                    ? `Ends in ${Math.ceil(timeRemaining[batch._id] / (60 * 1000))}m`
+                                    : `${Math.floor((MAX_CLASS_DURATION - timeRemaining[batch._id]) / (60 * 1000))}m elapsed`}
+                                </span>
+                              )}
+                            </div>
+                            <input
+                              type="checkbox"
+                              className="toggle toggle-primary toggle-sm"
+                              checked={!!activeSessions[batch._id]}
+                              onChange={() => handleToggleChange(batch._id)}
+                              disabled={disabledToggles[batch._id] || submitting}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  ))
                         ) : (
                           <div className="text-center py-8 text-gray-500 w-full">
                             <div className="flex flex-col items-center justify-center">

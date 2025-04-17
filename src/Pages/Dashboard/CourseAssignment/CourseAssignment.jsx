@@ -311,13 +311,38 @@ const CourseAssignment = () => {
   };
 
   // Filter batches that have available seats and are ongoing or upcoming
-  const availableBatches = batchList.filter((batch) => {
-    const occupied = batch.occupiedSeat || 0;
-    const hasAvailableSeats = occupied < batch.seat;
-    const validStatus =
-      batch.status === "Ongoing" || batch.status === "Upcoming";
-    return hasAvailableSeats && validStatus;
-  });
+  // const availableBatches = batchList.filter((batch) => {
+  //   const occupied = batch.occupiedSeat || 0;
+  //   const hasAvailableSeats = occupied < batch.seat;
+  //   const validStatus =
+  //     batch.status === "Ongoing" || batch.status === "Upcoming";
+  //   return hasAvailableSeats && validStatus;
+  // });
+
+  // Modify the availableBatches filter to consider the student's preferred course
+const availableBatches = batchList.filter((batch) => {
+  const occupied = batch.occupiedSeat || 0;
+  const hasAvailableSeats = occupied < batch.seat;
+  const validStatus = batch.status === "Ongoing" || batch.status === "Upcoming";
+  
+  // If students are selected, check if batch matches their preferred course
+  if (selectedUsers.length > 0) {
+    const firstStudent = combinedData.find(student => 
+      selectedUsers.includes(student._id)
+    );
+    if (firstStudent) {
+      return (
+        hasAvailableSeats && 
+        validStatus && 
+        batch.course_id === courseList.find(c => 
+          c.courseName === firstStudent.prefCourse
+        )?._id
+      );
+    }
+  }
+  
+  return hasAvailableSeats && validStatus;
+});
 
   return (
     <div className="min-h-screen mt-6 w-[1100px] ">
@@ -364,40 +389,77 @@ const CourseAssignment = () => {
         </h2>
       </div>
 
-      {/* Batch Selection (shown only when students are selected) */}
-      {selectedUsers.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assign Selected Students ({selectedUsers.length}) to Batch:
-              </label>
-              <select
-                className="select select-bordered w-full"
-                value={selectedBatch}
-                onChange={(e) => setSelectedBatch(e.target.value)}
-              >
-                <option value="">Select a Batch</option>
-                {availableBatches.map((batch) => (
-                  <option key={batch._id} value={batch.batchName}>
-                    {batch.batchName} ({batch.status}) - Available:{" "}
-                    {batch.seat - (batch.occupiedSeat || 0)}
+  {/* Batch Selection (shown only when students are selected) */}
+{selectedUsers.length > 0 && (
+  <div className="bg-white rounded-lg shadow p-4 mb-6">
+    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+      <div className="flex-1">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Assign Selected Students ({selectedUsers.length}) to Batch:
+        </label>
+
+        {availableBatches.length > 0 ? (
+          <>
+            <select
+              className="select select-bordered w-full"
+              value={selectedBatch}
+              onChange={(e) => setSelectedBatch(e.target.value)}
+            >
+              <option value="">Select a Batch</option>
+              {availableBatches.map((batch) => {
+                const course = courseList.find(c => c._id === batch.course_id);
+                const availableSeats = batch.seat - (batch.occupiedSeat || 0);
+                return (
+                  <option 
+                    key={batch._id} 
+                    value={batch.batchName}
+                    disabled={availableSeats < selectedUsers.length}
+                  >
+                    {batch.batchName} ({course?.courseName || 'Unknown Course'}) - 
+                    Available: {availableSeats}/{batch.seat} ({batch.status})
+                    {availableSeats < selectedUsers.length && " - Not enough seats"}
                   </option>
-                ))}
-              </select>
+                );
+              })}
+            </select>
+            <div className="mt-2 text-sm text-gray-500">
+              Showing batches for: {combinedData.find(student => selectedUsers.includes(student._id))?.prefCourse || "All courses"}
             </div>
-            <div className="flex gap-2">
-              <button
-                className="btn btn-primary"
-                onClick={handleAssignBatch}
-                disabled={!selectedBatch}
-              >
-                Assign Batch
-              </button>
+          </>
+        ) : (
+          <div className="alert alert-warning shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <h3 className="font-bold">No available batches!</h3>
+              <div className="text-xs">No ongoing/upcoming batches found with available seats for the selected students' preferred course.</div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          className="btn btn-primary"
+          onClick={handleAssignBatch}
+          disabled={!selectedBatch || availableBatches.length === 0}
+        >
+          Assign Batch
+        </button>
+        <button 
+          className="btn btn-ghost"
+          onClick={() => {
+            setSelectedUsers([]);
+            setSelectedBatch("");
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Loading State */}
       {loading && (
@@ -507,37 +569,37 @@ const CourseAssignment = () => {
                     </tbody>
                   </table>
                 </div>
-
-            
               </div>
             </>
           )}
         </>
       )}
 
-          {/* Pagination */}
-          <div className="flex justify-end p-4 border-t border-gray-200">
-                  <div className="join">
-                    <button
-                      className="join-item btn"
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    >
-                      «
-                    </button>
-                    <button className="join-item btn">
-                      Page {currentPage} of {totalPages}
-                    </button>
-                    <button
-                      className="join-item btn"
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    >
-                      »
-                    </button>
-                  </div>
-                </div>
+      {/* Pagination */}
 
+      {totalPages > 1 && (
+        <div className="flex justify-end p-4 border-t border-gray-200">
+          <div className="join">
+            <button
+              className="join-item btn"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              «
+            </button>
+            <button className="join-item btn">
+              Page {currentPage} of {totalPages}
+            </button>
+            <button
+              className="join-item btn"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
       {/* Student Details Modal */}
       <dialog id="studentModal" className="modal">
         <div className="modal-box max-w-2xl">

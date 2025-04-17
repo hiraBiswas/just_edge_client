@@ -248,23 +248,26 @@ const InstructorManagement = () => {
 
       {/* Pagination */}
       <div className="flex justify-end join my-4">
-        <button
-          className="join-item btn"
-          disabled={currentPage === 1}
-          onClick={() => handlePageChange(currentPage - 1)}
-        >
-          Previous
-        </button>
-        <button className="join-item btn">{`Page ${currentPage}`}</button>
-
-        <button
-          className="join-item btn"
-          disabled={currentPage === totalPages}
-          onClick={() => handlePageChange(currentPage + 1)}
-        >
-          Next
-        </button>
-      </div>
+  {combinedData.length > itemsPerPage && (
+    <>
+      <button
+        className="join-item btn"
+        disabled={currentPage === 1}
+        onClick={() => handlePageChange(currentPage - 1)}
+      >
+        Previous
+      </button>
+      <button className="join-item btn">{`Page ${currentPage}`}</button>
+      <button
+        className="join-item btn"
+        disabled={currentPage === totalPages}
+        onClick={() => handlePageChange(currentPage + 1)}
+      >
+        Next
+      </button>
+    </>
+  )}
+</div>
       <Toaster position="top-center" reverseOrder={false} />
     </div>
   );

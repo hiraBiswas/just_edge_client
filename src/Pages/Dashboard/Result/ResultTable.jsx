@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import UploadResult from "./UploadResult";
 import { Toaster, toast } from "react-hot-toast";
 import { AuthContext } from "../../../Providers/AuthProvider";
+import { FaPencilAlt as PencilIcon, FaTrash as TrashIcon } from 'react-icons/fa';
 import {
   Document,
   Page,
@@ -431,7 +432,7 @@ const ResultTable = () => {
   }
 
   return (
-    <div className="p-6 bg-base-100 w-[1100px] mx-auto mt-5">
+    <div className="p-6 bg-base-100 w-[1150px] mx-auto ">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Upload or View Marks</h2>
         <UploadResult />
@@ -468,7 +469,7 @@ const ResultTable = () => {
         students.length > 0 &&
         !studentsLoading &&
         !resultsLoading && (
-          <div className="overflow-x-auto bg-white p-4 rounded-sm shadow-sm">
+          <div className="overflow-x-auto ">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold mb-4">
                 Results for Batch: {selectedBatchName}
@@ -491,119 +492,171 @@ const ResultTable = () => {
                 )}
               </PDFDownloadLink>
             </div>
-            <table className="min-w-full border-collapse border">
-              <thead>
-                <tr className="bg-blue-950 text-white">
-                  <th className="px-4 py-2 text-left">SI</th>
-                  <th className="px-4 py-2 text-left">Student Name</th>
-                  <th className="px-4 py-2 text-left">Student ID</th>
-                  <th className="px-4 py-2 text-center">Assignment</th>
-                  <th className="px-4 py-2 text-center">Mid Term</th>
-                  <th className="px-4 py-2 text-center">Project</th>
-                  <th className="px-4 py-2 text-center">Final Exam</th>
-                  <th className="px-4 py-2 text-center">Attendance</th>
-                  <th className="px-4 py-2 text-center">Total</th>
-                  <th className="px-4 py-2 text-center">Status</th>
-                  <th className="px-4 py-2 text-center">Action</th>
+         
+  <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-blue-950">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg">
+              SI
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+              Student Name
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+              Student ID
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              Assignment
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              Mid Term
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              Project
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              Final Exam
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              Attendance
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              Total
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              Status
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider rounded-tr-lg">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {students.length === 0 ? (
+            <tr>
+              <td colSpan="11" className="px-6 py-8 text-center text-gray-500">
+                <div className="flex flex-col items-center justify-center">
+                  <svg
+                    className="w-12 h-12 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                  <p className="mt-2 text-sm font-medium text-gray-600">
+                    No students available
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Add students to get started
+                  </p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            students.map((student, index) => {
+              const studentResults = allResults.find(
+                (result) => result.studentID === student.studentID
+              );
+
+              const assignmentMarks = studentResults?.Assignment ?? "-";
+              const midTermMarks = studentResults?.Mid_Term ?? "-";
+              const projectMarks = studentResults?.Project ?? "-";
+              const finalExamMarks = studentResults?.Final_Exam ?? "-";
+              const attendanceMarks = studentResults?.Attendance ?? "-";
+
+              const hasResults = studentResults !== undefined;
+              const hasNullField =
+                hasResults &&
+                (studentResults.Assignment === null ||
+                  studentResults.Mid_Term === null ||
+                  studentResults.Project === null ||
+                  studentResults.Final_Exam === null ||
+                  studentResults.Attendance === null);
+
+              const total = hasResults
+                ? (studentResults.Assignment || 0) +
+                  (studentResults.Mid_Term || 0) +
+                  (studentResults.Project || 0) +
+                  (studentResults.Final_Exam || 0) +
+                  (studentResults.Attendance || 0)
+                : 0;
+
+              let status = "Fail";
+              if (hasResults && !hasNullField && total >= 60) {
+                status = "Pass";
+              }
+
+              return (
+                <tr key={student.studentID} className="hover:bg-blue-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {index + 1}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {student.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {student.studentID}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                    {assignmentMarks}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                    {midTermMarks}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                    {projectMarks}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                    {finalExamMarks}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                    {attendanceMarks}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-gray-900">
+                    {hasResults ? total : "N/A"}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm text-center font-semibold ${status === "Pass" ? "text-green-600" : "text-red-600"}`}>
+                    {status}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex items-center justify-center space-x-2">
+                      {studentResults && (
+                        <>
+                          <button
+                            onClick={() => openEditModal(studentResults)}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Edit"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStudent(studentResults._id)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Delete"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {students.map((student, index) => {
-                  const studentResults = allResults.find(
-                    (result) => result.studentID === student.studentID
-                  );
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-                  const assignmentMarks = studentResults?.Assignment ?? "-";
-                  const midTermMarks = studentResults?.Mid_Term ?? "-";
-                  const projectMarks = studentResults?.Project ?? "-";
-                  const finalExamMarks = studentResults?.Final_Exam ?? "-";
-                  const attendanceMarks = studentResults?.Attendance ?? "-";
-
-                  // Check if student has any results
-                  const hasResults = studentResults !== undefined;
-
-                  // Check if any field is null
-                  const hasNullField =
-                    hasResults &&
-                    (studentResults.Assignment === null ||
-                      studentResults.Mid_Term === null ||
-                      studentResults.Project === null ||
-                      studentResults.Final_Exam === null ||
-                      studentResults.Attendance === null);
-
-                  // Calculate total (counting null values as 0)
-                  const total = hasResults
-                    ? (studentResults.Assignment || 0) +
-                      (studentResults.Mid_Term || 0) +
-                      (studentResults.Project || 0) +
-                      (studentResults.Final_Exam || 0) +
-                      (studentResults.Attendance || 0)
-                    : 0;
-
-                  // Status determination
-                  let status = "Fail";
-                  if (hasResults && !hasNullField && total >= 60) {
-                    status = "Pass";
-                  }
-
-                  return (
-                    <tr
-                      key={student.studentID}
-                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                    >
-                      <td className="px-4 py-2 border">{index + 1}</td>
-                      <td className="px-4 py-2 border">{student.name}</td>
-                      <td className="px-4 py-2 border">{student.studentID}</td>
-                      <td className="px-4 py-2 border text-center">
-                        {assignmentMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center">
-                        {midTermMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center">
-                        {projectMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center">
-                        {finalExamMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center">
-                        {attendanceMarks}
-                      </td>
-                      <td className="px-4 py-2 border text-center font-medium">
-                        {hasResults ? total : "N/A"}
-                      </td>
-                      <td
-                        className={`px-4 py-2 border text-center font-semibold ${
-                          status === "Pass" ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {status}
-                      </td>
-                      <td className="px-4 py-2 border flex gap-2 text-center">
-                        {studentResults && (
-                          <>
-                            <button
-                              className="bg-blue-950 text-white px-2 py-1 rounded-sm text-sm mr-1"
-                              onClick={() => openEditModal(studentResults)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="bg-red-500 text-white px-2 py-1 rounded-sm text-sm"
-                              onClick={() =>
-                                handleDeleteStudent(studentResults._id)
-                              }
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
         )}
 
