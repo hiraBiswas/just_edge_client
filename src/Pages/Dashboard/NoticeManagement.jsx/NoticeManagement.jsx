@@ -232,7 +232,7 @@ const NoticeManagement = () => {
   };
 
   return (
-    <div className=" w-[1050px] mx-auto p-4">
+    <div className=" w-[1100px] mx-auto mt-6">
 
 
       {/* Header Section */}
@@ -594,6 +594,7 @@ const NoticeManagement = () => {
                   type="date"
                   className="input input-bordered w-full"
                   value={newNotice.deadline}
+                  required
                   onChange={(e) =>
                     setNewNotice((prev) => ({
                       ...prev,
