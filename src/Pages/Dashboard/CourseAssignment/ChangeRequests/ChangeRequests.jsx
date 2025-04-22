@@ -30,6 +30,7 @@ const ChangeRequests = () => {
     currentRequest: null,
     candidates: [],
   });
+  const [swapLoading, setSwapLoading] = useState(false);
   const [batchModal, setBatchModal] = useState({
     open: false,
     currentRequest: null,
@@ -51,32 +52,90 @@ const ChangeRequests = () => {
     setPendingRequests(filtered);
   }, [allRequests]);
 
+  // const fetchAllBatchRequests = async () => {
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const requestsResponse = await axiosSecure.get("/batch-change-requests");
+  //     const requests = requestsResponse.data;
+
+  //     const [studentsResponse, usersResponse, batchesResponse] =
+  //       await Promise.all([
+  //         axiosSecure.get("/students"),
+  //         axiosSecure.get("/users"),
+  //         axiosSecure.get("/batches"),
+  //       ]);
+
+  //     const enrichedRequests = requests.map((request) => {
+  //       const student = studentsResponse.data.find(
+  //         (s) => s._id === request.studentId
+  //       );
+  //       const user = usersResponse.data.find((u) => u._id === student?.userId);
+  //       const currentBatch = batchesResponse.data.find(
+  //         (b) => b._id === student?.enrolled_batch
+  //       );
+  //       const requestedBatch = batchesResponse.data.find(
+  //         (b) => b._id === request.requestedBatch
+  //       );
+
+  //       return {
+  //         ...request,
+  //         studentInfo: {
+  //           name: user?.name || "Unknown",
+  //           userId: student?.userId,
+  //           enrolled_batch: student?.enrolled_batch,
+  //         },
+  //         currentBatchInfo: {
+  //           batchName: currentBatch?.batchName || "N/A",
+  //           _id: currentBatch?._id,
+  //         },
+  //         requestedBatchInfo: {
+  //           batchName: requestedBatch?.batchName || "N/A",
+  //           seat: requestedBatch?.seat,
+  //           occupiedSeat: requestedBatch?.occupiedSeat,
+  //           _id: requestedBatch?._id,
+  //         },
+  //         seatsAvailable: requestedBatch
+  //           ? requestedBatch.seat - requestedBatch.occupiedSeat > 0
+  //           : false,
+  //       };
+  //     });
+
+  //     setAllRequests(enrichedRequests);
+  //   } catch (err) {
+  //     console.error("Error fetching requests:", err);
+  //     setError("Failed to load batch change requests");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
   const fetchAllBatchRequests = async () => {
     setLoading(true);
     setError(null);
     try {
+      // Clear existing data while loading
+      setAllRequests([]);
+      setPendingRequests([]);
+  
       const requestsResponse = await axiosSecure.get("/batch-change-requests");
       const requests = requestsResponse.data;
-
-      const [studentsResponse, usersResponse, batchesResponse] =
-        await Promise.all([
-          axiosSecure.get("/students"),
-          axiosSecure.get("/users"),
-          axiosSecure.get("/batches"),
-        ]);
-
+  
+      // Fetch all related data in parallel
+      const [studentsResponse, usersResponse, batchesResponse] = await Promise.all([
+        axiosSecure.get("/students"),
+        axiosSecure.get("/users"),
+        axiosSecure.get("/batches"),
+      ]);
+  
+      // Process and enrich the data
       const enrichedRequests = requests.map((request) => {
-        const student = studentsResponse.data.find(
-          (s) => s._id === request.studentId
-        );
-        const user = usersResponse.data.find((u) => u._id === student?.userId);
-        const currentBatch = batchesResponse.data.find(
-          (b) => b._id === student?.enrolled_batch
-        );
-        const requestedBatch = batchesResponse.data.find(
-          (b) => b._id === request.requestedBatch
-        );
-
+        const student = studentsResponse.data.find(s => s._id === request.studentId);
+        const user = usersResponse.data.find(u => u._id === student?.userId);
+        const currentBatch = batchesResponse.data.find(b => b._id === student?.enrolled_batch);
+        const requestedBatch = batchesResponse.data.find(b => b._id === request.requestedBatch);
+  
         return {
           ...request,
           studentInfo: {
@@ -94,20 +153,59 @@ const ChangeRequests = () => {
             occupiedSeat: requestedBatch?.occupiedSeat,
             _id: requestedBatch?._id,
           },
-          seatsAvailable: requestedBatch
+          seatsAvailable: requestedBatch 
             ? requestedBatch.seat - requestedBatch.occupiedSeat > 0
             : false,
         };
       });
-
+  
+      // Update both states atomically
       setAllRequests(enrichedRequests);
+      setPendingRequests(enrichedRequests.filter(req => req.status === "Pending"));
+      
     } catch (err) {
       console.error("Error fetching requests:", err);
       setError("Failed to load batch change requests");
+      // Clear states on error
+      setAllRequests([]);
+      setPendingRequests([]);
     } finally {
       setLoading(false);
     }
   };
+  
+  // Updated handleSwap function
+  const handleSwap = async (selectedCandidateId) => {
+    setSwapLoading(true);
+    try {
+      const response = await axiosSecure.patch("/batch-change-requests/swap", {
+        requestId1: swapModal.currentRequest._id,
+        requestId2: selectedCandidateId,
+      });
+  
+      if (response.status === 200) {
+        toast.success("Batch swap completed successfully!");
+        
+        // Close modal but keep loading state
+        document.getElementById("swap_modal").close();
+        setSwapModal({ open: false, currentRequest: null, candidates: [] });
+        
+        // Add artificial delay to ensure smooth transition
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Refetch with proper loading states
+        await fetchAllBatchRequests();
+        
+     
+      }
+    } catch (error) {
+      console.error("Error processing swap:", error);
+      toast.error(error.response?.data?.message || "Failed to process swap");
+    } finally {
+      setSwapLoading(false);
+    }
+  };
+
 
   const fetchAllCourseRequests = async () => {
     setLoading(true);
@@ -133,13 +231,11 @@ const ChangeRequests = () => {
       const courses = coursesResponse.data;
       const batches = batchesResponse.data;
 
-      // Create map of batches to courses
       const batchToCourseMap = {};
       batches.forEach((batch) => {
         batchToCourseMap[batch._id] = batch.course_id;
       });
 
-      // Create map of available batches for each course
       const availableBatchesMap = {};
       batches.forEach((batch) => {
         if (
@@ -157,7 +253,6 @@ const ChangeRequests = () => {
         const student = students.find((s) => s._id === request.studentId);
         const user = users.find((u) => u._id === student?.userId);
 
-        // Find current course via enrolled batch
         let currentCourse = null;
         if (student?.enrolled_batch) {
           const courseId = batchToCourseMap[student.enrolled_batch];
@@ -200,7 +295,6 @@ const ChangeRequests = () => {
     }
   };
 
-  // Find all potential swap candidates for a request
   const findSwapCandidates = (request) => {
     return pendingRequests.filter(
       (req) =>
@@ -210,7 +304,6 @@ const ChangeRequests = () => {
     );
   };
 
-  // Open swap modal with candidates
   const openSwapModal = (request) => {
     const candidates = findSwapCandidates(request);
     setSwapModal({
@@ -221,7 +314,6 @@ const ChangeRequests = () => {
     document.getElementById("swap_modal").showModal();
   };
 
-  // Normal batch change approval
   const handleApprove = async (requestId) => {
     try {
       const response = await axiosSecure.patch(
@@ -240,27 +332,28 @@ const ChangeRequests = () => {
     }
   };
 
-  // Execute the swap
-  const handleSwap = async (selectedCandidateId) => {
-    try {
-      const response = await axiosSecure.patch("/batch-change-requests/swap", {
-        requestId1: swapModal.currentRequest._id,
-        requestId2: selectedCandidateId,
-      });
+  // const handleSwap = async (selectedCandidateId) => {
+  //   setSwapLoading(true);
+  //   try {
+  //     const response = await axiosSecure.patch("/batch-change-requests/swap", {
+  //       requestId1: swapModal.currentRequest._id,
+  //       requestId2: selectedCandidateId,
+  //     });
 
-      if (response.status === 200) {
-        toast.success("Batch swap completed successfully!");
-        document.getElementById("swap_modal").close();
-        setSwapModal({ open: false, currentRequest: null, candidates: [] });
-        fetchAllBatchRequests();
-      }
-    } catch (error) {
-      console.error("Error processing swap:", error);
-      toast.error(error.response?.data?.message || "Failed to process swap");
-    }
-  };
+  //     if (response.status === 200) {
+  //       toast.success("Batch swap completed successfully!");
+  //       document.getElementById("swap_modal").close();
+  //       setSwapModal({ open: false, currentRequest: null, candidates: [] });
+  //       await fetchAllBatchRequests();
+  //     }
+  //   } catch (error) {
+  //     console.error("Error processing swap:", error);
+  //     toast.error(error.response?.data?.message || "Failed to process swap");
+  //   } finally {
+  //     setSwapLoading(false);
+  //   }
+  // };
 
-  // Request rejection
   const handleReject = async (requestId) => {
     try {
       const reason = prompt("Please enter rejection reason (optional):") || "";
@@ -284,20 +377,17 @@ const ChangeRequests = () => {
 
   const openBatchAssignModal = async (request) => {
     try {
-      // 1. Fetch all batches
       const batchesResponse = await axiosSecure.get("/batches");
       const allBatches = batchesResponse.data;
 
-      // 2. Filter batches that match the requested course
       const matchingBatches = allBatches.filter(
         (batch) => batch.course_id === request.requestedCourse
       );
 
-      // 3. Further filter for upcoming or ongoing batches and check seat availability
       const availableBatches = matchingBatches.filter(
         (batch) =>
           ["Upcoming", "Ongoing"].includes(batch.status) &&
-          batch.seat > batch.occupiedSeat // Ensure available seats
+          batch.seat > batch.occupiedSeat
       );
 
       setBatchModal({
@@ -306,42 +396,11 @@ const ChangeRequests = () => {
         availableBatches,
       });
       document.getElementById("batch_assign_modal").showModal();
-
-      // Log for debugging
-      console.log("All batches:", allBatches);
-      console.log("Matching batches:", matchingBatches);
-      console.log("Available batches:", availableBatches);
     } catch (error) {
       console.error("Error in batch assignment:", error);
       toast.error("Failed to load available batches");
     }
   };
-
-  // const handleBatchAssign = async () => {
-  //   try {
-  //     const selectElement = document.getElementById("batch_select");
-  //     const selectedBatchId = selectElement.value;
-
-  //     if (!selectedBatchId) {
-  //       toast.error("Please select a batch");
-  //       return;
-  //     }
-
-  //     const response = await axiosSecure.patch(
-  //       `/course-change-requests/${batchModal.currentRequest._id}/assign-batch`,
-  //       { batchId: selectedBatchId }
-  //     );
-
-  //     if (response.status === 200) {
-  //       toast.success("Batch assigned successfully");
-  //       document.getElementById("batch_assign_modal").close();
-  //       fetchAllCourseRequests(); // Refresh the list
-  //     }
-  //   } catch (error) {
-  //     console.error("Error assigning batch:", error);
-  //     toast.error(error.response?.data?.message || "Failed to assign batch");
-  //   }
-  // };
 
   const handleBatchAssign = async () => {
     try {
@@ -353,7 +412,6 @@ const ChangeRequests = () => {
         return;
       }
 
-      // Disable button during processing
       selectElement.disabled = true;
       document.querySelector(
         "#batch_assign_modal .btn-primary"
@@ -369,8 +427,6 @@ const ChangeRequests = () => {
       fetchAllCourseRequests();
     } catch (error) {
       console.error("Assignment error:", error);
-
-      // Specific handling for already processed requests
       if (error.response?.data?.message?.includes("already processed")) {
         toast.error("This request was already processed. Refreshing data...");
         document.getElementById("batch_assign_modal").close();
@@ -381,7 +437,6 @@ const ChangeRequests = () => {
         toast.error("Failed to process approval. Please try again.");
       }
     } finally {
-      // Re-enable inputs
       const selectElement = document.getElementById("batch_select");
       if (selectElement) selectElement.disabled = false;
       const approveBtn = document.querySelector(
@@ -393,40 +448,49 @@ const ChangeRequests = () => {
 
   const handleRejectCourse = async (requestId) => {
     try {
-      const reason =
-        window.prompt("Please enter rejection reason (optional):") || "";
-
-      // If user clicks cancel in the prompt
+      const reason = window.prompt("Please enter rejection reason (optional):") || "";
       if (reason === null) return;
-
+  
+      setLoading(true);
+      
       const response = await axiosSecure.patch(
-        `/api/course-change-requests/${requestId}/reject`,
+        `/course-change-requests/${requestId}/reject`,
         { reason }
       );
-
+  
       if (response.data.success) {
         toast.success(response.data.message);
-        fetchAllCourseRequests(); // Refresh the list
+        // Optimistic update - remove the rejected request immediately
+        setPendingCourseRequests(prev => 
+          prev.filter(req => req._id !== requestId)
+        );
       } else {
-        toast.error(response.data.message);
+        // Handle specific error cases
+        if (response.data.code === "REQUEST_ALREADY_PROCESSED") {
+          // Request was already processed elsewhere - refresh the list
+          toast.info("Request status was updated elsewhere. Refreshing data...");
+          await fetchAllCourseRequests();
+        } else {
+          toast.error(response.data.message);
+        }
       }
     } catch (error) {
       console.error("Rejection error:", error);
-
       if (error.response) {
-        if (error.response.status === 404) {
-          toast.error("Request not found - it may have already been processed");
-          fetchAllCourseRequests(); // Refresh to update status
-        } else if (error.response.status === 400) {
-          toast.error("Invalid request ID");
+        if (error.response.status === 409) {
+          // Conflict - request already processed
+          toast.info("Request was already processed. Refreshing data...");
+          await fetchAllCourseRequests();
         } else {
           toast.error(
-            error.response.data.message || "Failed to reject request"
+            error.response.data?.message || "Failed to reject request"
           );
         }
       } else {
         toast.error("Network error - please check your connection");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -442,7 +506,6 @@ const ChangeRequests = () => {
               Dashboard
             </Link>
           </li>
-
           <li>
             <Link
               to="/dashboard/courseAssignment"
@@ -455,12 +518,11 @@ const ChangeRequests = () => {
         </ul>
       </div>
 
-
       <h1 className="text-xl font-bold lg:text-xl text-center text-gray-800 mb-6">
         Change Requests Management
       </h1>
 
-      {/* Swap Confirmation Modal - Redesigned */}
+      {/* Swap Modal */}
       <dialog id="swap_modal" className="modal">
         <div className="modal-box max-w-md bg-white rounded-lg shadow-xl">
           <div className="flex justify-between items-center border-b pb-3">
@@ -470,6 +532,7 @@ const ChangeRequests = () => {
             <button
               onClick={() => document.getElementById("swap_modal").close()}
               className="text-gray-500 hover:text-gray-700"
+              disabled={swapLoading}
             >
               ✕
             </button>
@@ -501,7 +564,12 @@ const ChangeRequests = () => {
               </div>
             </div>
 
-            {swapModal.candidates.length > 0 ? (
+            {swapLoading ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <span className="loading loading-spinner loading-lg text-blue-600"></span>
+                <p className="mt-4 text-sm text-gray-600">Processing swap...</p>
+              </div>
+            ) : swapModal.candidates.length > 0 ? (
               <>
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
@@ -511,6 +579,7 @@ const ChangeRequests = () => {
                     className="select select-bordered w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     defaultValue=""
                     id="swap_candidate_select"
+                    disabled={swapLoading}
                   >
                     <option value="" disabled>
                       Choose a student
@@ -530,6 +599,7 @@ const ChangeRequests = () => {
                       document.getElementById("swap_modal").close()
                     }
                     className="btn btn-ghost"
+                    disabled={swapLoading}
                   >
                     Cancel
                   </button>
@@ -541,15 +611,21 @@ const ChangeRequests = () => {
                       const selectedId = selectElement?.value;
                       if (selectedId) {
                         handleSwap(selectedId);
-                        document.getElementById("swap_modal").close();
                       } else {
                         toast.error("Please select a student to swap with");
                       }
                     }}
                     className="btn btn-primary flex items-center gap-2"
+                    disabled={swapLoading}
                   >
-                    <FaExchangeAlt />
-                    Confirm Swap
+                    {swapLoading ? (
+                      <span className="loading loading-spinner loading-sm"></span>
+                    ) : (
+                      <>
+                        <FaExchangeAlt />
+                        Confirm Swap
+                      </>
+                    )}
                   </button>
                 </div>
               </>
@@ -570,7 +646,7 @@ const ChangeRequests = () => {
         </form>
       </dialog>
 
-      {/* Batch Assignment Modal - Redesigned */}
+      {/* Batch Assignment Modal */}
       <dialog id="batch_assign_modal" className="modal">
         <div className="modal-box max-w-md bg-white rounded-lg shadow-xl">
           <div className="flex justify-between items-center border-b pb-3">
@@ -702,6 +778,11 @@ const ChangeRequests = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                     {swapLoading && (
+      <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    )}
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-blue-950">
                         <tr>
@@ -726,111 +807,103 @@ const ChangeRequests = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {pendingRequests.length > 0 ? (
-                          pendingRequests.map((req, index) => {
-                            const swapCandidates = findSwapCandidates(req);
-                            const canSwap = swapCandidates.length > 0;
+                        {pendingRequests.map((req, index) => {
+                          const swapCandidates = findSwapCandidates(req);
+                          const canSwap = swapCandidates.length > 0;
 
-                            return (
-                              <tr key={req._id} className="hover:bg-blue-50">
-                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
-                                  {index + 1}
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap">
-                                  <div className="flex items-center">
-                                    <div className="">
-                                      <div className="text-sm font-medium text-gray-900">
-                                        {req.studentInfo?.name || "Unknown"}
-                                      </div>
-                                      <div className="text-sm text-gray-500">
-                                        {req.studentInfo?.email || ""}
-                                      </div>
+                          return (
+                            <tr
+                              key={req._id}
+                              className={`hover:bg-blue-50 ${
+                                swapLoading ? "opacity-70" : ""
+                              }`}
+                            >
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {index + 1}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {req.studentInfo?.name || "Unknown"}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      {req.studentInfo?.email || ""}
                                     </div>
                                   </div>
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap">
-                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                    {req.currentBatchInfo?.batchName || "N/A"}
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                  {req.currentBatchInfo?.batchName || "N/A"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                  {req.requestedBatchInfo?.batchName || "N/A"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                {req.seatsAvailable ? (
+                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Available
                                   </span>
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap">
-                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                    {req.requestedBatchInfo?.batchName || "N/A"}
+                                ) : (
+                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    Full
                                   </span>
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap">
-                                  {req.seatsAvailable ? (
-                                    <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                      Available
-                                    </span>
-                                  ) : (
-                                    <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                      Full
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                  <div className="flex justify-end space-x-2">
-                                    {req.seatsAvailable && (
-                                      <button
-                                        onClick={() => handleApprove(req._id)}
-                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                      >
-                                        Approve
-                                      </button>
-                                    )}
-                                    {canSwap && (
-                                      <button
-                                        onClick={() => openSwapModal(req)}
-                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                                        title="Swap with another student"
-                                      >
-                                        <FaExchangeAlt className="h-4 w-4" />
-                                      </button>
-                                    )}
+                                )}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex justify-end space-x-2">
+                                  {req.seatsAvailable && (
                                     <button
-                                      onClick={() => handleReject(req._id)}
-                                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                      onClick={() => handleApprove(req._id)}
+                                      disabled={swapLoading}
+                                      className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${
+                                        swapLoading
+                                          ? "bg-green-400"
+                                          : "bg-green-600 hover:bg-green-700"
+                                      } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
                                     >
-                                      Reject
+                                      {swapLoading ? "..." : "Approve"}
                                     </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan="6"
-                              className="px-4 py-6 text-center text-gray-500"
-                            >
-                              <div className="flex flex-col items-center justify-center">
-                                <svg
-                                  className="w-12 h-12 text-gray-400"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  ></path>
-                                </svg>
-                                <p className="mt-2 text-sm font-medium text-gray-600">
-                                  No pending batch change requests found
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  When students request batch changes, they'll
-                                  appear here
-                                </p>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                                  )}
+
+                                  {canSwap && (
+                                    <button
+                                      onClick={() => openSwapModal(req)}
+                                      className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${
+                                        swapLoading
+                                          ? "bg-yellow-400"
+                                          : "bg-yellow-500 hover:bg-yellow-600"
+                                      } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500`}
+                                      title="Swap with another student"
+                                      disabled={swapLoading}
+                                    >
+                                      {swapLoading ? (
+                                        <span className="loading loading-spinner loading-xs"></span>
+                                      ) : (
+                                        <FaExchangeAlt className="h-4 w-4" />
+                                      )}
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleReject(req._id)}
+                                    disabled={swapLoading}
+                                    className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${
+                                      swapLoading
+                                        ? "bg-red-400"
+                                        : "bg-red-600 hover:bg-red-700"
+                                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500`}
+                                  >
+                                    {swapLoading ? "..." : "Reject"}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -892,102 +965,73 @@ const ChangeRequests = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {pendingCourseRequests.length > 0 ? (
-                          pendingCourseRequests.map((req, index) => (
-                            <tr key={req._id} className="hover:bg-blue-50">
-                              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {index + 1}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="flex-shrink-0 h-10 w-10"></div>
-                                  <div className="">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {req.studentInfo?.name || "Unknown"}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                      {req.studentInfo?.email || ""}
-                                    </div>
+                        {pendingCourseRequests.map((req, index) => (
+                          <tr key={req._id} className="hover:bg-blue-50">
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {index + 1}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10"></div>
+                                <div className="">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {req.studentInfo?.name || "Unknown"}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {req.studentInfo?.email || ""}
                                   </div>
                                 </div>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                  {req.currentCourseInfo?.courseName || "N/A"}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                {req.currentCourseInfo?.courseName || "N/A"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {req.requestedCourseInfo?.courseName || "N/A"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              {req.hasAvailableBatches ? (
+                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                  Available
                                 </span>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                  {req.requestedCourseInfo?.courseName || "N/A"}
+                              ) : (
+                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                  Unavailable
                                 </span>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                {req.hasAvailableBatches ? (
-                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    Available
-                                  </span>
-                                ) : (
-                                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                    Unavailable
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div className="flex justify-end space-x-2">
-                                  <button
-                                    onClick={() => openBatchAssignModal(req)}
-                                    className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${
-                                      req.hasAvailableBatches
-                                        ? "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
-                                        : "bg-gray-400 cursor-not-allowed"
-                                    } focus:outline-none focus:ring-2 focus:ring-offset-2`}
-                                    disabled={!req.hasAvailableBatches}
-                                    title={
-                                      !req.hasAvailableBatches
-                                        ? "No batches available"
-                                        : "Assign batch"
-                                    }
-                                  >
-                                    Assign Batch
-                                  </button>
-                                  <button
-                                    onClick={() => handleRejectCourse(req._id)}
-                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                  >
-                                    Reject
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan="6"
-                              className="px-4 py-6 text-center text-gray-500"
-                            >
-                              <div className="flex flex-col items-center justify-center">
-                                <svg
-                                  className="w-12 h-12 text-gray-400"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                  xmlns="http://www.w3.org/2000/svg"
+                              )}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => openBatchAssignModal(req)}
+                                  className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${
+                                    req.hasAvailableBatches
+                                      ? "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+                                      : "bg-gray-400 cursor-not-allowed"
+                                  } focus:outline-none focus:ring-2 focus:ring-offset-2`}
+                                  disabled={!req.hasAvailableBatches}
+                                  title={
+                                    !req.hasAvailableBatches
+                                      ? "No batches available"
+                                      : "Assign batch"
+                                  }
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  ></path>
-                                </svg>
-                                <p className="mt-2 text-sm font-medium text-gray-600">
-                                  No pending course change requests found
-                                </p>
+                                  Assign Batch
+                                </button>
+                                <button
+                                  onClick={() => handleRejectCourse(req._id)}
+                                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                >
+                                  Reject
+                                </button>
                               </div>
                             </td>
                           </tr>
-                        )}
+                        ))}
                       </tbody>
                     </table>
                   </div>

@@ -87,10 +87,6 @@ export const router = createBrowserRouter([
       element: <PrivateRoute><Dashboard /></PrivateRoute>,
       children: [
 
-        {
-            index: true, // This will automatically redirect when visiting /dashboard
-            element:<DashboardRedirect></DashboardRedirect>
-        },
 
           {
               path: 'adminDashboard',

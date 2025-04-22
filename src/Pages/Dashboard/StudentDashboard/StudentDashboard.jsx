@@ -36,7 +36,7 @@ const StudentDashboard = () => {
             }
           }
         } catch (err) {
-          toast.error("Error fetching student, profile or result data.");
+          console.log("Error fetching student, profile or result data.");
         }
       };
       fetchStudentData();

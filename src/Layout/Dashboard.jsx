@@ -1,5 +1,5 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useContext } from "react";
+import { Link, NavLink, Outlet, useNavigate, Navigate } from "react-router-dom";
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../Providers/AuthProvider";
 import useAdmin from "../hooks/useAdmin";
 import useInstructor from "../hooks/useInstructor";
@@ -29,6 +29,28 @@ const Dashboard = () => {
   const [isAdmin, isAdminLoading] = useAdmin();
   const [isInstructor, isInstructorLoading] = useInstructor();
   const { user, logOut } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [isRedirecting, setIsRedirecting] = useState(true);
+  
+  // Handle initial redirection
+  useEffect(() => {
+    if (isAdminLoading || isInstructorLoading) return;
+    
+    const currentPath = window.location.pathname;
+    
+    // Only redirect if we're at the dashboard root
+    if (currentPath === "/dashboard") {
+      if (isAdmin) {
+        navigate("/dashboard/adminDashboard", { replace: true });
+      } else if (isInstructor) {
+        navigate("/dashboard/instructorDashboard", { replace: true });
+      } else {
+        navigate("/dashboard/studentDashboard", { replace: true });
+      }
+    }
+    
+    setIsRedirecting(false);
+  }, [isAdmin, isInstructor, isAdminLoading, isInstructorLoading, navigate]);
 
   const handleSignOut = () => {
     logOut()
@@ -40,14 +62,14 @@ const Dashboard = () => {
       });
   };
 
-  if (isAdminLoading || isInstructorLoading) {
+  // Show loading while determining role or during redirection
+  if (isAdminLoading || isInstructorLoading || isRedirecting) {
     return (
       <div className="flex justify-center items-center h-screen">
         <span className="loading loading-ring loading-lg"></span>
       </div>
     );
   }
-
 
   const navLinkClass = ({ isActive }) => 
     `flex items-center gap-3 p-3 rounded-lg transition-colors ${

@@ -29,6 +29,7 @@ const EnrollmentRequests = () => {
     batchChange: [],
   });
   const [loadingRequestsStatus, setLoadingRequestsStatus] = useState(true);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (user?._id) {
@@ -317,29 +318,87 @@ const EnrollmentRequests = () => {
   const currentBatchStatus =
     batches.find((b) => b._id === studentData?.enrolled_batch)?.status || "";
 
+  // Add these new cancel functions
+  const handleCancelCourseRequest = async (requestId) => {
+    setIsCancelling(true);
+    try {
+      const response = await axiosSecure.patch(
+        `/course-change-requests/${requestId}/cancel`
+      );
+
+      if (response.data.success) {
+        toast.success("Course change request cancelled successfully!");
+
+        // Update local state immediately
+        setPendingRequests((prev) => ({
+          ...prev,
+          hasAnyPending: false,
+          course: null,
+        }));
+
+        // Refresh the requests list
+        await fetchAllRequests();
+
+        // Optional: Force a slight delay to ensure state updates
+        setTimeout(() => {
+          window.location.reload(); // Only if absolutely necessary
+        }, 500);
+      } else {
+        toast.error(response.data.message || "Failed to cancel request");
+      }
+    } catch (err) {
+      console.error("Error cancelling course request:", err);
+      toast.error(
+        err.response?.data?.message || "Failed to cancel course change request"
+      );
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleCancelBatchRequest = async (requestId) => {
+    try {
+      await axiosSecure.patch(`/batch-change-requests/${requestId}/cancel`);
+      toast.success("Batch change request cancelled successfully!");
+      fetchAllRequests();
+      setPendingRequests((prev) => ({
+        ...prev,
+        hasAnyPending: false,
+        batch: null,
+      }));
+    } catch (err) {
+      console.error("Error cancelling batch request:", err);
+      toast.error("Failed to cancel batch change request");
+    }
+  };
+
   return (
     <div className=" w-[1100px] mx-auto">
-      <div className="flex justify-between items-center mt-3 mb-2">
+      <div className="flex justify-between items-center mt-5 mb-2">
         <h1 className="text-xl font-bold text-gray-800">
           Enrollment Management
         </h1>
         {pendingRequests.hasAnyPending && (
-          <div className="badge badge-lg badge-warning gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            Pending Request
+          <div className="flex items-center gap-3">
+            <div className="badge badge-lg badge-warning gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              Pending Request
+            </div>
+
+       
           </div>
         )}
       </div>
@@ -369,6 +428,7 @@ const EnrollmentRequests = () => {
                 </h4>
                 {allRequests.courseChange.length > 0 ? (
                   <div className="space-y-2">
+                    {/* In the Course Change Requests section */}
                     {allRequests.courseChange.map((request, index) => (
                       <div
                         key={`course-req-${index}`}
@@ -397,17 +457,29 @@ const EnrollmentRequests = () => {
                                 </p>
                               )}
                           </div>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              request.status === "Approved"
-                                ? "bg-green-100 text-green-800"
-                                : request.status === "Rejected"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {request.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                request.status === "Approved"
+                                  ? "bg-green-100 text-green-800"
+                                  : request.status === "Rejected"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {request.status}
+                            </span>
+                            {request.status === "Pending" && (
+                              <button
+                                onClick={() =>
+                                  handleCancelCourseRequest(request._id)
+                                }
+                                className="btn btn-xs btn-error"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -426,6 +498,7 @@ const EnrollmentRequests = () => {
                 </h4>
                 {allRequests.batchChange.length > 0 ? (
                   <div className="space-y-2">
+                    {/* In the Batch Change Requests section */}
                     {allRequests.batchChange.map((request, index) => (
                       <div
                         key={`batch-req-${index}`}
@@ -454,17 +527,29 @@ const EnrollmentRequests = () => {
                                 </p>
                               )}
                           </div>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              request.status === "Approved"
-                                ? "bg-green-100 text-green-800"
-                                : request.status === "Rejected"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {request.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                request.status === "Approved"
+                                  ? "bg-green-100 text-green-800"
+                                  : request.status === "Rejected"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {request.status}
+                            </span>
+                            {request.status === "Pending" && (
+                              <button
+                                onClick={() =>
+                                  handleCancelBatchRequest(request._id)
+                                }
+                                className="btn btn-xs btn-error"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
