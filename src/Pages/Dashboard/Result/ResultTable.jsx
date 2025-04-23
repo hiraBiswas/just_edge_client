@@ -4,7 +4,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import UploadResult from "./UploadResult";
 import { Toaster, toast } from "react-hot-toast";
 import { AuthContext } from "../../../Providers/AuthProvider";
-import { FaPencilAlt as PencilIcon, FaTrash as TrashIcon } from 'react-icons/fa';
+import {
+  FaPencilAlt as PencilIcon,
+  FaTrash as TrashIcon,
+} from "react-icons/fa";
 import {
   Document,
   Page,
@@ -238,9 +241,7 @@ const MyPDFDocument = ({ students, allResults, selectedBatchName }) => {
                 <Text style={styles.tableCell}>{project}</Text>
                 <Text style={styles.tableCell}>{finalExam}</Text>
                 <Text style={styles.tableCell}>{attendance}</Text>
-                <Text style={styles.tableCell}>
-                  {hasResults ? total : "N/A"}
-                </Text>
+                <Text style={styles.tableCell}>{hasResults ? total : "0"}</Text>
                 <Text style={styles.tableCell}>{status}</Text>
               </View>
             );
@@ -335,17 +336,19 @@ const ResultTable = () => {
   // Open Edit Modal
   const openEditModal = (studentResults) => {
     setEditStudent(studentResults);
-
-    // Extract editable fields dynamically (excluding fixed fields)
+  
+    // Exclude fields not meant to be edited
     const editableFields = Object.keys(studentResults)
       .filter(
-        (key) => !["_id", "batchId", "studentID", "createdAt"].includes(key)
+        (key) =>
+          !["_id", "batchId", "studentID", "createdAt", "isPublished", "isDeleted"].includes(key)
       )
       .map((key) => ({ field: key, value: studentResults[key] ?? "" }));
-
+  
     setEditedExams(editableFields);
     document.getElementById("edit_modal").showModal();
   };
+  
 
   // Handle Exam Change
   const handleExamChange = (index, newMarks) => {
@@ -492,171 +495,193 @@ const ResultTable = () => {
                 )}
               </PDFDownloadLink>
             </div>
-         
-  <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-blue-950">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg">
-              SI
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-              Student Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-              Student ID
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-              Assignment
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-              Mid Term
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-              Project
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-              Final Exam
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-              Attendance
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-              Total
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider rounded-tr-lg">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {students.length === 0 ? (
-            <tr>
-              <td colSpan="11" className="px-6 py-8 text-center text-gray-500">
-                <div className="flex flex-col items-center justify-center">
-                  <svg
-                    className="w-12 h-12 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
-                  <p className="mt-2 text-sm font-medium text-gray-600">
-                    No students available
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Add students to get started
-                  </p>
-                </div>
-              </td>
-            </tr>
-          ) : (
-            students.map((student, index) => {
-              const studentResults = allResults.find(
-                (result) => result.studentID === student.studentID
-              );
 
-              const assignmentMarks = studentResults?.Assignment ?? "-";
-              const midTermMarks = studentResults?.Mid_Term ?? "-";
-              const projectMarks = studentResults?.Project ?? "-";
-              const finalExamMarks = studentResults?.Final_Exam ?? "-";
-              const attendanceMarks = studentResults?.Attendance ?? "-";
+            <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-blue-950">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg">
+                        SI
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                        Student Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                        Student ID
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                        Assignment
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                        Mid Term
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                        Project
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                        Final Exam
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                        Attendance
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider rounded-tr-lg">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {students.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="11"
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
+                          <div className="flex flex-col items-center justify-center">
+                            <svg
+                              className="w-12 h-12 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                              />
+                            </svg>
+                            <p className="mt-2 text-sm font-medium text-gray-600">
+                              No students available
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Add students to get started
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      students.map((student, index) => {
+                        const studentResults = allResults.find(
+                          (result) => result.studentID === student.studentID
+                        );
 
-              const hasResults = studentResults !== undefined;
-              const hasNullField =
-                hasResults &&
-                (studentResults.Assignment === null ||
-                  studentResults.Mid_Term === null ||
-                  studentResults.Project === null ||
-                  studentResults.Final_Exam === null ||
-                  studentResults.Attendance === null);
+                        const assignmentMarks =
+                          studentResults?.Assignment ?? "-";
+                        const midTermMarks = studentResults?.Mid_Term ?? "-";
+                        const projectMarks = studentResults?.Project ?? "-";
+                        const finalExamMarks =
+                          studentResults?.Final_Exam ?? "-";
+                        const attendanceMarks =
+                          studentResults?.Attendance ?? "-";
 
-              const total = hasResults
-                ? (studentResults.Assignment || 0) +
-                  (studentResults.Mid_Term || 0) +
-                  (studentResults.Project || 0) +
-                  (studentResults.Final_Exam || 0) +
-                  (studentResults.Attendance || 0)
-                : 0;
+                        const hasResults = studentResults !== undefined;
+                        const hasNullField =
+                          hasResults &&
+                          (studentResults.Assignment === null ||
+                            studentResults.Mid_Term === null ||
+                            studentResults.Project === null ||
+                            studentResults.Final_Exam === null ||
+                            studentResults.Attendance === null);
 
-              let status = "Fail";
-              if (hasResults && !hasNullField && total >= 60) {
-                status = "Pass";
-              }
+                        const total = hasResults
+                          ? (studentResults.Assignment || 0) +
+                            (studentResults.Mid_Term || 0) +
+                            (studentResults.Project || 0) +
+                            (studentResults.Final_Exam || 0) +
+                            (studentResults.Attendance || 0)
+                          : 0;
 
-              return (
-                <tr key={student.studentID} className="hover:bg-blue-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {index + 1}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {student.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {student.studentID}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
-                    {assignmentMarks}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
-                    {midTermMarks}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
-                    {projectMarks}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
-                    {finalExamMarks}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
-                    {attendanceMarks}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-gray-900">
-                    {hasResults ? total : "N/A"}
-                  </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm text-center font-semibold ${status === "Pass" ? "text-green-600" : "text-red-600"}`}>
-                    {status}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center justify-center space-x-2">
-                      {studentResults && (
-                        <>
-                          <button
-                            onClick={() => openEditModal(studentResults)}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Edit"
+                        let status = "Fail";
+                        if (hasResults && !hasNullField && total >= 60) {
+                          status = "Pass";
+                        }
+
+                        return (
+                          <tr
+                            key={student.studentID}
+                            className="hover:bg-blue-50"
                           >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteStudent(studentResults._id)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Delete"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {index + 1}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {student.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {student.studentID}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                              {assignmentMarks}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                              {midTermMarks}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                              {projectMarks}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                              {finalExamMarks}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
+                              {attendanceMarks}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-gray-900">
+                              {hasResults ? total : "0"}
+                            </td>
+                            <td
+                              className={`px-6 py-4 whitespace-nowrap text-sm text-center font-semibold ${
+                                status === "Pass"
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {status}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div className="flex items-center justify-center space-x-2">
+                                {studentResults ? (
+                                  <>
+                                    <button
+                                      onClick={() =>
+                                        openEditModal(studentResults)
+                                      }
+                                      className="text-blue-600 hover:text-blue-800"
+                                      title="Edit"
+                                    >
+                                      <PencilIcon className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        handleDeleteStudent(studentResults._id)
+                                      }
+                                      className="text-red-600 hover:text-red-800"
+                                      title="Delete"
+                                    >
+                                      <TrashIcon className="h-4 w-4" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-gray-400 italic text-xs">
+                                    Not Uploaded
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
@@ -674,7 +699,7 @@ const ResultTable = () => {
             </h3>
 
             <p className="text-md text-center text-gray-600 mb-2">
-              <strong>Batch ID:</strong> {editStudent.batchId} <br />
+              {/* <strong>Batch ID:</strong> {editStudent.batchId} <br /> */}
               <strong>Student ID:</strong> {editStudent.studentID}
             </p>
 
