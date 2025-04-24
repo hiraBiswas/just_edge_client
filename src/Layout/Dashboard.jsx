@@ -14,6 +14,7 @@ import { ImProfile } from "react-icons/im";
 import { AiOutlineProfile } from "react-icons/ai";
 import {
   Users, 
+  ClipboardCheck,
   BookOpenCheck, 
   BarChart4,
   FileText,
@@ -109,6 +110,7 @@ const Dashboard = () => {
                 <li><NavLink className={navLinkClass} to="/dashboard/instructorManagement"><UserCheck /> Instructor Management</NavLink></li>
                 <li><NavLink className={navLinkClass} to="/dashboard/batchManagement"><Users /> Batch Management</NavLink></li>
                 <li><NavLink className={navLinkClass} to="/dashboard/courseAssignment"><Bookmark /> Batch Assignment</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/publishResult"><ClipboardCheck />Result Management</NavLink></li>
                 <li><NavLink className={navLinkClass} to="/dashboard/noticeManagement"><Bell /> Notice Management</NavLink></li>
               </>
             ) : isInstructor ? (

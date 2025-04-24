@@ -42,6 +42,7 @@ import ChangeRequests from "../Pages/Dashboard/CourseAssignment/ChangeRequests/C
 import ProfileAndDocumentUpdate from "../Pages/Dashboard/StudentDashboard/ProfileAndDocumentUpdate";
 import ResultDisplay from "../Pages/Dashboard/StudentDashboard/ResultDisplay";
 import BatchInfo from "../Pages/Dashboard/InstructorDashboard/BatchInfo";
+import PublishResult from "../Pages/Dashboard/ResultManagement/PublishResult";
 
 export const router = createBrowserRouter([
   {
@@ -118,6 +119,10 @@ export const router = createBrowserRouter([
             element: <AdminRoute><NoticeManagement /></AdminRoute>
         },
 
+        {
+            path: 'publishResult',
+            element: <AdminRoute><PublishResult /></AdminRoute>
+        },
     
           {
               path: 'courseDetails/:id',
