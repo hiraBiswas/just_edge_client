@@ -18,18 +18,27 @@ const EnrollmentRequests = () => {
   const [routineData, setRoutineData] = useState([]);
   const [instructorData, setInstructorData] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [canRequestBatchChange, setCanRequestBatchChange] = useState(true); // Default to true
+  const [requestStatus, setRequestStatus] = useState(null); // Track the status separately
   const [pendingRequests, setPendingRequests] = useState({
     hasAnyPending: false,
-    course: null,
-    batch: null,
+    status: null,
   });
+  const [batchRequestStatus, setBatchRequestStatus] = useState({
+    canRequest: true,
+    existingStatus: null,
+  });
+
+  const [courseRequestStatus, setCourseRequestStatus] = useState({
+    canRequest: true,
+    existingStatus: null,
+  });
+
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [allRequests, setAllRequests] = useState({
     courseChange: [],
     batchChange: [],
   });
-  const [loadingRequestsStatus, setLoadingRequestsStatus] = useState(true);
-  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (user?._id) {
@@ -38,6 +47,7 @@ const EnrollmentRequests = () => {
         const foundStudent = res.data.find((s) => s.userId === user._id);
         if (foundStudent) {
           setStudentData(foundStudent);
+          console.log(studentData);
           setCurrentPrefCourse(foundStudent.prefCourse);
 
           // Get user data
@@ -198,15 +208,17 @@ const EnrollmentRequests = () => {
       )?.courseName
     : "N/A";
 
-  console.log(enrolledBatchName);
-  console.log(enrolledCourseName);
-  console.log(preferredCourseName);
-
   const handleCourseChangeRequest = async () => {
     if (!selectedCourse) {
       toast.error("Please select a course");
       return;
     }
+
+    // Immediately disable buttons
+    setCourseRequestStatus({
+      canRequest: false,
+      existingStatus: "Pending",
+    });
 
     const courseRequest = {
       studentId: studentData._id,
@@ -220,19 +232,16 @@ const EnrollmentRequests = () => {
       toast.success("Course change request submitted successfully!");
       document.getElementById("course_modal").close();
 
-      // Refresh data
-      await fetchAllRequests();
-      setPendingRequests((prev) => ({
-        ...prev,
-        hasAnyPending: true,
-        course: courseRequest,
-      }));
-
-      // Reset selection
-      setSelectedCourse("");
+      // Verify with backend
+      await checkAllRequestStatus();
     } catch (err) {
-      console.error("Error submitting course change request:", err);
-      toast.error("Failed to submit course change request");
+      console.error("Error submitting request:", err);
+      toast.error("Failed to submit request");
+      // Re-enable if failed
+      setCourseRequestStatus({
+        canRequest: true,
+        existingStatus: null,
+      });
     }
   };
 
@@ -259,6 +268,12 @@ const EnrollmentRequests = () => {
       return;
     }
 
+    // Immediately disable buttons
+    setBatchRequestStatus({
+      canRequest: false,
+      existingStatus: "Pending",
+    });
+
     const batchRequest = {
       studentId: studentData._id,
       requestedBatch: selectedBatch,
@@ -271,19 +286,16 @@ const EnrollmentRequests = () => {
       toast.success("Batch change request submitted successfully!");
       document.getElementById("batch_modal").close();
 
-      // Refresh data
-      await fetchAllRequests();
-      setPendingRequests((prev) => ({
-        ...prev,
-        hasAnyPending: true,
-        batch: batchRequest,
-      }));
-
-      // Reset selection
-      setSelectedBatch("");
+      // Verify with backend
+      await checkAllRequestStatus();
     } catch (err) {
-      console.error("Error submitting batch change request:", err);
-      toast.error("Failed to submit batch change request!");
+      console.error("Error submitting request:", err);
+      toast.error("Failed to submit request");
+      // Re-enable if failed
+      setBatchRequestStatus({
+        canRequest: true,
+        existingStatus: null,
+      });
     }
   };
 
@@ -320,57 +332,79 @@ const EnrollmentRequests = () => {
 
   // Add these new cancel functions
   const handleCancelCourseRequest = async (requestId) => {
-    setIsCancelling(true);
     try {
-      const response = await axiosSecure.patch(
-        `/course-change-requests/${requestId}/cancel`
-      );
+      await axiosSecure.patch(`/course-change-requests/${requestId}/cancel`);
+      toast.success("Course change request cancelled successfully!");
 
-      if (response.data.success) {
-        toast.success("Course change request cancelled successfully!");
+      // Immediately check status to update buttons
+      await checkAllRequestStatus();
 
-        // Update local state immediately
-        setPendingRequests((prev) => ({
-          ...prev,
-          hasAnyPending: false,
-          course: null,
-        }));
-
-        // Refresh the requests list
-        await fetchAllRequests();
-
-        // Optional: Force a slight delay to ensure state updates
-        setTimeout(() => {
-          window.location.reload(); // Only if absolutely necessary
-        }, 500);
-      } else {
-        toast.error(response.data.message || "Failed to cancel request");
-      }
+      // Close modal if needed
+      document.getElementById("request_history_modal").close();
     } catch (err) {
-      console.error("Error cancelling course request:", err);
-      toast.error(
-        err.response?.data?.message || "Failed to cancel course change request"
-      );
-    } finally {
-      setIsCancelling(false);
+      toast.error("Failed to cancel request");
     }
   };
 
   const handleCancelBatchRequest = async (requestId) => {
     try {
       await axiosSecure.patch(`/batch-change-requests/${requestId}/cancel`);
+  
+
+      // Immediately check status to update buttons
+      await checkAllRequestStatus();
+
+      // Close modal if needed
+      document.getElementById("request_history_modal").close();
       toast.success("Batch change request cancelled successfully!");
-      fetchAllRequests();
-      setPendingRequests((prev) => ({
-        ...prev,
-        hasAnyPending: false,
-        batch: null,
-      }));
     } catch (err) {
-      console.error("Error cancelling batch request:", err);
-      toast.error("Failed to cancel batch change request");
+      toast.error("Failed to cancel request");
     }
   };
+
+  const checkAllRequestStatus = async () => {
+    try {
+      if (!user?._id) return;
+
+      const [batchRes, courseRes] = await Promise.all([
+        axiosSecure.get(`/batch-change-requests/status/${user._id}`),
+        axiosSecure.get(`/course-change-requests/status/${user._id}`),
+      ]);
+
+      const batchPending = batchRes.data?.existingStatus === "Pending";
+      const coursePending = courseRes.data?.existingStatus === "Pending";
+      const hasAnyPending = batchPending || coursePending;
+
+      // Update all states in one go
+      setPendingRequests({
+        hasAnyPending,
+        course: coursePending ? courseRes.data : null,
+        batch: batchPending ? batchRes.data : null,
+      });
+
+      setBatchRequestStatus({
+        canRequest: !hasAnyPending && (batchRes.data?.canRequest ?? true),
+        existingStatus: batchRes.data?.existingStatus || null,
+      });
+
+      setCourseRequestStatus({
+        canRequest: !hasAnyPending && (courseRes.data?.canRequest ?? true),
+        existingStatus: courseRes.data?.existingStatus || null,
+      });
+    } catch (error) {
+      console.error("Status check failed:", error);
+      // Fail-safe: Enable buttons if API fails
+      setBatchRequestStatus({ canRequest: true, existingStatus: null });
+      setCourseRequestStatus({ canRequest: true, existingStatus: null });
+      setPendingRequests({ hasAnyPending: false, course: null, batch: null });
+    }
+  };
+
+  useEffect(() => {
+    if (user?._id) {
+      checkAllRequestStatus();
+    }
+  }, [user?._id]);
 
   return (
     <div className=" w-[1100px] mx-auto">
@@ -397,8 +431,6 @@ const EnrollmentRequests = () => {
               </svg>
               Pending Request
             </div>
-
-       
           </div>
         )}
       </div>
@@ -650,113 +682,62 @@ const EnrollmentRequests = () => {
 
               <div className="flex flex-wrap justify-between items-center gap-3">
                 <div className="flex flex-wrap gap-3">
-                  {studentData?.enrolled_batch ? (
-                    <>
-                      <button
-                        className={`btn btn-primary gap-2 ${
-                          pendingRequests.hasAnyPending ||
-                          currentBatchStatus === "Completed"
-                            ? "btn-disabled"
-                            : ""
-                        }`}
-                        onClick={() =>
-                          !pendingRequests.hasAnyPending &&
-                          document.getElementById("course_modal").showModal()
-                        }
-                        disabled={
-                          pendingRequests.hasAnyPending ||
-                          currentBatchStatus === "Completed"
-                        }
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                          />
-                        </svg>
-                        Change Course
-                      </button>
-                      <button
-                        className={`btn btn-outline btn-primary gap-2 ${
-                          pendingRequests.hasAnyPending ||
-                          currentBatchStatus === "Completed"
-                            ? "btn-disabled"
-                            : ""
-                        }`}
-                        onClick={() =>
-                          !pendingRequests.hasAnyPending &&
-                          document.getElementById("batch_modal").showModal()
-                        }
-                        disabled={
-                          pendingRequests.hasAnyPending ||
-                          currentBatchStatus === "Completed"
-                        }
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                          />
-                        </svg>
-                        Change Batch
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      className={`btn btn-warning gap-2 ${
-                        pendingRequests.hasAnyPending ? "btn-disabled" : ""
-                      }`}
-                      onClick={() =>
-                        !pendingRequests.hasAnyPending &&
-                        document.getElementById("my_modal_3").showModal()
-                      }
-                      disabled={pendingRequests.hasAnyPending}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                        />
-                      </svg>
-                      Change Preferred Course
-                    </button>
-                  )}
-                </div>
-
-                {/* View Requests Button (only for enrolled students) */}
-                {studentData?.enrolled_batch && (
+                  {/* Course Change Button */}
                   <button
-                    className="btn btn-ghost text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 gap-2"
+                    className={`btn btn-primary gap-2 ${
+                      pendingRequests.hasAnyPending ||
+                      !courseRequestStatus.canRequest ||
+                      currentBatchStatus === "Completed"
+                        ? "btn-disabled"
+                        : ""
+                    }`}
                     onClick={() => {
-                      fetchAllRequests();
-                      document
-                        .getElementById("request_history_modal")
-                        .showModal();
+                      if (courseRequestStatus.canRequest) {
+                        document.getElementById("course_modal").showModal();
+                      }
                     }}
+                    disabled={
+                      pendingRequests.hasAnyPending ||
+                      !courseRequestStatus.canRequest ||
+                      currentBatchStatus === "Completed"
+                    }
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                    Change Course
+                  </button>
+
+                  {/* Batch Change Button */}
+                  <button
+                    className={`btn btn-outline btn-primary gap-2 ${
+                      pendingRequests.hasAnyPending ||
+                      !batchRequestStatus.canRequest ||
+                      currentBatchStatus === "Completed"
+                        ? "btn-disabled"
+                        : ""
+                    }`}
+                    onClick={() => {
+                      if (batchRequestStatus.canRequest) {
+                        document.getElementById("batch_modal").showModal();
+                      }
+                    }}
+                    disabled={
+                      pendingRequests.hasAnyPending ||
+                      !batchRequestStatus.canRequest ||
+                      currentBatchStatus === "Completed"
+                    }
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -772,9 +753,36 @@ const EnrollmentRequests = () => {
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                       />
                     </svg>
+                    Change Batch
+                  </button>
+
+                
+                </div>
+                  {/* New View Requests Button */}
+                  <button
+                    className="btn btn-ghost gap-2"
+                    onClick={() =>
+                      document
+                        .getElementById("request_history_modal")
+                        .showModal()
+                    }
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
                     View Requests
                   </button>
-                )}
               </div>
             </>
           )}
