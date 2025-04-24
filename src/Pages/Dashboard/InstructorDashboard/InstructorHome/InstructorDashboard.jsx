@@ -27,8 +27,9 @@ const InstructorDashboard = () => {
   const [activeSessions, setActiveSessions] = useState({});
   const [timeRemaining, setTimeRemaining] = useState({});
   const [batchStats, setBatchStats] = useState({});
-  const MAX_CLASS_DURATION = 3 * 60 * 60 * 1000; // 3 hours
-  const WARNING_THRESHOLD = 30 * 60 * 1000; // 30 minute warning
+  const MAX_CLASS_DURATION = 4 * 60 * 60 * 1000; // 3 hours
+  const [todaysClasses, setTodaysClasses] = useState([]);
+
 
     // Filter batches by status
     const ongoingBatches = assignedBatches.filter(
@@ -41,45 +42,168 @@ const InstructorDashboard = () => {
       (batch) => batch.status === "Completed"
     );
 
-  // Define endSession with useCallback at the top level, not inside an effect
-  const endSession = useCallback(
-    async (batchId, autoEnded = false) => {
+
+    const saveSessionToStorage = (batchId, sessionData) => {
+      const sessions = JSON.parse(localStorage.getItem('activeSessions')) || {};
+      sessions[batchId] = sessionData;
+      localStorage.setItem('activeSessions', JSON.stringify(sessions));
+    };
+   
+    const removeSessionFromStorage = (batchId) => {
+      const sessions = JSON.parse(localStorage.getItem('activeSessions')) || {};
+      delete sessions[batchId];
+      localStorage.setItem('activeSessions', JSON.stringify(sessions));
+    };
+  
+    // Load sessions from localStorage on component mount
+    useEffect(() => {
+      const storedSessions = JSON.parse(localStorage.getItem("activeSessions")) || {};
+      setActiveSessions(storedSessions);
+    }, []);
+
+    const handleToggleChange = async (batchId) => {
       try {
-        // End the session logic
-        setActiveSessions((prev) => {
+        const today = new Date().toISOString().split("T")[0];
+        
+        const alreadyRecorded = todaysClasses.some(cls => 
+          cls.batchId === batchId && cls.date === today
+        );
+    
+        if (alreadyRecorded) {
+          toast.error("Today's class already recorded for this batch.");
+          return;
+        }
+    
+        if (activeSessions[batchId]) {
+          // Ending the session
+          await endSession(batchId);
+        } else {
+          // Starting a new session
+          const startTime = new Date().toISOString();
+          setActiveSessions(prev => ({
+            ...prev,
+            [batchId]: { startTime },
+          }));
+          saveSessionToStorage(batchId, { startTime });
+          toast("Class session started", { icon: "⏱️" });
+        }
+      } catch (err) {
+        console.error("Error handling toggle:", err);
+        toast.error("Failed to record class. Please try again.");
+      }
+    };
+
+    
+    
+
+    useEffect(() => {
+      const storedSessions = JSON.parse(localStorage.getItem('activeSessions')) || {};
+      // Convert stored strings to proper objects if needed
+      const parsedSessions = Object.entries(storedSessions).reduce((acc, [key, value]) => {
+        acc[key] = typeof value === 'string' ? { startTime: value } : value;
+        return acc;
+      }, {});
+      setActiveSessions(parsedSessions);
+    }, []);
+    
+    
+    const endSession = async (batchId) => {
+      const session = activeSessions[batchId];
+      
+      if (!session || !session.startTime) {
+        console.warn("No valid session start time found. Skipping.");
+        removeSessionFromStorage(batchId);
+        setActiveSessions(prev => {
           const newSessions = { ...prev };
           delete newSessions[batchId];
           return newSessions;
         });
-
-        setTimeRemaining((prev) => {
-          const newRemaining = { ...prev };
-          delete newRemaining[batchId];
-          return newRemaining;
-        });
-
-        if (autoEnded) {
-          toast.warning(
-            "Class time limit reached. Session ended automatically."
-          );
-        } else {
-          toast.success("Class session ended successfully");
-        }
-
-        // You can add API call here to record session end if needed
-        // await axiosSecure.post("/class-sessions/end", {
-        //   batchId,
-        //   instructorId: instructorData?._id,
-        //   endTime: new Date().toISOString()
-        // });
-      } catch (err) {
-        console.error("Error ending session:", err);
-        toast.error("Failed to end session. Please try again.");
+        return;
       }
-    },
-    [axiosSecure]
-  ); // Add any dependencies needed
-
+    
+      const endTime = new Date().toISOString();
+      const startTime = session.startTime;
+      const today = startTime.split("T")[0];
+    
+      const classData = {
+        batchId,
+        instructorId: instructorData._id,
+        date: today,
+        startTime,
+        endTime,
+        duration: (new Date(endTime) - new Date(startTime)) / (1000 * 60),
+      };
+    
+      try {
+        setSubmitting(true);
+        const res = await axiosSecure.post('/classes', classData);
+        
+        if (res?.data?.success) {
+          // তাৎক্ষণিকভাবে todaysClasses আপডেট করুন
+          const newClass = {
+            ...res.data.savedClass,
+            batchId: batchId,
+            date: today
+          };
+          
+          setTodaysClasses(prev => [...prev, newClass]);
+          
+          // ক্লাস প্রগ্রেসও আপডেট করুন
+          setClassProgress(prev => {
+            const currentBatchProgress = prev[batchId] || { completed: 0, total: 27, percentage: 0 };
+            const newCompleted = currentBatchProgress.completed + 1;
+            const newPercentage = Math.round((newCompleted / currentBatchProgress.total) * 100);
+            
+            return {
+              ...prev,
+              [batchId]: {
+                ...currentBatchProgress,
+                completed: newCompleted,
+                percentage: newPercentage
+              }
+            };
+          });
+          
+          toast.success("Class session saved successfully");
+        }
+      } catch (err) {
+        console.error("Error saving class:", err);
+        toast.error("Failed to save class session");
+      } finally {
+        removeSessionFromStorage(batchId);
+        setActiveSessions(prev => {
+          const newSessions = { ...prev };
+          delete newSessions[batchId];
+          return newSessions;
+        });
+        setSubmitting(false);
+      }
+    };
+    
+    useEffect(() => {
+      const fetchTodaysClasses = async () => {
+        try {
+          const today = new Date().toISOString().split("T")[0];
+          const res = await axiosSecure.get(`/classes?date=${today}&instructorId=${instructorData._id}`);
+          
+          // Ensure each class has a batchId
+          const classesWithBatchId = res.data.map(cls => ({
+            ...cls,
+            batchId: cls.batchId || cls.batch?._id || null
+          })).filter(cls => cls.batchId); // Filter out classes without batchId
+          
+          setTodaysClasses(classesWithBatchId);
+        } catch (err) {
+          console.error("Error fetching today's classes:", err);
+        }
+      };
+    
+      if (instructorData?._id) {
+        fetchTodaysClasses();
+      }
+    }, [instructorData]);
+    
+    
   useEffect(() => {
     if (completedBatches.length > 0) {
       const fetchBatchStats = async () => {
@@ -249,6 +373,18 @@ const InstructorDashboard = () => {
     return () => clearInterval(timer);
   }, [activeSessions, endSession]); // Include endSession as a dependency
 
+
+  useEffect(() => {
+    const storedSessions = JSON.parse(localStorage.getItem('activeSessions')) || {};
+    // Convert stored strings to proper objects if needed
+    const parsedSessions = Object.entries(storedSessions).reduce((acc, [key, value]) => {
+      acc[key] = typeof value === 'string' ? { startTime: value } : value;
+      return acc;
+    }, {});
+    setActiveSessions(parsedSessions);
+  }, []);
+
+  
   const convertTo12HourFormat = (time) => {
     let [hours, minutes] = time.split(":");
     hours = parseInt(hours, 10);
@@ -258,36 +394,35 @@ const InstructorDashboard = () => {
     return `${hours}:${minutes} ${suffix}`;
   };
 
-  const formatDuration = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
 
-    return [
-      hours > 0 ? `${hours}h` : "",
-      minutes > 0 ? `${minutes}m` : "",
-      `${secs}s`,
-    ]
-      .filter(Boolean)
-      .join(" ");
-  };
-
-  const handleToggleChange = async (batchId) => {
-    try {
-      if (activeSessions[batchId]) {
-        await endSession(batchId);
-      } else {
-        setActiveSessions((prev) => ({
-          ...prev,
-          [batchId]: { startTime: new Date().toISOString() },
-        }));
-        toast("Class session started", { icon: "⏱️" });
-      }
-    } catch (err) {
-      console.error("Error handling toggle:", err);
-      toast.error("Failed to record class. Please try again.");
+  const formatSessionDuration = (startTime) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const diffMs = now - start;
+    
+    const minutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (hours === 0) {
+      return `${minutes}m`;
+    } else {
+      return `${hours}h ${remainingMinutes}m`;
     }
   };
+
+  // Add this helper function at the top of your component file
+const safeDateParse = (dateString) => {
+  if (!dateString) return null;
+  try {
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
+};
+
+
 
   if (isLoading) {
     return (
@@ -296,8 +431,6 @@ const InstructorDashboard = () => {
       </div>
     );
   }
-
-
 
   const tabs = [
     {
@@ -596,33 +729,57 @@ const InstructorDashboard = () => {
                             </div>
                           ) : null}
                         </div>
-                        
-                        {/* Class session toggle (for ongoing batches) */}
                         {batch.status === "Ongoing" && (
-                          <label className="inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex flex-col items-end mr-2">
-                              {activeSessions[batch._id] && (
-                                <span className={`text-xs ${
-                                  timeRemaining[batch._id] <= WARNING_THRESHOLD 
-                                    ? "text-orange-500" 
-                                    : "text-gray-500"
-                                }`}>
-                                  {timeRemaining[batch._id] <= WARNING_THRESHOLD
-                                    ? `Ends in ${Math.ceil(timeRemaining[batch._id] / (60 * 1000))}m`
-                                    : `${Math.floor((MAX_CLASS_DURATION - timeRemaining[batch._id]) / (60 * 1000))}m elapsed`}
-                                </span>
-                              )}
-                            </div>
-                            <input
-                              type="checkbox"
-                              className="toggle toggle-primary toggle-sm"
-                              checked={!!activeSessions[batch._id]}
-                              onChange={() => handleToggleChange(batch._id)}
-                              disabled={disabledToggles[batch._id] || submitting}
-                            />
-                          </label>
-                        )}
-                      </div>
+                          <div className="flex flex-col items-end">
+  <div className="relative">
+  <label
+  className="inline-flex items-center cursor-pointer mb-1"
+  onClick={(e) => {
+    e.stopPropagation(); // prevent parent click
+    const today = new Date().toISOString().split("T")[0];
+    const alreadyRecorded = todaysClasses.some(
+      (cls) => cls.batchId === batch._id.toString() && cls.date === today
+    );
+    if (alreadyRecorded) e.preventDefault(); // block toggle if class already exists
+  }}
+>
+      <input
+        type="checkbox"
+        className={`toggle toggle-sm ${
+          todaysClasses.some(cls => 
+            cls.batchId === batch._id.toString() && 
+            cls.date === new Date().toISOString().split("T")[0]
+          ) ? "toggle-success" : "toggle-primary"
+        }`}
+        checked={!!activeSessions[batch._id]}
+        onChange={() => handleToggleChange(batch._id)}
+        disabled={
+          todaysClasses.some(cls => 
+            cls.batchId === batch._id.toString() && 
+            cls.date === new Date().toISOString().split("T")[0]
+          ) || 
+          (batch.status !== "Ongoing")
+        }
+      />
+    </label>
+    {todaysClasses.some(cls => 
+      cls.batchId === batch._id.toString() && 
+      cls.date === new Date().toISOString().split("T")[0]
+    ) && (
+      <div className="absolute -bottom-5 right-0 text-xs text-gray-500 whitespace-nowrap">
+        Class recorded today
+      </div>
+    )}
+  </div>
+  {activeSessions[batch._id] && (
+    <div className="text-xs text-gray-500">
+      {formatSessionDuration(activeSessions[batch._id].startTime)}
+    </div>
+  )}
+</div>
+)}
+
+      </div>
                     </div>
                   ))
                         ) : (
