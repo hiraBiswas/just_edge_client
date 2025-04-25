@@ -219,35 +219,40 @@ const PublishResult = () => {
   const [filteredBatches, setFilteredBatches] = useState([]);
   const [selectedBatchId, setSelectedBatchId] = useState("");
   const [batchStatus, setBatchStatus] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState({
+    batches: true,
+    results: false
+  });
   const [publishing, setPublishing] = useState(false);
   const axiosSecure = useAxiosSecure();
 
-  useEffect(() => {
-    setLoading(true);
-    axiosSecure
-      .get("/batches")
-      .then((res) => {
-        const data = res.data;
-        const valid = data.filter(
-          (batch) => batch.status === "Ongoing" || batch.status === "Completed"
-        );
-        setAllBatches(data);
-        setFilteredBatches(valid);
+ // Fetch all batches on component mount
+ useEffect(() => {
+  const fetchBatches = async () => {
+    try {
+      const res = await axiosSecure.get("/batches");
+      const data = res.data;
+      const validBatches = data.filter(
+        (batch) => batch.status === "Ongoing" || batch.status === "Completed"
+      );
+      
+      setAllBatches(data);
+      setFilteredBatches(validBatches);
 
-        // Auto-select the first batch if available
-        if (valid.length > 0) {
-          setSelectedBatchId(valid[0]._id);
-        }
+      // Auto-select the first batch if available
+      if (validBatches.length > 0) {
+        setSelectedBatchId(validBatches[0]._id);
+      }
+    } catch (err) {
+      console.error("Error fetching batches:", err);
+      toast.error("Failed to load batches");
+    } finally {
+      setLoading(prev => ({ ...prev, batches: false }));
+    }
+  };
 
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching batches:", err);
-        toast.error("Failed to load batches");
-        setLoading(false);
-      });
-  }, [axiosSecure]);
+  fetchBatches();
+}, [axiosSecure]);
 
   useEffect(() => {
     if (selectedBatchId) {
@@ -255,34 +260,80 @@ const PublishResult = () => {
     }
   }, [selectedBatchId, axiosSecure]);
 
-  // Frontend Component Update
-  // const fetchBatchResults = () => {
-  //     setLoading(true);
-  //     axiosSecure.get(`/results/batch-status/${selectedBatchId}`)
-  //       .then((res) => {
-  //         if (res.status === 404 && res.data.batchExists) {
-  //           // Special case: Batch exists but no results uploaded
-  //           setBatchStatus({
-  //             isPublished: false,
-  //             data: [],
-  //             message: res.data.message,
-  //             noResults: true
-  //           });
-  //         } else {
-  //           setBatchStatus(res.data);
-  //         }
-  //         setLoading(false);
-  //       })
-  //       .catch((err) => {
-  //         console.error('Error fetching batch results:', err);
-  //         if (err.response?.status === 404) {
-  //           toast.error(err.response.data.message || 'Batch not found');
-  //         } else {
-  //           toast.error('Failed to load batch results');
-  //         }
-  //         setLoading(false);
-  //       });
-  //   };
+    // Fetch batch results when selectedBatchId changes
+    useEffect(() => {
+      if (!selectedBatchId) return;
+  
+      const fetchResults = async () => {
+        setLoading(prev => ({ ...prev, results: true }));
+        setBatchStatus(null);
+        
+        try {
+          const res = await axiosSecure.get(`/results/batch-status/${selectedBatchId}`);
+          setBatchStatus(res.data);
+        } catch (err) {
+          console.error("Error fetching batch results:", err);
+          
+          if (err.response?.status === 404) {
+            setBatchStatus({
+              isPublished: false,
+              data: [],
+              message: err.response.data.message || "Results not uploaded yet",
+              noResults: true,
+              batchExists: err.response.data.batchExists
+            });
+          } else {
+            toast.error("Failed to load batch results");
+          }
+        } finally {
+          setLoading(prev => ({ ...prev, results: false }));
+        }
+      };
+  
+      fetchResults();
+    }, [selectedBatchId, axiosSecure]);
+  
+    const handleSelectChange = (e) => {
+      setSelectedBatchId(e.target.value);
+    };
+  
+    const handlePublishResults = async () => {
+      if (!selectedBatchId) return;
+  
+      setPublishing(true);
+      try {
+        const res = await axiosSecure.put(`/results/publish/${selectedBatchId}`);
+        toast.success(res.data.message || "Results published successfully");
+        // Refresh the results after publishing
+        const newResults = await axiosSecure.get(`/results/batch-status/${selectedBatchId}`);
+        setBatchStatus(newResults.data);
+      } catch (err) {
+        console.error("Error publishing results:", err);
+        toast.error(err.response?.data?.message || "Failed to publish results");
+      } finally {
+        setPublishing(false);
+      }
+    };
+  
+    const getSelectedBatchName = () => {
+      if (!selectedBatchId) return "Selected Batch";
+      const batch = allBatches.find((b) => b._id === selectedBatchId);
+      return batch ? batch.batchName : "Selected Batch";
+    };
+  
+    // Calculate statistics for the PDF
+    const getResultsStatistics = () => {
+      if (!batchStatus?.data?.length) return null;
+      
+      const passCount = batchStatus.data.filter((r) => r.status === "Pass").length;
+      const failCount = batchStatus.data.filter((r) => r.status === "Fail").length;
+      const totalStudents = batchStatus.data.length;
+      const passRate = totalStudents > 0 ? ((passCount / totalStudents) * 100).toFixed(1) : 0;
+  
+      return { passCount, failCount, totalStudents, passRate };
+    };
+  
+
 
   const fetchBatchResults = () => {
     setLoading(true);
@@ -313,34 +364,6 @@ const PublishResult = () => {
       });
   };
 
-  const handleSelectChange = (e) => {
-    setSelectedBatchId(e.target.value);
-    setBatchStatus(null);
-  };
-
-  const handlePublishResults = () => {
-    if (!selectedBatchId) return;
-
-    setPublishing(true);
-    axiosSecure
-      .put(`/results/publish/${selectedBatchId}`)
-      .then((res) => {
-        toast.success(res.data.message || "Results published successfully");
-        fetchBatchResults();
-      })
-      .catch((err) => {
-        console.error("Error publishing results:", err);
-        toast.error(err.response?.data?.message || "Failed to publish results");
-      })
-      .finally(() => {
-        setPublishing(false);
-      });
-  };
-
-  const getSelectedBatchName = () => {
-    const batch = filteredBatches.find((b) => b._id === selectedBatchId);
-    return batch ? batch.batchName : "Selected Batch";
-  };
 
   return (
     <div className="w-[1100px] mx-auto p-4">
@@ -348,14 +371,14 @@ const PublishResult = () => {
         Result Publication
       </h2>
 
-      <div className="mb-4  flex justify-between items-center gap-4">
-        <div className="w-full ">
+      <div className="mb-4 flex justify-between items-center gap-4">
+        <div className="w-full">
           <select
             id="batch-select"
             value={selectedBatchId}
             onChange={handleSelectChange}
             className="select-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            disabled={loading}
+            disabled={loading.batches}
           >
             <option value="">Select Batch</option>
             {filteredBatches.map((batch) => (
@@ -383,7 +406,7 @@ const PublishResult = () => {
                 document={
                   <ResultsPDF
                     batchName={getSelectedBatchName()}
-                    results={batchStatus.data}
+                    results={batchStatus.data || []}
                   />
                 }
                 fileName={`${getSelectedBatchName()}_results.pdf`}
@@ -403,9 +426,9 @@ const PublishResult = () => {
               </PDFDownloadLink>
             ) : (
               <button
-                className="flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm whitespace-nowrap"
+                 className="flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-md text-sm whitespace-nowrap"
                 onClick={handlePublishResults}
-                disabled={publishing}
+                disabled={publishing || batchStatus.noResults}
               >
                 {publishing ? (
                   <span className="flex items-center">
@@ -422,13 +445,17 @@ const PublishResult = () => {
         )}
       </div>
 
-      {loading ? (
+      {loading.batches ? (
         <div className="flex items-center justify-center h-[calc(100vh-180px)] bg-white rounded-lg shadow border border-gray-200">
           <span className="loading loading-ring loading-lg"></span>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow border border-gray-200 max-h-[calc(100vh-180px)] overflow-hidden flex flex-col">
-          {selectedBatchId && batchStatus ? (
+          {loading.results ? (
+            <div className="flex-1 flex items-center justify-center h-[calc(100vh-180px)]">
+              <span className="loading loading-ring loading-lg"></span>
+            </div>
+          ) : selectedBatchId && batchStatus ? (
             <>
               <div className="overflow-auto flex-1">
                 <table className="w-full relative">
@@ -489,14 +516,16 @@ const PublishResult = () => {
                               {batchStatus.message ||
                                 "No results found for this batch"}
                             </p>
-                            <p className="text-gray-400 text-sm">
-                              {"Result upload kora hoi ni"}
-                            </p>
+                            {!batchStatus.batchExists && (
+                              <p className="text-gray-400 text-sm">
+                                The selected batch might not exist in the system
+                              </p>
+                            )}
                           </div>
                         </td>
                       </tr>
                     ) : (
-                      batchStatus?.data?.map((student, index) => (
+                      batchStatus.data?.map((student, index) => (
                         <tr key={index} className="hover:bg-blue-50">
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                             {index + 1}
@@ -543,23 +572,17 @@ const PublishResult = () => {
                 </table>
               </div>
 
-              {batchStatus?.data?.length > 0 && (
+              {batchStatus.data?.length > 0 && (
                 <div className="border-t border-gray-200 px-4 py-2 bg-gray-50 text-xs text-gray-600">
                   <div className="flex justify-between items-center">
                     <div>
                       Total: {batchStatus.data.length} | Passed:{" "}
                       <span className="text-green-600">
-                        {
-                          batchStatus.data.filter((s) => s.status === "Pass")
-                            .length
-                        }
+                        {batchStatus.data.filter((s) => s.status === "Pass").length}
                       </span>{" "}
                       | Failed:{" "}
                       <span className="text-red-600">
-                        {
-                          batchStatus.data.filter((s) => s.status === "Fail")
-                            .length
-                        }
+                        {batchStatus.data.filter((s) => s.status === "Fail").length}
                       </span>
                     </div>
                     {batchStatus.isPublished && (

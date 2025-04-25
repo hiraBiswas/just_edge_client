@@ -19,6 +19,7 @@ const UploadResult = () => {
   const [isInstructor] = useInstructor();
   const [activeTab, setActiveTab] = useState("excel");
   const [loading, setLoading] = useState(false); // Loader state
+  const [availableBatches, setAvailableBatches] = useState([]);
   const { user } = useContext(AuthContext);
 
   // Fetch Batches
@@ -61,6 +62,51 @@ const UploadResult = () => {
   const instructorBatches = instructorId
     ? batches.filter((batch) => batch.instructorIds.includes(instructorId))
     : [];
+
+    // Filter batches to only show those where results haven't been published
+  useEffect(() => {
+    const fetchBatchesWithoutResults = async () => {
+      if (!instructorBatches.length) return;
+      
+      try {
+        const batchesWithStatus = await Promise.all(
+          instructorBatches.map(async (batch) => {
+            try {
+              const response = await axiosSecure.get(`/results/batch-status/${batch._id}`);
+              return {
+                ...batch,
+                isPublished: response.data.isPublished,
+                hasResults: true
+              };
+            } catch (error) {
+              if (error.response?.status === 404) {
+                // No results uploaded yet
+                return {
+                  ...batch,
+                  isPublished: false,
+                  hasResults: false
+                };
+              }
+              console.error(`Error fetching status for batch ${batch._id}:`, error);
+              return { ...batch, error: true };
+            }
+          })
+        );
+        
+        // Filter batches that either have no results or where results aren't published
+        const filteredBatches = batchesWithStatus.filter(batch => 
+          !batch.error && (!batch.hasResults || !batch.isPublished)
+        );
+        
+        setAvailableBatches(filteredBatches);
+      } catch (error) {
+        console.error("Error checking batch result status:", error);
+        toast.error("Failed to fetch batch information");
+      }
+    };
+
+    fetchBatchesWithoutResults();
+  }, [instructorBatches, axiosSecure]);
 
   const handleBatchChange = (e) => {
     setBatchId(e.target.value);
@@ -280,9 +326,9 @@ const handleManualSubmit = async (e) => {
                   <option value="" disabled>
                     Select a batch
                   </option>
-                  {instructorBatches.map((batch) => (
+                  {availableBatches.map((batch) => (
                     <option key={batch._id} value={batch._id}>
-                      {batch.batchName}
+                      {batch.batchName} 
                     </option>
                   ))}
                 </select>
@@ -316,9 +362,9 @@ const handleManualSubmit = async (e) => {
                   <option value="" disabled>
                     Select a batch
                   </option>
-                  {instructorBatches.map((batch) => (
+                  {availableBatches.map((batch) => (
                     <option key={batch._id} value={batch._id}>
-                      {batch.batchName}
+                      {batch.batchName} 
                     </option>
                   ))}
                 </select>

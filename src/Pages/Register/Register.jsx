@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 import { HiEye, HiEyeOff } from "react-icons/hi";
@@ -60,64 +60,47 @@ const Register = () => {
   };
 
   const handleStudentSubmit = async (data) => {
-    const {
-      password,
-      confirmPassword,
-      name,
-      email,
-      studentID,
-      department,
-      session,
-      institution,
-      prefCourse,
-    } = data;
-
-    const image =
-      "https://i.ibb.co/JvWtdNv/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow-520826-1931.jpg";
-    const type = "student";
-
     try {
       setIsLoading(true);
 
-      // Password validation
-      if (!validatePassword(password, confirmPassword)) {
+      // Password match check
+      if (data.password !== data.confirmPassword) {
+        toast.error("Passwords don't match!");
         return;
       }
 
-      // Register user
+      // 1️⃣ Register user (email auto-checked)
       const userResponse = await axiosPublic.post("/users", {
-        name,
-        email,
-        password,
-        image,
-        type,
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        contact: data.contact,
+        image: data.image,
+        type: "student",
       });
 
-      console.log(userResponse);
+      // 2️⃣ Save student data (manual studentID check)
+      const studentResponse = await axiosPublic.post("/students", {
+        userId: userResponse.data.insertedId,
+        studentID: data.studentID, // ✅ Backend will check duplicates
+        department: data.department,
+        session: data.session,
+        institution: data.institution,
+        prefCourse: data.prefCourse,
+      });
 
-      if (userResponse.data.insertedId) {
-        const studentResponse = await axiosPublic.post("/students", {
-          userId: userResponse.data.insertedId,
-          studentID,
-          department,
-          session,
-          institution,
-          prefCourse,
-        });
-
-        console.log(studentResponse);
-
-        if (studentResponse.data.insertedId) {
-          reset();
-          navigate("/login");
-          toast.success("Student registered successfully");
-        } else {
-          toast.error("Error saving student data.");
-        }
-      }
+      // Success: redirect to login
+      toast.success("Registration successful!");
+      navigate("/login");
     } catch (error) {
-      console.error("Error during student registration:", error);
-      toast.error(`Error during student registration: ${error.message}`);
+      console.error("Registration failed:", error);
+
+      // Show backend error message
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message); // "This Student ID is already registered!"
+      } else {
+        toast.error("Registration failed! Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -137,15 +120,6 @@ const Register = () => {
         return;
       }
 
-      // Log request payload for debugging
-      console.log({
-        name,
-        email,
-        password,
-        image,
-        type,
-      });
-
       // Register user
       const userResponse = await axiosPublic.post("/users", {
         name,
@@ -153,12 +127,12 @@ const Register = () => {
         password,
         image,
         type,
+        contact,
       });
 
       if (userResponse.data.insertedId) {
         const instructorResponse = await axiosPublic.post("/instructors", {
           userId: userResponse.data.insertedId,
-          contact,
           status: "Pending",
           isDeleted: false,
         });
@@ -553,10 +527,7 @@ const Register = () => {
           </div>
         </div>
       </div>
-      <Toaster
-  position="top-center"
-  reverseOrder={false}
-/>
+      <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
 };

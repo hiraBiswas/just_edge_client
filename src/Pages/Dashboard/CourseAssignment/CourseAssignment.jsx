@@ -310,42 +310,32 @@ const CourseAssignment = () => {
     }
   };
 
-  // Filter batches that have available seats and are ongoing or upcoming
-  // const availableBatches = batchList.filter((batch) => {
-  //   const occupied = batch.occupiedSeat || 0;
-  //   const hasAvailableSeats = occupied < batch.seat;
-  //   const validStatus =
-  //     batch.status === "Ongoing" || batch.status === "Upcoming";
-  //   return hasAvailableSeats && validStatus;
-  // });
+  const availableBatches = batchList.filter((batch) => {
+    const occupied = batch.occupiedSeat || 0;
+    const hasAvailableSeats = occupied < batch.seat;
+    const validStatus =
+      batch.status === "Ongoing" || batch.status === "Upcoming";
 
-  // Modify the availableBatches filter to consider the student's preferred course
-const availableBatches = batchList.filter((batch) => {
-  const occupied = batch.occupiedSeat || 0;
-  const hasAvailableSeats = occupied < batch.seat;
-  const validStatus = batch.status === "Ongoing" || batch.status === "Upcoming";
-  
-  // If students are selected, check if batch matches their preferred course
-  if (selectedUsers.length > 0) {
-    const firstStudent = combinedData.find(student => 
-      selectedUsers.includes(student._id)
-    );
-    if (firstStudent) {
-      return (
-        hasAvailableSeats && 
-        validStatus && 
-        batch.course_id === courseList.find(c => 
-          c.courseName === firstStudent.prefCourse
-        )?._id
+    if (selectedUsers.length > 0) {
+      const firstStudent = combinedData.find((student) =>
+        selectedUsers.includes(student._id)
       );
+      if (firstStudent) {
+        return (
+          hasAvailableSeats &&
+          validStatus &&
+          batch.course_id ===
+            courseList.find((c) => c.courseName === firstStudent.prefCourse)
+              ?._id
+        );
+      }
     }
-  }
-  
-  return hasAvailableSeats && validStatus;
-});
+
+    return hasAvailableSeats && validStatus;
+  });
 
   return (
-    <div className="min-h-screen mt-6 w-[1100px] ">
+    <div className="min-h-[calc(100vh-64px)] p-4 w-full max-w-[1100px] mx-auto">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
@@ -356,6 +346,7 @@ const availableBatches = batchList.filter((batch) => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          {/* In the first select element (Filter by Course) */}
           <select
             className="select select-bordered w-full md:w-64"
             value={filterCourse}
@@ -389,77 +380,98 @@ const availableBatches = batchList.filter((batch) => {
         </h2>
       </div>
 
-  {/* Batch Selection (shown only when students are selected) */}
-{selectedUsers.length > 0 && (
-  <div className="bg-white rounded-lg shadow p-4 mb-6">
-    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-      <div className="flex-1">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Assign Selected Students ({selectedUsers.length}) to Batch:
-        </label>
+      {/* Batch Selection (shown only when students are selected) */}
+      {selectedUsers.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assign Selected Students ({selectedUsers.length}) to Batch:
+              </label>
 
-        {availableBatches.length > 0 ? (
-          <>
-            <select
-              className="select select-bordered w-full"
-              value={selectedBatch}
-              onChange={(e) => setSelectedBatch(e.target.value)}
-            >
-              <option value="">Select a Batch</option>
-              {availableBatches.map((batch) => {
-                const course = courseList.find(c => c._id === batch.course_id);
-                const availableSeats = batch.seat - (batch.occupiedSeat || 0);
-                return (
-                  <option 
-                    key={batch._id} 
-                    value={batch.batchName}
-                    disabled={availableSeats < selectedUsers.length}
+              {availableBatches.length > 0 ? (
+                <>
+                  <select
+                    className="select select-bordered w-full"
+                    value={selectedBatch}
+                    onChange={(e) => setSelectedBatch(e.target.value)}
                   >
-                    {batch.batchName} ({course?.courseName || 'Unknown Course'}) - 
-                    Available: {availableSeats}/{batch.seat} ({batch.status})
-                    {availableSeats < selectedUsers.length && " - Not enough seats"}
-                  </option>
-                );
-              })}
-            </select>
-            <div className="mt-2 text-sm text-gray-500">
-              Showing batches for: {combinedData.find(student => selectedUsers.includes(student._id))?.prefCourse || "All courses"}
+                    <option value="">Select a Batch</option>
+                    {availableBatches.map((batch) => {
+                      const course = courseList.find(
+                        (c) => c._id === batch.course_id
+                      );
+                      const availableSeats =
+                        batch.seat - (batch.occupiedSeat || 0);
+                      return (
+                        <option
+                          key={batch._id}
+                          value={batch.batchName}
+                          disabled={availableSeats < selectedUsers.length}
+                        >
+                          {batch.batchName} (
+                          {course?.courseName || "Unknown Course"}) - Available:{" "}
+                          {availableSeats}/{batch.seat} ({batch.status})
+                          {availableSeats < selectedUsers.length &&
+                            " - Not enough seats"}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <div className="mt-2 text-sm text-gray-500">
+                    Showing batches for:{" "}
+                    {combinedData.find((student) =>
+                      selectedUsers.includes(student._id)
+                    )?.prefCourse || "All courses"}
+                  </div>
+                </>
+              ) : (
+                <div className="alert alert-warning shadow-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <div>
+                    <h3 className="font-bold">No available batches!</h3>
+                    <div className="text-xs">
+                      No ongoing/upcoming batches found with available seats for
+                      the selected students' preferred course.
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </>
-        ) : (
-          <div className="alert alert-warning shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div>
-              <h3 className="font-bold">No available batches!</h3>
-              <div className="text-xs">No ongoing/upcoming batches found with available seats for the selected students' preferred course.</div>
+
+            <div className="flex gap-2">
+              <button
+                className="btn btn-primary"
+                onClick={handleAssignBatch}
+                disabled={!selectedBatch || availableBatches.length === 0}
+              >
+                Assign Batch
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  setSelectedUsers([]);
+                  setSelectedBatch("");
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
-        )}
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          className="btn btn-primary"
-          onClick={handleAssignBatch}
-          disabled={!selectedBatch || availableBatches.length === 0}
-        >
-          Assign Batch
-        </button>
-        <button 
-          className="btn btn-ghost"
-          onClick={() => {
-            setSelectedUsers([]);
-            setSelectedBatch("");
-          }}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        </div>
+      )}
 
       {/* Loading State */}
       {loading && (
@@ -487,87 +499,91 @@ const availableBatches = batchList.filter((batch) => {
             <>
               <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="table  w-full">
-                    <thead className="bg-blue-950 text-white">
-                      <tr>
-                        <th className="w-10">
-                          <input
-                            type="checkbox"
-                            checked={selectAll}
-                            onChange={handleSelectAll}
-                            className="checkbox checkbox-sm bg-white border border-gray-300"
-                          />
-                        </th>
-                        <th className="py-3 px-4 text-left">#</th>
-                        <th className="py-3 px-4 text-left">Image</th>
-                        <th className="py-3 px-4 text-left min-w-[150px]">
-                          Name
-                        </th>
-                        <th className="py-3 px-4 text-left">Student ID</th>
-                        <th className="py-3 px-4 text-left">Session</th>
-                        <th className="py-3 px-4 text-left min-w-[180px]">
-                          Preferred Course
-                        </th>
-                        <th className="py-3 px-4 text-left">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {currentUsers.map((user, index) => (
-                        <tr key={user._id} className="hover:bg-gray-50">
-                          <td className="py-2 px-4">
+                  <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
+                    <table className="table w-full">
+                      <thead className="bg-blue-950 text-white sticky top-0 z-10">
+                        <tr>
+                          <th className="w-10">
                             <input
                               type="checkbox"
-                              checked={selectedUsers.includes(user._id)}
-                              onChange={() => handleSelectUser(user._id)}
-                              className="checkbox checkbox-sm"
+                              checked={selectAll}
+                              onChange={handleSelectAll}
+                              className="checkbox checkbox-sm bg-white border border-gray-300"
                             />
-                          </td>
-                          <td className="py-2 px-4">
-                            {(currentPage - 1) * itemsPerPage + index + 1}
-                          </td>
-                          <td className="py-2 px-4">
-                            <div className="avatar">
-                              <div className="mask mask-squircle w-10 h-10">
-                                <img src={user.image} alt={user.name} />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2 px-4 font-medium">{user.name}</td>
-                          <td className="py-2 px-4">{user.studentID}</td>
-                          <td className="py-2 px-4">{user.session}</td>
-                          <td className="py-2 px-4">{user.prefCourse}</td>
-                          <td className="py-2 px-4">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => {
-                                  setSelectedStudent(user);
-                                  document
-                                    .getElementById("studentModal")
-                                    .showModal();
-                                }}
-                                className="btn btn-ghost btn-sm text-gray-600 hover:text-blue-600"
-                                title="View Details"
-                              >
-                                <FaEye size={16} />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleArchiveStudent(
-                                    user._id,
-                                    user.studentDocId
-                                  )
-                                }
-                                className="btn btn-ghost btn-sm text-gray-600 hover:text-red-600"
-                                title="Archive Student"
-                              >
-                                <FaRegFileArchive size={16} />
-                              </button>
-                            </div>
-                          </td>
+                          </th>
+                          <th className="py-3 px-4 text-left">#</th>
+                          <th className="py-3 px-4 text-left">Image</th>
+                          <th className="py-3 px-4 text-left min-w-[150px]">
+                            Name
+                          </th>
+                          <th className="py-3 px-4 text-left">Student ID</th>
+                          <th className="py-3 px-4 text-left">Session</th>
+                          <th className="py-3 px-4 text-left min-w-[180px]">
+                            Preferred Course
+                          </th>
+                          <th className="py-3 px-4 text-left">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {currentUsers.map((user, index) => (
+                          <tr key={user._id} className="hover:bg-gray-50">
+                            <td className="py-2 px-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedUsers.includes(user._id)}
+                                onChange={() => handleSelectUser(user._id)}
+                                className="checkbox checkbox-sm"
+                              />
+                            </td>
+                            <td className="py-2 px-4">
+                              {(currentPage - 1) * itemsPerPage + index + 1}
+                            </td>
+                            <td className="py-2 px-4">
+                              <div className="avatar">
+                                <div className="mask mask-squircle w-10 h-10">
+                                  <img src={user.image} alt={user.name} />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-2 px-4 font-medium">
+                              {user.name}
+                            </td>
+                            <td className="py-2 px-4">{user.studentID}</td>
+                            <td className="py-2 px-4">{user.session}</td>
+                            <td className="py-2 px-4">{user.prefCourse}</td>
+                            <td className="py-2 px-4">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedStudent(user);
+                                    document
+                                      .getElementById("studentModal")
+                                      .showModal();
+                                  }}
+                                  className="btn btn-ghost btn-sm text-gray-600 hover:text-blue-600"
+                                  title="View Details"
+                                >
+                                  <FaEye size={16} />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleArchiveStudent(
+                                      user._id,
+                                      user.studentDocId
+                                    )
+                                  }
+                                  className="btn btn-ghost btn-sm text-gray-600 hover:text-red-600"
+                                  title="Archive Student"
+                                >
+                                  <FaRegFileArchive size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </>
@@ -576,7 +592,6 @@ const availableBatches = batchList.filter((batch) => {
       )}
 
       {/* Pagination */}
-
       {totalPages > 1 && (
         <div className="flex justify-end p-4 border-t border-gray-200">
           <div className="join">
@@ -600,6 +615,7 @@ const availableBatches = batchList.filter((batch) => {
           </div>
         </div>
       )}
+
       {/* Student Details Modal */}
       <dialog id="studentModal" className="modal">
         <div className="modal-box max-w-2xl">

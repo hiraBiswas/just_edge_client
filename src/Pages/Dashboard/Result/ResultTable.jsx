@@ -333,22 +333,40 @@ const ResultTable = () => {
     setSelectedBatchName(selectedBatch ? selectedBatch.batchName : "");
   };
 
+  // Check if the batch results are published
+  const isBatchPublished = () => {
+    if (!batchId || allResults.length === 0) return false;
+
+    // Check if any result in this batch is published
+    return allResults.some(
+      (result) => result.batchId === batchId && result.isPublished
+    );
+  };
+
+  const batchPublished = isBatchPublished();
+
   // Open Edit Modal
   const openEditModal = (studentResults) => {
     setEditStudent(studentResults);
-  
+
     // Exclude fields not meant to be edited
     const editableFields = Object.keys(studentResults)
       .filter(
         (key) =>
-          !["_id", "batchId", "studentID", "createdAt", "isPublished", "isDeleted"].includes(key)
+          ![
+            "_id",
+            "batchId",
+            "studentID",
+            "createdAt",
+            "isPublished",
+            "isDeleted",
+          ].includes(key)
       )
       .map((key) => ({ field: key, value: studentResults[key] ?? "" }));
-  
+
     setEditedExams(editableFields);
     document.getElementById("edit_modal").showModal();
   };
-  
 
   // Handle Exam Change
   const handleExamChange = (index, newMarks) => {
@@ -652,8 +670,9 @@ const ResultTable = () => {
                                       onClick={() =>
                                         openEditModal(studentResults)
                                       }
-                                      className="text-blue-600 hover:text-blue-800"
+                                      className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:hover:text-gray-400 disabled:cursor-not-allowed"
                                       title="Edit"
+                                      disabled={batchPublished}
                                     >
                                       <PencilIcon className="h-4 w-4" />
                                     </button>
@@ -661,8 +680,9 @@ const ResultTable = () => {
                                       onClick={() =>
                                         handleDeleteStudent(studentResults._id)
                                       }
-                                      className="text-red-600 hover:text-red-800"
+                                      className="text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:hover:text-gray-400 disabled:cursor-not-allowed"
                                       title="Delete"
+                                      disabled={batchPublished}
                                     >
                                       <TrashIcon className="h-4 w-4" />
                                     </button>
