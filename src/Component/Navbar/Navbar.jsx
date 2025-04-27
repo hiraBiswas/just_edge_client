@@ -1,19 +1,55 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { AuthContext } from '../../Providers/AuthProvider';
 import './navbar.css';
 
-
 const Navbar = () => {
   const { user, logOut } = useContext(AuthContext);
 
-  
   const links = (
     <>
-      <li className="text-lg lg:text-xl font-semibold mr-3"><NavLink to="/">Home</NavLink></li>
-      <li className="text-lg lg:text-xl font-semibold mr-3"><NavLink to="/about">About</NavLink></li>
-      <li className="text-lg lg:text-xl font-semibold mr-3"><NavLink to="/notice">Notice</NavLink></li>
-  
+      <li className="mr-3">
+        <NavLink 
+          to="/" 
+          className={({ isActive }) => 
+            `text-lg lg:text-xl font-semibold px-3 py-2 rounded-lg transition-colors ${
+              isActive 
+                ? 'underline' 
+                : 'text-gray-700 hover:text-blue-500'
+            }`
+          }
+        >
+          Home
+        </NavLink>
+      </li>
+      <li className="mr-3">
+        <NavLink 
+          to="/about" 
+          className={({ isActive }) => 
+            `text-lg lg:text-xl font-semibold px-3 py-2 rounded-lg transition-colors ${
+              isActive 
+                ? 'underline' 
+                : 'text-gray-700 hover:text-blue-500'
+            }`
+          }
+        >
+          About
+        </NavLink>
+      </li>
+      <li className="mr-3">
+        <NavLink 
+          to="/notice" 
+          className={({ isActive }) => 
+            `text-lg lg:text-xl font-semibold px-3 py-2 rounded-lg transition-colors ${
+              isActive 
+                ? 'underline' 
+                : 'text-gray-700 hover:text-blue-500'
+            }`
+          }
+        >
+          Notice
+        </NavLink>
+      </li>
     </>
   );
 
@@ -27,8 +63,7 @@ const Navbar = () => {
   };
 
   return (
-    <div className=''>
-      <div className="navbar bg-base-100 rounded-3xl drop-shadow-2xl">
+    <div className="navbar bg-base-100 rounded-3xl drop-shadow-2xl">
       <div className="navbar-start px-5">
         <div className="dropdown">
           {/* Mobile Menu Toggle */}
@@ -45,9 +80,8 @@ const Navbar = () => {
         <a className="text-2xl font-bold text-with-gradient lg:text-4xl">JUST_EDGE</a>
       </div>
 
-      {/* Removed Centered Links */}
       <div className="navbar-end px-5 flex items-center gap-3">
-        <ul className="hidden lg:flex menu-horizontal px-1 gap-3">
+        <ul className="hidden lg:flex items-center">
           {links}
         </ul>
 
@@ -56,18 +90,24 @@ const Navbar = () => {
           <div className="dropdown dropdown-end relative z-50 flex items-center">
             <label tabIndex={0} className="btn btn-ghost btn-circle avatar mr-2">
               <div className="w-10 rounded-full">
-                {/* Display the user's profile image */}
                 <img src={user.image || "default-profile.png"} alt="Profile" />
               </div>
             </label>
             <h2 className="text-lg font-semibold text-black mr-4">{user.name}</h2>
             <ul tabIndex={0} className="mt-32 p-2 shadow-sm menu menu-compact dropdown-content bg-base-100 rounded-box w-52">
               <li className='text-black'>
-                <Link to="/dashboard" className="justify-between">
+                <NavLink 
+                  to="/dashboard" 
+                  className={({ isActive }) => 
+                    `justify-between ${isActive ? 'bg-blue-100 text-blue-800' : ''}`
+                  }
+                >
                   Dashboard
-                </Link>
+                </NavLink>
               </li>
-              <li className='text-black'><button onClick={handleSignOut}>Logout</button></li>
+              <li className='text-black'>
+                <button onClick={handleSignOut}>Logout</button>
+              </li>
             </ul>
           </div>
         ) : (
@@ -76,9 +116,6 @@ const Navbar = () => {
           </Link>
         )}
       </div>
-
-  
-    </div>
     </div>
   );
 };

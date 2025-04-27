@@ -8,7 +8,6 @@ const Home = () => {
 
   return (
     <div>
-        
       <Banner></Banner>
      <div className="container mx-auto">
      <CourseContainer></CourseContainer>

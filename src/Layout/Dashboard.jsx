@@ -109,7 +109,7 @@ const Dashboard = () => {
                 <li><NavLink className={navLinkClass} to="/dashboard/courseManagement"><BookOpenCheck /> Course Management</NavLink></li>
                 <li><NavLink className={navLinkClass} to="/dashboard/instructorManagement"><UserCheck /> Instructor Management</NavLink></li>
                 <li><NavLink className={navLinkClass} to="/dashboard/batchManagement"><Users /> Batch Management</NavLink></li>
-                <li><NavLink className={navLinkClass} to="/dashboard/courseAssignment"><Bookmark /> Batch Assignment</NavLink></li>
+                <li><NavLink className={navLinkClass} to="/dashboard/courseAssignment"><Bookmark /> Batch Enrollment</NavLink></li>
                 <li><NavLink className={navLinkClass} to="/dashboard/publishResult"><ClipboardCheck />Result Management</NavLink></li>
                 <li><NavLink className={navLinkClass} to="/dashboard/noticeManagement"><Bell /> Notice Management</NavLink></li>
               </>

@@ -55,3 +55,20 @@
 .dropdown-content {
     background-color: #ffffff; /* Fully white dropdown */
 }
+
+
+/* Active route indicator for mobile */
+.menu a.active {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Hover effects */
+.menu a:not(.active):hover {
+  background-color: #f3f4f6;
+}
+
+/* Transition effects */
+.menu a {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}

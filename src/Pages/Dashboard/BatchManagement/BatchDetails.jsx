@@ -17,6 +17,7 @@ const BatchDetails = () => {
   const [instructors, setInstructors] = useState([]);
   const [instructorBatches, setInstructorBatches] = useState([]);
   const [routineLoading, setRoutineLoading] = useState(false);
+  const [onlineProfiles, setOnlineProfiles] = useState([]);
   const axiosSecure = useAxiosSecure();
 
   const dayOrder = [
@@ -58,6 +59,7 @@ const BatchDetails = () => {
           routineResponse,
           instructorsResponse,
           instructorsBatchesResponse,
+          onlineProfilesResponse,
         ] = await Promise.all([
           axiosSecure.get("/students"),
           axiosSecure.get("/users"),
@@ -65,6 +67,7 @@ const BatchDetails = () => {
           axiosSecure.get(`/routine/${batchId}`),
           axiosSecure.get("/instructors"),
           axiosSecure.get("/instructors-batches"),
+          axiosSecure.get("/onlineProfile"),
         ]);
 
         setStudents(studentsResponse.data);
@@ -73,6 +76,7 @@ const BatchDetails = () => {
         setRoutines(routineResponse.data);
         setInstructorBatches(instructorsBatchesResponse.data);
         setInstructors(instructorsResponse.data);
+        setOnlineProfiles(onlineProfilesResponse.data); 
 
         const filtered = studentsResponse.data.filter(
           (student) => student.enrolled_batch === batchId
@@ -87,6 +91,18 @@ const BatchDetails = () => {
 
     fetchData();
   }, [batchId, axiosSecure]);
+
+    // Add this helper function to check if student has online profile
+    const hasOnlineProfile = (studentId) => {
+      return onlineProfiles.some(profile => profile.studentId === studentId);
+    };
+  
+    // Add this helper function to check if student has passport photo
+    const hasPassportPhoto = (student) => {
+      return student.passportPhoto && student.passportPhoto !== "";
+    };
+  
+  
 
   const getInstructorNames = (instructorId) => {
     const instructor = instructors.find(
@@ -469,8 +485,8 @@ const BatchDetails = () => {
         )}
       </section>
 
-      {/* Students Section */}
-      <section className="bg-white rounded-lg shadow-sm border border-gray-100">
+    {/* Students Section */}
+    <section className="bg-white rounded-lg shadow-sm border border-gray-100">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-800">
@@ -500,9 +516,13 @@ const BatchDetails = () => {
                       <th className="py-3 px-4 font-medium text-black text-left min-w-[180px]">
                         Department
                       </th>
-                      <th className="py-3 px-4 font-medium text-black text-left min-w-[200px]">
-                        Institution
+                      <th className="py-3 px-4 font-medium text-black text-center min-w-[120px]">
+                        Online Profile
                       </th>
+                      <th className="py-3 px-4 font-medium text-black text-center min-w-[120px]">
+                        Document
+                      </th>
+                   
                     </tr>
                   </thead>
                   <tbody>
@@ -517,7 +537,29 @@ const BatchDetails = () => {
                         </td>
                         <td className="py-3 px-4">{student.studentID}</td>
                         <td className="py-3 px-4">{student.department}</td>
-                        <td className="py-3 px-4">{student.institution}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              hasOnlineProfile(student._id)
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {hasOnlineProfile(student._id) ? "Uploaded" : "Not Uploaded"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              hasPassportPhoto(student)
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {hasPassportPhoto(student) ? "Uploaded" : "Not Uploaded"}
+                          </span>
+                        </td>
+                        
                       </tr>
                     ))}
                   </tbody>
@@ -531,6 +573,7 @@ const BatchDetails = () => {
           )}
         </div>
       </section>
+
 
       {/* Create Routine Modal */}
       <dialog

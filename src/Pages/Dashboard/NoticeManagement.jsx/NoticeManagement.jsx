@@ -23,7 +23,7 @@ const NoticeManagement = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const axiosSecure = useAxiosSecure();
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [noticesPerPage] = useState(10);
@@ -40,8 +40,8 @@ const NoticeManagement = () => {
     try {
       const response = await axiosSecure.get("/notice");
       // Sort notices by createdAt in descending order (newest first)
-      const sortedNotices = response.data.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
+      const sortedNotices = response.data.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
       setNotices(sortedNotices);
       setTotalNotices(sortedNotices.length);
@@ -53,7 +53,6 @@ const NoticeManagement = () => {
     }
   };
 
-  
   useEffect(() => {
     fetchNotices();
   }, []);
@@ -147,8 +146,10 @@ const NoticeManagement = () => {
       description: notice.description || "",
       tags: notice.tags || [],
       currentTag: "",
-      attachments: notice.attachments || [],
-      deadline: notice.deadline || "",
+      attachments: notice.attachment ? [{ fileUrl: notice.attachment }] : [],
+      deadline: notice.deadline
+        ? new Date(notice.deadline).toISOString().split("T")[0]
+        : "",
     });
     setEditingNoticeId(notice._id);
     setIsEditing(true);
@@ -166,16 +167,19 @@ const NoticeManagement = () => {
         attachment: newNotice.attachments[0]?.fileUrl || "",
         deadline: newNotice.deadline,
       };
-  
+
       let response;
       if (isEditing) {
-        response = await axiosSecure.patch(`/notice/${editingNoticeId}`, noticeData);
+        response = await axiosSecure.patch(
+          `/notice/${editingNoticeId}`,
+          noticeData
+        );
       } else {
         response = await axiosSecure.post("/notice", noticeData);
       }
-  
+
       await fetchNotices();
-  
+
       setIsModalOpen(false);
       setIsEditing(false);
       setEditingNoticeId(null);
@@ -187,22 +191,29 @@ const NoticeManagement = () => {
         attachments: [],
         deadline: "",
       });
-  
-      toast.success(isEditing ? "Notice updated successfully" : "Notice created successfully");
+
+      toast.success(
+        isEditing
+          ? "Notice updated successfully"
+          : "Notice created successfully"
+      );
     } catch (error) {
       console.error("Error saving notice:", error);
-      toast.error(error.response?.data?.message || "An unexpected error occurred");
+      toast.error(
+        error.response?.data?.message || "An unexpected error occurred"
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   const handleDeleteNotice = async (noticeId) => {
     try {
       await axiosSecure.delete(`/notice/${noticeId}`);
-      setNotices(prevNotices => prevNotices.filter(notice => notice._id !== noticeId));
-      setTotalNotices(prev => prev - 1);
+      setNotices((prevNotices) =>
+        prevNotices.filter((notice) => notice._id !== noticeId)
+      );
+      setTotalNotices((prev) => prev - 1);
       toast.success("Notice deleted successfully");
     } catch (error) {
       console.error("Error deleting notice:", error);
@@ -216,9 +227,9 @@ const NoticeManagement = () => {
       try {
         const uploadedFiles = await handleFileUpload(e);
         if (uploadedFiles && uploadedFiles.length > 0) {
-          setNewNotice(prev => ({
+          setNewNotice((prev) => ({
             ...prev,
-            attachments: [...prev.attachments, ...uploadedFiles]
+            attachments: [...prev.attachments, ...uploadedFiles],
           }));
           toast.success("File uploaded successfully");
         }
@@ -233,13 +244,15 @@ const NoticeManagement = () => {
 
   return (
     <div className=" w-[1100px] mx-auto mt-6">
-
-
       {/* Header Section */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Notice Management</h1>
-          <p className="text-gray-600">Create and manage notices for students</p>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Notice Management
+          </h1>
+          <p className="text-gray-600">
+            Create and manage notices for students
+          </p>
         </div>
         <button
           className="btn bg-blue-950 text-white hover:bg-blue-800"
@@ -252,7 +265,7 @@ const NoticeManagement = () => {
               tags: [],
               currentTag: "",
               attachments: [],
-              deadline: ""
+              deadline: "",
             });
             setIsModalOpen(true);
           }}
@@ -343,7 +356,10 @@ const NoticeManagement = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {notices.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                    <td
+                      colSpan="5"
+                      className="px-6 py-8 text-center text-gray-500"
+                    >
                       <div className="flex flex-col items-center justify-center">
                         <svg
                           className="w-12 h-12 text-gray-400"
@@ -379,14 +395,19 @@ const NoticeManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">
                           {notice.tags?.map((tag) => (
-                            <span key={tag} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            >
                               {tag}
                             </span>
                           ))}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(notice.createdAt).toLocaleDateString()}
+                        {notice.deadline
+                          ? new Date(notice.deadline).toLocaleDateString()
+                          : "No deadline"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center space-x-2">
@@ -417,7 +438,8 @@ const NoticeManagement = () => {
           {totalNotices > noticesPerPage && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
               <div className="text-sm text-gray-700">
-                Showing <span className="font-medium">{indexOfFirstNotice + 1}</span> to{" "}
+                Showing{" "}
+                <span className="font-medium">{indexOfFirstNotice + 1}</span> to{" "}
                 <span className="font-medium">
                   {Math.min(indexOfLastNotice, totalNotices)}
                 </span>{" "}
@@ -425,15 +447,19 @@ const NoticeManagement = () => {
               </div>
               <div className="flex space-x-2">
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                   className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Previous
                 </button>
                 <button
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                  disabled={currentPage === Math.ceil(totalNotices / noticesPerPage)}
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  disabled={
+                    currentPage === Math.ceil(totalNotices / noticesPerPage)
+                  }
                   className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Next
@@ -513,7 +539,8 @@ const NoticeManagement = () => {
                         className="flex items-center justify-between text-sm"
                       >
                         <span>
-                          {file.fileName || "File"} ({file.fileType || "unknown"})
+                          {file.fileName || "File"} (
+                          {file.fileType || "unknown"})
                         </span>
                         <button
                           type="button"

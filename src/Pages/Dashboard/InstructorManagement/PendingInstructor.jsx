@@ -95,7 +95,7 @@ const PendingInstructor = () => {
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="flex w-full max-w-[1050px] flex-col min-h-screen mx-auto px-4">
+    <div className="flex w-[1100px] flex-col min-h-screen mx-auto">
  <div className="breadcrumbs text-md mt-4">
   <ul className="flex items-center space-x-2 text-gray-600">
     <li>
@@ -238,7 +238,7 @@ const PendingInstructor = () => {
   </div>
 
       {/* Pagination - Only show if there are items */}
-      {combinedData.length > 0 && (
+      {combinedData.length > itemsPerPage && (
         <div className="flex justify-end join my-4 mt-auto">
           <button
             className="join-item btn"

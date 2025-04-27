@@ -335,7 +335,7 @@ const CourseAssignment = () => {
   });
 
   return (
-    <div className="min-h-[calc(100vh-64px)] p-4 w-full max-w-[1100px] mx-auto">
+    <div className="min-h-[calc(100vh-64px)] p-4 w-[1100px] mx-auto">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
