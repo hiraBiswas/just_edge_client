@@ -66,25 +66,24 @@ const AuthProvider = ({ children }) => {
   };
 
   // Check authentication on initial load (i.e., if token exists)
-  useEffect(() => {
-    const token = localStorage.getItem('access-token');
-    const storedUser = localStorage.getItem('user');
+useEffect(() => {
+  const token = localStorage.getItem('access-token');
+  const storedUser = localStorage.getItem('user');
 
-    if (token && storedUser) {
-      // If token and user data are available in localStorage, set state
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-
-      // Log the user state after loading
-      console.log('User after useEffect (on page load):', parsedUser);
-    } else {
-      // If not authenticated, clear state and redirect (if necessary)
+  if (token && storedUser) {
+    try {
+      setUser(JSON.parse(storedUser));
+    } catch {
+      localStorage.removeItem('user'); // fallback
       setUser(null);
-      console.log('No token found, user is logged out.');
     }
+  } else {
+    setUser(null);
+  }
 
-    setLoading(false);
-  }, []);
+  setLoading(false);
+}, []);
+
 
   // Context value to be provided
   const authInfo = {

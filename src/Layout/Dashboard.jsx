@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useNavigate, Navigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"; 
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../Providers/AuthProvider";
 import useAdmin from "../hooks/useAdmin";
@@ -12,6 +12,7 @@ import { VscCombine } from "react-icons/vsc";
 import { MdAssignmentInd } from "react-icons/md";
 import { ImProfile } from "react-icons/im";
 import { AiOutlineProfile } from "react-icons/ai";
+
 import {
   Users, 
   ClipboardCheck,
@@ -34,29 +35,48 @@ const Dashboard = () => {
   const [isRedirecting, setIsRedirecting] = useState(true);
   
   // Handle initial redirection
+  // useEffect(() => {
+  //   if (isAdminLoading || isInstructorLoading) return;
+    
+  //   const currentPath = window.location.pathname;
+    
+  //   // Only redirect if we're at the dashboard root
+  //   if (currentPath === "/dashboard") {
+  //     if (isAdmin) {
+  //       navigate("/dashboard/adminDashboard", { replace: true });
+  //     } else if (isInstructor) {
+  //       navigate("/dashboard/instructorDashboard", { replace: true });
+  //     } else {
+  //       navigate("/dashboard/studentDashboard", { replace: true });
+  //     }
+  //   }
+    
+  //   setIsRedirecting(false);
+  // }, [isAdmin, isInstructor, isAdminLoading, isInstructorLoading, navigate]);
+
   useEffect(() => {
-    if (isAdminLoading || isInstructorLoading) return;
-    
-    const currentPath = window.location.pathname;
-    
-    // Only redirect if we're at the dashboard root
-    if (currentPath === "/dashboard") {
-      if (isAdmin) {
-        navigate("/dashboard/adminDashboard", { replace: true });
-      } else if (isInstructor) {
-        navigate("/dashboard/instructorDashboard", { replace: true });
-      } else {
-        navigate("/dashboard/studentDashboard", { replace: true });
+    if (!isAdminLoading && !isInstructorLoading) {
+      const path = window.location.pathname;
+  
+      if (path === "/dashboard") {
+        const targetPath = isAdmin
+          ? "/dashboard/adminDashboard"
+          : isInstructor
+          ? "/dashboard/instructorDashboard"
+          : "/dashboard/studentDashboard";
+  
+        navigate(targetPath, { replace: true });
       }
+  
+      setIsRedirecting(false);
     }
-    
-    setIsRedirecting(false);
   }, [isAdmin, isInstructor, isAdminLoading, isInstructorLoading, navigate]);
+  
 
   const handleSignOut = () => {
     logOut()
-      .then((result) => {
-        console.log(result.user);
+      .then(() => {
+        navigate("/login", { replace: true }); // Add this line
       })
       .catch((error) => {
         console.error(error);

@@ -107,7 +107,7 @@ const CreateCourse = () => {
   };
 
   return (
-    <div className="p-6 bg-white w-[1100px] mx-auto mt-5 rounded-lg shadow-sm">
+    <div className=" bg-white w-[1100px] mx-auto mt-5 rounded-lg shadow-sm">
       <nav className="text-gray-600 mb-6" aria-label="Breadcrumb">
         <ol className="list-none p-0 inline-flex space-x-2">
           <li className="flex items-center">

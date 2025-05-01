@@ -597,7 +597,7 @@ const EnrollmentRequests = () => {
       </dialog>
 
       {/* Student Enrollment Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-8">
         <div className="p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
             <svg
@@ -681,103 +681,141 @@ const EnrollmentRequests = () => {
 
               <div className="flex flex-wrap justify-between items-center gap-3">
                 <div className="flex flex-wrap gap-3">
-                  {/* Course Change Button */}
-                  <button
-                    className={`btn btn-primary gap-2 ${
-                      pendingRequests.hasAnyPending ||
-                      !courseRequestStatus.canRequest ||
-                      currentBatchStatus === "Completed"
-                        ? "btn-disabled"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      if (courseRequestStatus.canRequest) {
-                        document.getElementById("course_modal").showModal();
+                  {/* Show Change Preferred Course button if not enrolled */}
+                  {!studentData?.enrolled_batch && (
+                    <button
+                      className="btn btn-primary gap-2"
+                      onClick={() =>
+                        document.getElementById("my_modal_3").showModal()
                       }
-                    }}
-                    disabled={
-                      pendingRequests.hasAnyPending ||
-                      !courseRequestStatus.canRequest ||
-                      currentBatchStatus === "Completed"
-                    }
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                    Change Course
-                  </button>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                      Change Preferred Course
+                    </button>
+                  )}
 
-                  {/* Batch Change Button */}
-                  <button
-                    className={`btn btn-outline btn-primary gap-2 ${
-                      pendingRequests.hasAnyPending ||
-                      !batchRequestStatus.canRequest ||
-                      currentBatchStatus === "Completed"
-                        ? "btn-disabled"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      if (batchRequestStatus.canRequest) {
-                        document.getElementById("batch_modal").showModal();
-                      }
-                    }}
-                    disabled={
-                      pendingRequests.hasAnyPending ||
-                      !batchRequestStatus.canRequest ||
-                      currentBatchStatus === "Completed"
-                    }
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                      />
-                    </svg>
-                    Change Batch
-                  </button>
+                  {/* Show course/batch change buttons if enrolled */}
+                  {studentData?.enrolled_batch && (
+                    <>
+                      {/* Course Change Button */}
+                      <button
+                        className={`btn btn-primary gap-2 ${
+                          pendingRequests.hasAnyPending ||
+                          !courseRequestStatus.canRequest ||
+                          currentBatchStatus === "Completed"
+                            ? "btn-disabled"
+                            : ""
+                        }`}
+                        onClick={() => {
+                          if (courseRequestStatus.canRequest) {
+                            document.getElementById("course_modal").showModal();
+                          }
+                        }}
+                        disabled={
+                          pendingRequests.hasAnyPending ||
+                          !courseRequestStatus.canRequest ||
+                          currentBatchStatus === "Completed"
+                        }
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                          />
+                        </svg>
+                        Change Course
+                      </button>
+
+                      {/* Batch Change Button */}
+                      <button
+                        className={`btn btn-outline btn-primary gap-2 ${
+                          pendingRequests.hasAnyPending ||
+                          !batchRequestStatus.canRequest ||
+                          currentBatchStatus === "Completed"
+                            ? "btn-disabled"
+                            : ""
+                        }`}
+                        onClick={() => {
+                          if (batchRequestStatus.canRequest) {
+                            document.getElementById("batch_modal").showModal();
+                          }
+                        }}
+                        disabled={
+                          pendingRequests.hasAnyPending ||
+                          !batchRequestStatus.canRequest ||
+                          currentBatchStatus === "Completed"
+                        }
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                          />
+                        </svg>
+                        Change Batch
+                      </button>
+                    </>
+                  )}
                 </div>
-                {/* New View Requests Button */}
-                <button
-                  className="btn btn-ghost gap-2"
-                  onClick={() =>
-                    document.getElementById("request_history_modal").showModal()
-                  }
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  View Requests
-                </button>
+
+                {/* View Requests Button */}
+                {studentData?.enrolled_batch && (
+                  <>
+                    <button
+                      className="btn btn-ghost gap-2"
+                      onClick={() =>
+                        document
+                          .getElementById("request_history_modal")
+                          .showModal()
+                      }
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      View Requests
+                    </button>
+                  </>
+                )}
               </div>
             </>
           )}
@@ -923,7 +961,7 @@ const EnrollmentRequests = () => {
 
       {/* Batch Details Section */}
       {studentData?.enrolled_batch && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-4">
             <h2 className="text-xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <svg

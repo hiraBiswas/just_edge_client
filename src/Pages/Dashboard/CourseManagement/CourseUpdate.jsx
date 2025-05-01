@@ -118,7 +118,7 @@ const UpdateCourse = () => {
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className="p-4  w-[1050px] mx-auto mt-5 ">
+    <div className=" w-[1100px] mx-auto mt-6 ">
       <div className="breadcrumbs text-md mb-6">
         <ul className="flex items-center space-x-2 text-gray-600">
           <li>

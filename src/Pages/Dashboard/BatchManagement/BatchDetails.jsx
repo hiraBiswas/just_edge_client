@@ -278,7 +278,7 @@ const BatchDetails = () => {
       </div>
 
       {/* Instructors Section */}
-      <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-100">
+      <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-800">
@@ -410,7 +410,7 @@ const BatchDetails = () => {
       </dialog>
 
       {/* Routine Section */}
-      <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-100">
+      <section className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="flex justify-between items-center p-6 pb-0">
           <h2 className="text-lg font-semibold text-black">Class Routine</h2>
           {routineLoading ? (
@@ -486,7 +486,7 @@ const BatchDetails = () => {
       </section>
 
     {/* Students Section */}
-    <section className="bg-white rounded-lg shadow-sm border border-gray-100">
+    <section className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-800">

@@ -335,14 +335,14 @@ const CourseAssignment = () => {
   });
 
   return (
-    <div className="min-h-[calc(100vh-64px)] p-4 w-[1100px] mx-auto">
+    <div className="min-h-[calc(100vh-64px)] mt-6 w-[1100px] mx-auto">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            Student Batch Assignment
+            Student Batch Enrollment
           </h1>
-          <p className="text-gray-600">Manage student batch assignments</p>
+          <p className="text-gray-600">Manage student batch Enrollment</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
@@ -457,7 +457,7 @@ const CourseAssignment = () => {
                 onClick={handleAssignBatch}
                 disabled={!selectedBatch || availableBatches.length === 0}
               >
-                Assign Batch
+               Enroll
               </button>
               <button
                 className="btn btn-ghost"
@@ -512,7 +512,6 @@ const CourseAssignment = () => {
                             />
                           </th>
                           <th className="py-3 px-4 text-left">#</th>
-                          <th className="py-3 px-4 text-left">Image</th>
                           <th className="py-3 px-4 text-left min-w-[150px]">
                             Name
                           </th>
@@ -538,13 +537,7 @@ const CourseAssignment = () => {
                             <td className="py-2 px-4">
                               {(currentPage - 1) * itemsPerPage + index + 1}
                             </td>
-                            <td className="py-2 px-4">
-                              <div className="avatar">
-                                <div className="mask mask-squircle w-10 h-10">
-                                  <img src={user.image} alt={user.name} />
-                                </div>
-                              </div>
-                            </td>
+                        
                             <td className="py-2 px-4 font-medium">
                               {user.name}
                             </td>

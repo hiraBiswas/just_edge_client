@@ -109,10 +109,10 @@ const ResultDisplay = () => {
             <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-6 py-4 border-b">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">
+                  {/* <h3 className="text-lg font-semibold text-gray-800">
                     {result.courseName || "Course Not Found"}
-                  </h3>
-                  <p className="text-sm text-gray-600">
+                  </h3> */}
+                 <p className="text-sm text-gray-600">
                     Batch: {result.batchName || "N/A"}
                   </p>
                 </div>

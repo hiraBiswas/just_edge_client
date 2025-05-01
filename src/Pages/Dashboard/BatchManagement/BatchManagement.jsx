@@ -177,7 +177,7 @@ const BatchManagement = () => {
   const totalPages = Math.ceil(filteredBatches.length / itemsPerPage);
 
   return (
-    <div className="flex flex-col mx-auto">
+    <div className="flex w-[1100px] flex-col mx-auto">
       <div className="overflow-x-auto mt-6 grow">
         <div className="flex justify-between">
           <div className="join">
@@ -214,10 +214,10 @@ const BatchManagement = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto bg-white rounded-lg mt-6 shadow-lg border border-gray-100">
+        <div className="overflow-x-auto w-[1100px] bg-white rounded-lg mt-6 shadow-lg border border-gray-100">
           {loading || usersLoading || instructorsLoading ? (
-            <div className="animate-pulse w-[1050px]">
-              <table className="w-[1050px]">
+            <div className="animate-pulse w-[1100px]">
+              <table className="w-[1100px]">
                 <thead className="bg-blue-950">
                   <tr>
                     <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
