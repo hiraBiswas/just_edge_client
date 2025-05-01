@@ -22,6 +22,7 @@ const UpdateCourse = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -35,7 +36,7 @@ const UpdateCourse = () => {
           classDuration: data.classDuration,
           minimumQualification: data.minimumQualification,
           ageLimit: data.ageLimit,
-          image: data.image,
+          image: data.image || null, // Ensure image is null if not present
           isDeleted: data.isDeleted,
         });
       } catch (error) {
@@ -50,51 +51,64 @@ const UpdateCourse = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    const toastId = toast.loading("Updating course...");
 
-    let imageUrl = course.image;
-    if (typeof course.image === "object") {
-      const formData = new FormData();
-      formData.append("image", course.image);
+    try {
+      let imageUrl = course.image;
 
-      try {
+      // Only upload if a new image file was selected
+      if (course.image && typeof course.image === "object") {
+        // toast.loading("Uploading image...", { id: toastId });
+        const formData = new FormData();
+        formData.append("image", course.image);
+
         const imageUploadResponse = await fetch(image_hosting_api, {
           method: "POST",
           body: formData,
         });
-        if (!imageUploadResponse.ok) throw new Error(`ImgBB upload failed`);
+
+        if (!imageUploadResponse.ok) {
+          throw new Error("Image upload failed");
+        }
 
         const result = await imageUploadResponse.json();
         if (!result.success) {
-          toast.error("Error during image upload");
-          return;
+          throw new Error("Image upload failed");
         }
+
         imageUrl = result.data.display_url;
-      } catch (error) {
-        toast.error("Failed to upload image.");
-        return;
       }
-    }
 
-    const updatedCourseData = {
-      ...course,
-      image: imageUrl,
-    };
+      // Prepare updated course data
+      const updatedCourseData = {
+        courseName: course.courseName,
+        level: course.level,
+        numberOfClass: course.numberOfClass,
+        classDuration: course.classDuration,
+        minimumQualification: course.minimumQualification,
+        ageLimit: course.ageLimit,
+        image: imageUrl || course.image, // Keep existing image if no new one was uploaded
+        isDeleted: course.isDeleted,
+      };
 
-    try {
-      const response = await axiosPublic.patch(
-        `/courses/${id}`,
-        updatedCourseData
-      );
+      // Update course
+      toast.loading("Saving changes...", { id: toastId });
+      const response = await axiosPublic.patch(`/courses/${id}`, updatedCourseData);
+
       if (response.data) {
-        toast.success("Course updated successfully");
+        toast.success("Course updated successfully", { id: toastId });
         setTimeout(() => {
           navigate("/dashboard/courseManagement");
         }, 1000);
       } else {
-        toast.error("Course update failed");
+        throw new Error("Failed to update course");
       }
     } catch (error) {
-      toast.error("Failed to update course.");
+      toast.error(error.message || "Failed to update course", { id: toastId });
+      console.error("Update error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -104,18 +118,13 @@ const UpdateCourse = () => {
   };
 
   const handleImageChange = (e) => {
-    setCourse({ ...course, image: e.target.files[0] });
+    // Set to null if no file selected (instead of undefined)
+    setCourse({ ...course, image: e.target.files[0] || null });
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <span className="loading loading-ring loading-lg"></span>
-      </div>
-    );
-  }
-
-  if (error) return <p>Error: {error}</p>;
+  const handleRemoveImage = () => {
+    setCourse({ ...course, image: null });
+  };
 
   return (
     <div className=" w-[1100px] mx-auto mt-6 ">
@@ -249,18 +258,27 @@ const UpdateCourse = () => {
             </div>
           </div>
 
-          {/* Image Upload */}
-          <div>
+ {/* Image Upload - Now Optional */}
+ <div>
             <label className="block text-sm font-medium mb-1">
-              Course Image
+              Course Image (Optional)
             </label>
-            {course.image && typeof course.image === "string" && (
-              <img
-                src={course.image}
-                alt="Current course"
-                className="w-24 h-24 object-cover mb-2 border border-gray-300 rounded"
-              />
-            )}
+            {course.image && typeof course.image === "string" ? (
+              <div className="mb-2 relative">
+                <img
+                  src={course.image}
+                  alt="Current course"
+                  className="w-24 h-24 object-cover border border-gray-300 rounded"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : null}
             <input
               type="file"
               name="image"
@@ -268,13 +286,24 @@ const UpdateCourse = () => {
               onChange={handleImageChange}
               className="file-input file-input-bordered w-full file-input-sm"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Leave empty to keep current image
+            </p>
           </div>
 
           <button
             type="submit"
             className="btn btn-sm bg-blue-900 hover:bg-blue-800 text-white w-full mt-4"
+            disabled={isSubmitting}
           >
-            Update Course
+            {isSubmitting ? (
+              <>
+                <span className="loading loading-spinner loading-xs"></span>
+                Updating...
+              </>
+            ) : (
+              "Update Course"
+            )}
           </button>
         </form>
       </div>

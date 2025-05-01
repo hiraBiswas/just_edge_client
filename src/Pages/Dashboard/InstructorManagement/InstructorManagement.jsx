@@ -1,23 +1,13 @@
-import React, { useContext, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import toast, { Toaster } from "react-hot-toast";
-import { FaEyeSlash } from "react-icons/fa6";
-import { IoEyeSharp } from "react-icons/io5";
-import useAxiosPublic from "../../../hooks/useAxiosPublic";
-import useAxiosSecure from "../../../hooks/useAxiosSecure";
+
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaEye, FaRegFileArchive } from "react-icons/fa";
+import { Toaster, toast } from "react-hot-toast";
+import useAxiosSecure from "../../../hooks/useAxiosSecure";
+import { FaRegFileArchive } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { FaPlus } from "react-icons/fa6";
-import { RxCross2 } from "react-icons/rx";
 
 const InstructorManagement = () => {
-  const { register, handleSubmit, reset } = useForm();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const axiosPublic = useAxiosPublic();
   const axiosSecure = useAxiosSecure();
   const [users, setUsers] = useState([]);
   const [instructors, setInstructors] = useState([]);
@@ -44,10 +34,38 @@ const InstructorManagement = () => {
     fetchInstructors();
   }, [axiosSecure]);
 
-  // Combine users and instructors data
+  // Archive instructor function
+  const handleArchive = async (instructorId) => {
+    try {
+      const response = await axiosSecure.patch(`/instructors/${instructorId}`, {
+        isDeleted: true
+      });
+
+      if (response.data) {
+        toast.success("Instructor archived successfully");
+        // Update local state to remove the archived instructor
+        setInstructors(prevInstructors => 
+          prevInstructors.map(instructor => 
+            instructor._id === instructorId 
+              ? { ...instructor, isDeleted: true } 
+              : instructor
+          )
+        );
+      } else {
+        toast.error("Failed to archive instructor");
+      }
+    } catch (error) {
+      console.error("Error archiving instructor:", error);
+      toast.error("Failed to archive instructor");
+    }
+  };
+
+  // Combine users and instructors data, filtering out deleted instructors
   const combinedData = React.useMemo(() => {
     const filteredInstructors = instructors.filter(
-      (instructor) => !instructor.isDeleted && instructor.status === "Approved"
+      (instructor) => 
+        !instructor.isDeleted && 
+        instructor.status === "Approved"
     );
 
     const combined = filteredInstructors
@@ -56,7 +74,8 @@ const InstructorManagement = () => {
         if (!userInfo) return null;
 
         return {
-          _id: userInfo._id,
+          _id: instructor._id,
+          userId: userInfo._id,
           name: userInfo.name,
           email: userInfo.email,
           image: userInfo.image,
@@ -111,9 +130,9 @@ const InstructorManagement = () => {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">
                     Index
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                  {/* <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
                     Profile
-                  </th>
+                  </th> */}
                   <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
                     Name
                   </th>
@@ -149,7 +168,7 @@ const InstructorManagement = () => {
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-4">
                         <div className="h-8 w-8 bg-gray-100 rounded"></div>
-                        <div className="h-8 w-8 bg-gray-100 rounded"></div>
+                    
                       </div>
                     </td>
                   </tr>
@@ -165,9 +184,9 @@ const InstructorManagement = () => {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">
                     Index
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                  {/* <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
                     Profile
-                  </th>
+                  </th> */}
                   <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
                     Name
                   </th>
@@ -198,10 +217,10 @@ const InstructorManagement = () => {
                       key={instructor._id}
                       className="hover:bg-blue-50 transition-colors duration-150"
                     >
-                      <td className="px-4 py-1 whitespace-nowrap text-sm text-gray-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
-                      <td className="px-4 py-1 whitespace-nowrap">
+                      {/* <td className="px-4 py-1 whitespace-nowrap">
                         <img
                           src={
                             instructor.image ||
@@ -210,26 +229,21 @@ const InstructorManagement = () => {
                           alt={instructor.name}
                           className="w-10 h-10 rounded-full"
                         />
-                      </td>
-                      <td className="px-4 py-1 whitespace-nowrap text-sm font-medium text-gray-900">
+                      </td> */}
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {instructor.name}
                       </td>
-                      <td className="px-4 py-1 whitespace-nowrap text-sm text-gray-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                         {instructor.email}
                       </td>
-                      <td className="px-4 py-1 whitespace-nowrap text-sm text-gray-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                         {instructor.contact}
                       </td>
-                      <td className="px-4 py-1 whitespace-nowrap text-sm text-gray-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                         <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => console.log("Edit")}
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                            title="Edit"
-                          >
-                            <MdEdit className="w-5 h-5" />
-                          </button>
-                          <button
+                      
+                        <button
+                            onClick={() => handleArchive(instructor._id)}
                             className="text-red-600 hover:text-red-800 transition-colors"
                             title="Archive"
                           >

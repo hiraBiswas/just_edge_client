@@ -190,13 +190,11 @@ const CreateBatch = ({ onBatchCreated }) => {
             placeholder="Will be generated"
             disabled
           />
-          <p className="text-sm text-gray-500 mt-1">
-            Batch number is generated automatically
-          </p>
+       
         </div>
 
         {/* Batch Name Preview */}
-        {formData.selectedCourseName && formData.batchNumber && (
+        {/* {formData.selectedCourseName && formData.batchNumber && (
           <div>
             <label className="block text-gray-700 font-medium mb-2">
               Batch Name Preview
@@ -205,7 +203,7 @@ const CreateBatch = ({ onBatchCreated }) => {
               {formData.selectedCourseName} - {formData.batchNumber}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Seat */}
         <div>
@@ -262,7 +260,7 @@ const CreateBatch = ({ onBatchCreated }) => {
         </button>
       </form>
 
-      <Toaster position="top-center" />
+    
     </div>
   );
 };

@@ -108,6 +108,7 @@ const UpdateBatch = ({ batchId, onBatchUpdated, onCloseModal }) => {
             value={batchName}
             onChange={(e) => setBatchName(e.target.value)} // Allow the user to update batchName
             className="input input-bordered w-full"
+            disabled
           />
         </div>
 

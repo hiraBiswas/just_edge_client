@@ -8,7 +8,7 @@ import { Toaster } from "react-hot-toast";
 
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true); // Loading state for skeleton
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [searchTerm, setSearchTerm] = useState("");
@@ -20,49 +20,48 @@ const CourseManagement = () => {
       try {
         const response = await fetch("http://localhost:5000/courses");
         const data = await response.json();
-        setCourses(data);
+        // Filter out deleted courses right after fetching
+        const activeCourses = data.filter(course => !course.isDeleted);
+        setCourses(activeCourses);
       } catch (error) {
         console.error("Error fetching courses:", error);
       } finally {
-        setLoading(false); // Set loading to false after data is fetched
+        setLoading(false);
       }
     };
     fetchCourses();
   }, []);
 
-  const totalPages = Math.ceil(courses.length / itemsPerPage);
-  const currentItems = courses
-    .filter(
-      (course) =>
-        course.courseName.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (selectedLevel ? course.level === selectedLevel : true)
-    )
-    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // Filter courses based on search term and level
+  const filteredCourses = courses.filter(
+    (course) =>
+      course.courseName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (selectedLevel ? course.level === selectedLevel : true)
+  );
+
+  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
+  const currentItems = filteredCourses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleArchive = async (courseId) => {
     try {
-      // Log the data being sent to the backend
-      const dataToSend = { isDeleted: true };
-      console.log("Data being sent to backend:", dataToSend);
-
       const response = await fetch(
         `http://localhost:5000/courses/${courseId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSend), // Send the logged data
+          body: JSON.stringify({ isDeleted: true }),
         }
       );
 
-      console.log("Response from backend:", response); // Log the response object
-
       if (response.ok) {
-        setCourses((prevCourses) =>
-          prevCourses.map((course) =>
-            course._id === courseId ? { ...course, isDeleted: true } : course
-          )
+        // Remove the archived course from the local state
+        setCourses(prevCourses => 
+          prevCourses.filter(course => course._id !== courseId)
         );
         toast.success("Course archived successfully!");
       } else {
@@ -78,7 +77,7 @@ const CourseManagement = () => {
   return (
     <div className="flex flex-col h-screen w-[1100px] mx-auto">
       <div className="overflow-x-auto mt-6 grow">
-        <div className="flex justify-between items-center w-full ">
+        <div className="flex justify-between items-center w-full">
           <div className="flex items-center">
             <input
               className="input input-bordered"
@@ -108,30 +107,30 @@ const CourseManagement = () => {
           </div>
         </div>
 
-        {/* Table Section with Skeleton Loader - Modified for proper width */}
+        {/* Table Section */}
         <div className="bg-white rounded-lg mt-6 shadow-lg border border-gray-100 w-full">
           {loading ? (
             <div className="animate-pulse w-full overflow-hidden">
               <table className="w-full">
-              <thead className="bg-blue-950">
-          <tr>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">
-              #
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
-              Course Name
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
-              Level
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
-              Qualification
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tr-lg">
-              Action
-            </th>
-          </tr>
-        </thead>
+                <thead className="bg-blue-950">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Course Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Level
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Qualification
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tr-lg">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-gray-200">
                   {[...Array(itemsPerPage)].map((_, index) => (
                     <tr key={index} className="hover:bg-blue-50">
@@ -162,25 +161,25 @@ const CourseManagement = () => {
           ) : (
             <div className="w-full overflow-x-auto">
               <table className="w-full">
-              <thead className="bg-blue-950">
-          <tr>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">
-              #
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
-              Course Name
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
-              Level
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
-              Qualification
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tr-lg">
-              Action
-            </th>
-          </tr>
-        </thead>
+                <thead className="bg-blue-950">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tl-lg">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Course Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Level
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                      Qualification
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider rounded-tr-lg">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-gray-200">
                   {currentItems.length === 0 ? (
                     <tr>
@@ -195,9 +194,7 @@ const CourseManagement = () => {
                     currentItems.map((course, index) => (
                       <tr
                         key={course._id}
-                        className={`hover:bg-blue-50 transition-colors duration-150 ${
-                          course.isDeleted ? "opacity-50" : ""
-                        }`}
+                        className="hover:bg-blue-50 transition-colors duration-150"
                       >
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                           {(currentPage - 1) * itemsPerPage + index + 1}
@@ -251,26 +248,25 @@ const CourseManagement = () => {
       </div>
 
       {/* Pagination Controls */}
-   {/* Pagination Controls - Only show if there are more items than itemsPerPage */}
-{courses.length > itemsPerPage && (
-  <div className="flex justify-end join my-4">
-    <button
-      className="join-item btn"
-      disabled={currentPage === 1}
-      onClick={() => handlePageChange(currentPage - 1)}
-    >
-      Previous
-    </button>
-    <button className="join-item btn">{`Page ${currentPage}`}</button>
-    <button
-      className="join-item btn"
-      disabled={currentPage === totalPages}
-      onClick={() => handlePageChange(currentPage + 1)}
-    >
-      Next
-    </button>
-  </div>
-)}
+      {filteredCourses.length > itemsPerPage && (
+        <div className="flex justify-end join my-4">
+          <button
+            className="join-item btn"
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            Previous
+          </button>
+          <button className="join-item btn">{`Page ${currentPage}`}</button>
+          <button
+            className="join-item btn"
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       <Toaster position="top-center" reverseOrder={false} />
     </div>

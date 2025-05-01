@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
-
+import { useNavigate } from "react-router-dom";
 import useAxiosPublic from "../../../hooks/useAxiosPublic";
 
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
@@ -9,6 +9,8 @@ const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_ke
 
 const CreateCourse = () => {
   const axiosPublic = useAxiosPublic();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [course, setCourse] = useState({
     courseName: "",
     level: "",
@@ -22,37 +24,44 @@ const CreateCourse = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Basic validation for required fields (excluding image)
+    if (!course.courseName || !course.level || !course.numberOfClass || 
+        !course.classDuration || !course.minimumQualification || !course.ageLimit) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const toastId = toast.loading("Creating course...");
+    
     try {
-      // Step 1: Upload image to ImgBB if a new image was selected
       let imageUrl = course.image;
       
-      if (typeof course.image === "object") { // If it's a File object
+      // Only upload if image is provided and it's a File object
+      if (course.image && typeof course.image === "object") {
         const formData = new FormData();
         formData.append("image", course.image);
         
-        toast.loading("Uploading image...");
+        toast.loading("Uploading image...", { id: toastId });
         const imageUploadResponse = await fetch(image_hosting_api, {
           method: "POST",
           body: formData,
         });
         
         if (!imageUploadResponse.ok) {
-          toast.dismiss();
           throw new Error(`Image upload failed with status: ${imageUploadResponse.status}`);
         }
-  
+
         const result = await imageUploadResponse.json();
-        toast.dismiss();
         
         if (!result.success) {
-          toast.error("Image upload failed");
-          return;
+          throw new Error("Image upload failed");
         }
         
         imageUrl = result.data.display_url;
       }
-  
-      // Step 2: Prepare course data
+
+      // Prepare course data (image can be null)
       const courseData = {
         courseName: course.courseName,
         level: course.level,
@@ -60,17 +69,16 @@ const CreateCourse = () => {
         classDuration: course.classDuration,
         minimumQualification: course.minimumQualification,
         ageLimit: course.ageLimit,
-        image: imageUrl,
+        image: imageUrl || null, // Handle case where no image was provided
         isDeleted: false,
       };
-  
-      // Step 3: Post course data
-      toast.loading("Creating course...");
+
+      // Post course data
+      toast.loading("Saving course...", { id: toastId });
       const response = await axiosPublic.post("/courses", courseData);
-      toast.dismiss();
-  
+
       if (response.data.insertedId) {
-        toast.success("Course created successfully");
+        toast.success("Course created successfully!", { id: toastId });
         
         // Reset form state
         setCourse({
@@ -80,20 +88,21 @@ const CreateCourse = () => {
           classDuration: "",
           minimumQualification: "",
           ageLimit: "",
-          image: "",
+          image: null,
         });
-  
+
         // Navigate after 1 second
         setTimeout(() => {
           navigate("/dashboard/courseManagement");
         }, 1000);
       } else {
-        toast.error("Course could not be added");
+        throw new Error("Failed to save course");
       }
     } catch (error) {
-      toast.dismiss();
+      toast.error(error.message || "Failed to create course", { id: toastId });
       console.error("Error:", error);
-      toast.error(error.message || "Failed to create course");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -103,8 +112,10 @@ const CreateCourse = () => {
   };
 
   const handleImageChange = (e) => {
-    setCourse({ ...course, image: e.target.files[0] });
+    // Set to null if no file selected (instead of undefined)
+    setCourse({ ...course, image: e.target.files[0] || null });
   };
+
 
   return (
     <div className=" bg-white w-[1100px] mx-auto mt-5 rounded-lg shadow-sm">
@@ -140,7 +151,7 @@ const CreateCourse = () => {
           {/* Course Name */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Course Name
+              Course Name*
             </label>
             <input
               type="text"
@@ -155,7 +166,7 @@ const CreateCourse = () => {
 
           {/* Level */}
           <div>
-            <label className="block text-sm font-medium mb-1">Level</label>
+            <label className="block text-sm font-medium mb-1">Level*</label>
             <select
               name="level"
               value={course.level}
@@ -176,7 +187,7 @@ const CreateCourse = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1">
-                Number of Classes
+                Number of Classes*
               </label>
               <input
                 type="number"
@@ -228,7 +239,7 @@ const CreateCourse = () => {
                 Age Limit
               </label>
               <input
-                type="text"
+                type="number"
                 name="ageLimit"
                 value={course.ageLimit}
                 onChange={handleChange}
@@ -242,7 +253,7 @@ const CreateCourse = () => {
           {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Course Image
+              Course Image (Optional)
             </label>
             <input
               type="file"
@@ -250,15 +261,22 @@ const CreateCourse = () => {
               accept="image/*"
               onChange={handleImageChange}
               className="file-input file-input-bordered w-full file-input-sm"
-              required
             />
+       
           </div>
-
           <button
             type="submit"
             className="btn btn-sm bg-blue-900 hover:bg-blue-800 text-white w-full mt-4"
+            disabled={isSubmitting}
           >
-            Create Course
+            {isSubmitting ? (
+              <>
+                <span className="loading loading-spinner loading-xs"></span>
+                Saving...
+              </>
+            ) : (
+              "Create Course"
+            )}
           </button>
         </form>
       </div>

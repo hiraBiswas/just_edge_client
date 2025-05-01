@@ -76,7 +76,7 @@ const BatchDetails = () => {
         setRoutines(routineResponse.data);
         setInstructorBatches(instructorsBatchesResponse.data);
         setInstructors(instructorsResponse.data);
-        setOnlineProfiles(onlineProfilesResponse.data); 
+        setOnlineProfiles(onlineProfilesResponse.data);
 
         const filtered = studentsResponse.data.filter(
           (student) => student.enrolled_batch === batchId
@@ -92,17 +92,15 @@ const BatchDetails = () => {
     fetchData();
   }, [batchId, axiosSecure]);
 
-    // Add this helper function to check if student has online profile
-    const hasOnlineProfile = (studentId) => {
-      return onlineProfiles.some(profile => profile.studentId === studentId);
-    };
-  
-    // Add this helper function to check if student has passport photo
-    const hasPassportPhoto = (student) => {
-      return student.passportPhoto && student.passportPhoto !== "";
-    };
-  
-  
+  // Add this helper function to check if student has online profile
+  const hasOnlineProfile = (studentId) => {
+    return onlineProfiles.some((profile) => profile.studentId === studentId);
+  };
+
+  // Add this helper function to check if student has passport photo
+  const hasPassportPhoto = (student) => {
+    return student.passportPhoto && student.passportPhoto !== "";
+  };
 
   const getInstructorNames = (instructorId) => {
     const instructor = instructors.find(
@@ -170,8 +168,7 @@ const BatchDetails = () => {
     } catch (error) {
       console.error("Error assigning instructor:", error);
       toast.error(
-        error.response?.data?.message ||
-          "Failed to assign instructor to batch"
+        error.response?.data?.message || "Failed to assign instructor to batch"
       );
     }
   };
@@ -203,10 +200,14 @@ const BatchDetails = () => {
     : [];
 
   // Get available instructors (not already assigned to this batch)
+  // Get available instructors (not already assigned to this batch and meeting criteria)
   const availableInstructors = instructors.filter((instructor) => {
-    return !instructorBatches.some(
-      (ib) =>
-        ib.instructorId === instructor._id && ib.batchId === batchId
+    return (
+      !instructorBatches.some(
+        (ib) => ib.instructorId === instructor._id && ib.batchId === batchId
+      ) &&
+      instructor.isDeleted === false &&
+      instructor.status === "Approved"
     );
   });
 
@@ -246,7 +247,9 @@ const BatchDetails = () => {
             </Link>
           </li>
           <li>/</li>
-          <li className="text-gray-600">{batch.batchName || "Batch Details"}</li>
+          <li className="text-gray-600">
+            {batch.batchName || "Batch Details"}
+          </li>
         </ol>
       </nav>
 
@@ -292,7 +295,7 @@ const BatchDetails = () => {
               disabled={availableInstructors.length === 0}
               title={
                 availableInstructors.length === 0
-                  ? "No available instructors to assign"
+                  ? "No available approved instructors to assign"
                   : "Assign Instructor"
               }
             >
@@ -374,14 +377,9 @@ const BatchDetails = () => {
                   className="select select-bordered w-full"
                 >
                   {availableInstructors.map((instructor) => {
-                    const user = users.find(
-                      (u) => u._id === instructor.userId
-                    );
+                    const user = users.find((u) => u._id === instructor.userId);
                     return (
-                      <option
-                        key={instructor._id}
-                        value={instructor._id}
-                      >
+                      <option key={instructor._id} value={instructor._id}>
                         {user ? user.name : "Unknown Instructor"}
                       </option>
                     );
@@ -485,8 +483,8 @@ const BatchDetails = () => {
         )}
       </section>
 
-    {/* Students Section */}
-    <section className="bg-white rounded-lg shadow-sm border border-gray-200">
+      {/* Students Section */}
+      <section className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-800">
@@ -522,7 +520,6 @@ const BatchDetails = () => {
                       <th className="py-3 px-4 font-medium text-black text-center min-w-[120px]">
                         Document
                       </th>
-                   
                     </tr>
                   </thead>
                   <tbody>
@@ -545,7 +542,9 @@ const BatchDetails = () => {
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {hasOnlineProfile(student._id) ? "Uploaded" : "Not Uploaded"}
+                            {hasOnlineProfile(student._id)
+                              ? "Uploaded"
+                              : "Not Uploaded"}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center">
@@ -556,10 +555,11 @@ const BatchDetails = () => {
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {hasPassportPhoto(student) ? "Uploaded" : "Not Uploaded"}
+                            {hasPassportPhoto(student)
+                              ? "Uploaded"
+                              : "Not Uploaded"}
                           </span>
                         </td>
-                        
                       </tr>
                     ))}
                   </tbody>
@@ -573,7 +573,6 @@ const BatchDetails = () => {
           )}
         </div>
       </section>
-
 
       {/* Create Routine Modal */}
       <dialog
@@ -622,7 +621,7 @@ const BatchDetails = () => {
           {/* UpdateRoutine Component */}
           <UpdateRoutine
             batchId={batchId}
-            routines={sortedRoutines} 
+            routines={sortedRoutines}
             closeModal={() => {
               document.getElementById("update_routine_modal").close();
             }}

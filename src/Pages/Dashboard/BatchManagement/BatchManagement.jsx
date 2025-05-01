@@ -8,11 +8,9 @@ import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
-import { ImCross } from "react-icons/im";
 import { RxCross2 } from "react-icons/rx";
 
 const BatchManagement = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [batches, setBatches] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,10 +21,7 @@ const BatchManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState(null);
-  const [instructorSelection, setInstructorSelection] = useState({});
   const axiosSecure = useAxiosSecure();
-
-  const openModal = () => setIsModalOpen(true);
 
   // Fetch courses
   useEffect(() => {
@@ -55,7 +50,6 @@ const BatchManagement = () => {
     queryKey: ["instructors"],
     queryFn: async () => {
       const res = await axiosSecure.get("/instructors");
-      // Filter the response data to only include instructors with "Approved" status
       return res.data.filter((instructor) => instructor.status === "Approved");
     },
   });
@@ -71,22 +65,16 @@ const BatchManagement = () => {
     });
   }, [instructors, users]);
 
-  // Instructor map is created after combinedInstructors is ready
-  const instructorMap = React.useMemo(() => {
-    return combinedInstructors.reduce((acc, instructor) => {
-      acc[instructor.userId] = instructor.name;
-      return acc;
-    }, {});
-  }, [combinedInstructors]);
-
+  // Fetch batches with isDeleted filter
   useEffect(() => {
     const fetchBatches = async () => {
       try {
         const response = await axiosSecure.get("/batches");
-        console.log(response.data);
-
+        // Filter out deleted batches
+        const activeBatches = response.data.filter(batch => !batch.isDeleted);
+        
         // Update batches with instructor names
-        const updatedBatches = response.data.map((batch) => {
+        const updatedBatches = activeBatches.map((batch) => {
           const instructorNames = batch.instructors || [];
           return {
             ...batch,
@@ -108,7 +96,10 @@ const BatchManagement = () => {
   const refreshBatches = async () => {
     try {
       const response = await axiosSecure.get("/batches");
-      const updatedBatches = response.data.map((batch) => {
+      // Filter out deleted batches
+      const activeBatches = response.data.filter(batch => !batch.isDeleted);
+      
+      const updatedBatches = activeBatches.map((batch) => {
         const instructorNames = batch.instructors || [];
         return {
           ...batch,
@@ -121,30 +112,25 @@ const BatchManagement = () => {
     }
   };
 
-  // Change all references from "my_modal_5" to "batch_modal"
-  const closeModal = () => {
-    const modal = document.getElementById("batch_modal"); // Changed ID
-    if (modal) {
-      modal.close();
-      if (selectedBatchId) setSelectedBatchId(null);
-      setIsModalOpen(false);
+  // Archive batch function
+  const handleArchive = async (batchId) => {
+    try {
+      const response = await axiosSecure.patch(`/batches/${batchId}`, {
+        isDeleted: true
+      });
+
+      if (response.data) {
+        toast.success("Batch archived successfully");
+        // Remove the archived batch from local state
+        setBatches(prevBatches => prevBatches.filter(batch => batch._id !== batchId));
+      } else {
+        toast.error("Failed to archive batch");
+      }
+    } catch (error) {
+      console.error("Error archiving batch:", error);
+      toast.error("Failed to archive batch");
     }
   };
-
-  useEffect(() => {
-    const modal = document.getElementById("batch_modal");
-    const handleCancel = (e) => {
-      e.preventDefault();
-      closeModal();
-    };
-
-    if (modal) {
-      modal.addEventListener("cancel", handleCancel);
-      return () => {
-        modal.removeEventListener("cancel", handleCancel);
-      };
-    }
-  }, []);
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -177,7 +163,7 @@ const BatchManagement = () => {
   const totalPages = Math.ceil(filteredBatches.length / itemsPerPage);
 
   return (
-    <div className="flex w-[1100px] flex-col mx-auto">
+    <div className="w-[1100px] mx-auto flex flex-col">
       <div className="overflow-x-auto mt-6 grow">
         <div className="flex justify-between">
           <div className="join">
@@ -214,13 +200,13 @@ const BatchManagement = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto w-[1100px] bg-white rounded-lg mt-6 shadow-lg border border-gray-100">
+        <div className="bg-white rounded-lg mt-6 shadow-lg border border-gray-100 w-full">
           {loading || usersLoading || instructorsLoading ? (
-            <div className="animate-pulse w-[1100px]">
-              <table className="w-[1100px]">
+            <div className="animate-pulse w-full">
+              <table className="w-full">
                 <thead className="bg-blue-950">
                   <tr>
-                    <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white tracking-wider">
                       Index
                     </th>
                     <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
@@ -240,7 +226,7 @@ const BatchManagement = () => {
                 <tbody className="divide-y divide-gray-200">
                   {[...Array(itemsPerPage)].map((_, index) => (
                     <tr key={index} className="hover:bg-blue-50">
-                      <td className="px-8 py-3 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <div className="h-5 bg-gray-100 rounded w-8"></div>
                       </td>
                       <td className="px-8 py-3 whitespace-nowrap">
@@ -265,7 +251,7 @@ const BatchManagement = () => {
               </table>
             </div>
           ) : (
-            <table className="w-[1050px]">
+            <table className="w-full">
               <thead className="bg-blue-950">
                 <tr>
                   <th className="px-8 py-3 text-left text-sm font-semibold text-white tracking-wider">
@@ -347,7 +333,8 @@ const BatchManagement = () => {
                             <MdEdit className="w-5 h-5" />
                           </button>
                           <button
-                            className="text-gray-500 hover:text-gray-700 transition-colors"
+                            onClick={() => handleArchive(batch._id)}
+                            className="text-red-600 hover:text-red-800 transition-colors"
                             title="Archive Batch"
                           >
                             <FaFileArchive className="w-5 h-5" />
@@ -363,26 +350,26 @@ const BatchManagement = () => {
         </div>
       </div>
 
-{/* Pagination - Only show if there are more items than itemsPerPage */}
-{filteredBatches.length > itemsPerPage && (
-  <div className="flex justify-end join my-4">
-    <button
-      className="join-item btn"
-      disabled={currentPage === 1}
-      onClick={() => handlePageChange(currentPage - 1)}
-    >
-      Previous
-    </button>
-    <button className="join-item btn">{`Page ${currentPage}`}</button>
-    <button
-      className="join-item btn"
-      disabled={currentPage === totalPages}
-      onClick={() => handlePageChange(currentPage + 1)}
-    >
-      Next
-    </button>
-  </div>
-)}
+      {/* Pagination */}
+      {filteredBatches.length > itemsPerPage && (
+        <div className="flex justify-end join my-4">
+          <button
+            className="join-item btn"
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            Previous
+          </button>
+          <button className="join-item btn">{`Page ${currentPage}`}</button>
+          <button
+            className="join-item btn"
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Create Batch Modal */}
       <dialog
