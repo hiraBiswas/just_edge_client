@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { Toaster, toast } from "react-hot-toast";
 
 // Helper: Convert time string to minutes for easier comparison
 const timeToMinutes = (timeStr) => {
@@ -29,18 +28,13 @@ const hasTimeOverlap = (start1, end1, start2, end2) => {
   return result;
 };
 
-// Create an isolated toast function for this component only
-const modalToast = {
-  success: (message) => toast.success(message, { id: "modal-toast" }),
-  error: (message) => toast.error(message, { id: "modal-toast" })
-};
-
 const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
   console.log("CreateRoutine component rendering with batchId:", batchId);
   const [users, setUsers] = useState([]);
   const [batchName, setBatchName] = useState("");
   const [existingSchedules, setExistingSchedules] = useState({});
   const [numDays, setNumDays] = useState(2);
+  const [errorsCleared, setErrorsCleared] = useState(false);
   const [schedule, setSchedule] = useState(
     Array.from({ length: numDays }, () => ({
       day: "",
@@ -54,8 +48,8 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
   const [selectedInstructors, setSelectedInstructors] = useState([]);
   const [errors, setErrors] = useState([]);
   const [instructorConflicts, setInstructorConflicts] = useState([]);
-  const [instructorAssignmentStep, setInstructorAssignmentStep] =
-    useState(true);
+  const [validationMessages, setValidationMessages] = useState([]);
+  const [instructorAssignmentStep, setInstructorAssignmentStep] = useState(true);
   const axiosSecure = useAxiosSecure();
 
   // Days of week array
@@ -98,7 +92,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         console.log("Set batchName to:", batchData.batchName);
       } catch (error) {
         console.error("Error fetching batch data:", error);
-        modalToast.error("Failed to load batch data");
+        setValidationMessages(["Failed to load batch data"]);
       }
     };
 
@@ -108,7 +102,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         setAvailableInstructors(response.data);
       } catch (error) {
         console.error("Error fetching available instructors:", error);
-        modalToast.error("Failed to load available instructors");
+        setValidationMessages(["Failed to load available instructors"]);
       }
     };
 
@@ -142,6 +136,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
     // Reset errors when changing days
     setErrors([]);
     setInstructorConflicts([]);
+    setValidationMessages([]);
     console.log("Cleared errors and conflicts");
   };
 
@@ -262,12 +257,6 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       setInstructorConflicts(conflicts);
       console.log("Set instructor conflicts:", conflicts);
 
-      // Show toast for each conflict
-      conflicts.forEach((conflict) => {
-        console.log("Showing conflict toast:", conflict);
-        modalToast.error(conflict);
-      });
-
       const isValid = conflicts.length === 0;
       console.log("Validation complete. Is valid?", isValid);
       return isValid;
@@ -282,6 +271,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       `Handling change for index ${index}, field ${field}, value ${value}`
     );
     const updatedSchedule = [...schedule];
+    const newMessages = [];
 
     // Store previous value for comparison
     const previousValue = updatedSchedule[index][field];
@@ -299,7 +289,8 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
 
       if (isDuplicateInForm) {
         console.log("Duplicate day in form detected");
-        modalToast.error(`Already has a class scheduled for ${value} in this form`);
+        newMessages.push(`Already has a class scheduled for ${value} in this form`);
+        setValidationMessages(newMessages);
         return;
       }
 
@@ -318,11 +309,12 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
                 response.data.classCounts[value] >= 2
               ) {
                 console.log(`Maximum classes detected for ${value}`);
-                modalToast.error(
+                newMessages.push(
                   `${getInstructorName(
                     instructorId
                   )} already has maximum classes (2) on ${value}`
                 );
+                setValidationMessages(newMessages);
                 break;
               }
             }
@@ -348,7 +340,8 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         timeToMinutes(updatedSchedule[index].startTime)
       ) {
         console.log("End time validation failed");
-        modalToast.error("End time must be after start time");
+        newMessages.push("End time must be after start time");
+        setValidationMessages(newMessages);
         return;
       }
 
@@ -377,13 +370,14 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
                       existingClass.endTime
                     )
                   ) {
-                    modalToast.error(
+                    newMessages.push(
                       `${getInstructorName(
                         instructorId
                       )} has time conflict on ${day}: ` +
                         `Existing class at ${existingClass.startTime}-${existingClass.endTime} ` +
                         `conflicts with ${startTime}-${endTime}`
                     );
+                    setValidationMessages(newMessages);
                     return; // Stop checking after first conflict
                   }
                 }
@@ -401,85 +395,94 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
 
   // Enhanced validation useEffect
   useEffect(() => {
-    // Skip validation if in instructor assignment step or if the form is not substantially filled
-    if (instructorAssignmentStep) {
+    // Skip validation if in instructor assignment step or if errors were just cleared
+    if (instructorAssignmentStep || errorsCleared) {
+      setErrorsCleared(false);
       return;
     }
-
+  
+    // Check if there's substantial data to validate
     const hasSubstantialData = schedule.some(
-      ({ day, startTime, endTime }) =>
-        day !== "" || startTime !== "" || endTime !== ""
+      ({ day, startTime, endTime }) => day !== "" || startTime !== "" || endTime !== ""
     );
-
+  
     if (!hasSubstantialData || instructorIds.length === 0) {
+      setValidationMessages([]);
+      setErrors([]);
+      setInstructorConflicts([]);
       return;
     }
-
+  
     console.log("Running validation useEffect");
-
+  
     // Keep track of whether the component is mounted
     let isMounted = true;
-
+  
     const validateEntries = async () => {
-      // Run validation checks
+      // Run local validation checks
       const localErrors = validateLocalSchedule();
-
+  
       // Update errors only if component is still mounted
       if (isMounted) {
         setErrors(localErrors);
-
+  
         // Only check with API if there are no local errors and all required fields are filled
         const allRequiredFieldsFilled = schedule.every(
           ({ day, startTime, endTime }) => day && startTime && endTime
         );
-
+  
         if (localErrors.length === 0 && allRequiredFieldsFilled) {
           try {
             const { conflicts, existingSchedules: schedules } =
               await checkInstructorAvailability();
-
+  
             // Only update state if component is still mounted
             if (isMounted) {
               setInstructorConflicts(conflicts);
               setExistingSchedules(schedules);
-
-              // Show toast notifications for conflicts
-              conflicts.forEach((conflict) => {
-                modalToast.error(conflict);
-              });
+              setValidationMessages(conflicts);
             }
           } catch (error) {
             console.error("Error in validation:", error);
             if (isMounted) {
-              modalToast.error("Failed to validate schedule");
+              setValidationMessages(["Failed to validate schedule"]);
             }
           }
+        } else if (localErrors.length > 0) {
+          // Show local errors if any
+          setValidationMessages(localErrors);
+        } else {
+          // Clear messages if no errors and not all fields are filled
+          setValidationMessages([]);
         }
       }
     };
-
+  
     // Use debounce to avoid excessive validation calls
     const timeoutId = setTimeout(() => {
       validateEntries();
-    }, 300); // Shorter timeout for better responsiveness
-
+    }, 500); // 500ms debounce delay
+  
     // Cleanup function
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [schedule, instructorIds, instructorAssignmentStep]);
+  }, [schedule, instructorIds, instructorAssignmentStep, errorsCleared]);
+
+
 
   // Updated handleSubmit to prevent submission if there are errors
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Form submission started");
     setLoading(true);
+    setValidationMessages([]); // Clear previous messages
 
     try {
       // Ensure there's at least one instructor
       if (instructorIds.length === 0) {
-        modalToast.error("At least one instructor must be assigned to the batch");
+        setValidationMessages(["At least one instructor must be assigned to the batch"]);
         setLoading(false);
         return;
       }
@@ -489,6 +492,16 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       const validationErrors = validateLocalSchedule();
       if (validationErrors.length > 0) {
         setErrors(validationErrors);
+        setValidationMessages(validationErrors);
+        setLoading(false);
+        return;
+      }
+
+      // Check instructor conflicts
+      const { conflicts } = await checkInstructorAvailability();
+      if (conflicts.length > 0) {
+        setInstructorConflicts(conflicts);
+        setValidationMessages(conflicts);
         setLoading(false);
         return;
       }
@@ -509,28 +522,25 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       // Check for successful status code (2xx) instead of response.data.success
       if (response.status >= 200 && response.status < 300) {
         console.log("Routine submission successful");
-        modalToast.success(response.data.message || "Routine created successfully!");
         
-        // Notify parent component of success but don't let it show its own toast
-        if (onSuccess) onSuccess();
+        // Notify parent component of success
+        if (onSuccess) onSuccess(response.data.message || "Routine created successfully!");
         
-        // Delay closing the modal to allow toast to be visible
-        setTimeout(() => {
-          closeModal(); // Close modal after delay
-        }, 2000); // 2 seconds delay
+        // Close the modal
+        closeModal();
       } else {
         throw new Error(response.data.message || "Failed to create routine");
       }
     } catch (error) {
       console.error("Submission error:", error);
-      modalToast.error(
+      setValidationMessages([
         error.response?.data?.message ||
           error.message ||
           "Failed to create routine"
-      );
+      ]);
 
       if (error.response?.data?.error?.code === 11000) {
-        modalToast.error("Duplicate routine detected. Please check your entries.");
+        setValidationMessages(["Duplicate routine detected. Please check your entries."]);
       }
     } finally {
       console.log("Submission process complete");
@@ -561,6 +571,17 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
           ))}
         </select>
       </div>
+
+      {/* Validation messages display */}
+      {validationMessages.length > 0 && (
+        <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
+          {validationMessages.map((message, index) => (
+            <p key={index} className="text-sm mb-1 last:mb-0">
+              {message}
+            </p>
+          ))}
+        </div>
+      )}
 
       {schedule.map((daySchedule, index) => (
         <div key={index} className="mb-4">
@@ -644,31 +665,6 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
           )}
         </button>
       </div>
-
-      {/* Modal-specific Toaster component with unique positioning */}
-      <Toaster
-        id="modal-toaster"
-        position="top-center"
-        containerStyle={{
-          position: 'absolute',
-          top: '10px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10000, // Higher z-index to stay above everything
-          width: '100%',
-          maxWidth: '400px', // Constrains width for better readability
-        }}
-        toastOptions={{
-          id: 'modal-toast',
-          duration: 4000,
-          style: {
-            background: '#333',
-            color: '#fff',
-            padding: '10px 15px',
-            borderRadius: '4px',
-          },
-        }}
-      />
     </form>
   );
 };

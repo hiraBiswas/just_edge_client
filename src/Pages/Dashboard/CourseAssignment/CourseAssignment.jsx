@@ -160,24 +160,24 @@ useEffect(() => {
       );
       return;
     }
-
+  
     if (!selectedBatch) {
       toast.error(
         "No batch selected. Please select a batch before proceeding."
       );
       return;
     }
-
+  
     // Find the selected batch
     const batchToAssign = batchList.find(
       (batch) => batch.batchName === selectedBatch
     );
-
+  
     if (!batchToAssign) {
       toast.error("Invalid batch. The selected batch could not be found.");
       return;
     }
-
+  
     // Check if batch has available seats
     const availableSeats =
       batchToAssign.seat - (batchToAssign.occupiedSeat || 0);
@@ -187,11 +187,11 @@ useEffect(() => {
       );
       return;
     }
-
+  
     try {
       const successfulAssignments = [];
       const failedAssignments = [];
-
+  
       // First, verify all students can be assigned (pre-check)
       for (const userId of selectedUsers) {
         const student = students.find((s) => s.userId === userId);
@@ -199,14 +199,14 @@ useEffect(() => {
           failedAssignments.push(userId);
         }
       }
-
+  
       if (failedAssignments.length > 0) {
         toast.error(
           `Could not find ${failedAssignments.length} student records. Assignment aborted.`
         );
         return;
       }
-
+  
       // Process all assignments in a single transaction if your backend supports it
       // Alternatively, process sequentially with error handling
       for (const userId of selectedUsers) {
@@ -215,7 +215,7 @@ useEffect(() => {
           const response = await axiosSecure.patch(`/students/${student._id}`, {
             enrolled_batch: batchToAssign._id,
           });
-
+  
           if (response.status === 200) {
             successfulAssignments.push(userId);
           } else {
@@ -226,14 +226,24 @@ useEffect(() => {
           failedAssignments.push(userId);
         }
       }
-
+  
       // Update batch occupied seats if any assignments were successful
       if (successfulAssignments.length > 0) {
         try {
+          const newOccupiedSeat = (batchToAssign.occupiedSeat || 0) + successfulAssignments.length;
+          
           await axiosSecure.patch(`/batches/${batchToAssign._id}`, {
-            occupiedSeat:
-              (batchToAssign.occupiedSeat || 0) + successfulAssignments.length,
+            occupiedSeat: newOccupiedSeat,
           });
+          
+          // Update local state to reflect the change immediately
+          setBatchList(prevBatchList => 
+            prevBatchList.map(batch => 
+              batch._id === batchToAssign._id 
+                ? { ...batch, occupiedSeat: newOccupiedSeat } 
+                : batch
+            )
+          );
         } catch (error) {
           console.error("Error updating batch seats:", error);
           // Revert student assignments if batch update fails
@@ -256,18 +266,18 @@ useEffect(() => {
           return;
         }
       }
-
+  
       // Show result
       if (successfulAssignments.length > 0) {
         toast.success(
           `Successfully assigned ${batchToAssign.batchName} to ${successfulAssignments.length} students.`
         );
       }
-
+  
       if (failedAssignments.length > 0) {
         toast.error(`Failed to assign ${failedAssignments.length} students.`);
       }
-
+  
       // Refresh data
       await queryClient.refetchQueries(["students"]);
       await queryClient.refetchQueries(["batches"]);
