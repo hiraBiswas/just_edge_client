@@ -21,6 +21,8 @@ const CourseAssignment = () => {
   const itemsPerPage = 8;
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(true);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   // Fetch batches
   useEffect(() => {
@@ -30,38 +32,35 @@ const CourseAssignment = () => {
         setBatchList(response.data);
       } catch (error) {
         console.error("Error fetching batches:", error);
-      } finally {
-        setLoading(false);
       }
     };
     setLoading(true);
     fetchBatches();
   }, [axiosSecure]);
 
-// Fetch courses
-useEffect(() => {
-  const fetchCourses = async () => {
-    try {
-      const response = await axiosSecure.get("/courses");
-      // Filter out courses where isDeleted is true
-      const activeCourses = response.data.filter(course => course.isDeleted === false);
-      setCourseList(activeCourses);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-      if (error.code === "ERR_NETWORK") {
-        toast.error("Network Error: Please check your internet connection.");
-      } else {
-        toast.error(`Error fetching courses: ${error.message}`);
+  // Fetch courses
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await axiosSecure.get("/courses");
+        const activeCourses = response.data.filter(
+          (course) => course.isDeleted === false
+        );
+        setCourseList(activeCourses);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        if (error.code === "ERR_NETWORK") {
+          toast.error("Network Error: Please check your internet connection.");
+        } else {
+          toast.error(`Error fetching courses: ${error.message}`);
+        }
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchCourses();
-}, []);
+    };
+    fetchCourses();
+  }, []);
 
   // Fetch users and students data
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const res = await axiosSecure.get("/users");
@@ -69,13 +68,21 @@ useEffect(() => {
     },
   });
 
-  const { data: students = [] } = useQuery({
+  const { data: students = [], isLoading: studentsLoading } = useQuery({
     queryKey: ["students"],
     queryFn: async () => {
       const res = await axiosSecure.get("/students");
       return res.data;
     },
   });
+
+  // Set loading states
+  useEffect(() => {
+    if (!usersLoading && !studentsLoading) {
+      setTableLoading(false);
+      setLoading(false);
+    }
+  }, [usersLoading, studentsLoading]);
 
   const getBatchNameById = (batchId) => {
     const batch = batchList.find((batch) => batch._id === batchId);
@@ -104,8 +111,8 @@ useEffect(() => {
           prefBatch: getBatchNameById(student.prefBatch),
           prefCourse: getCourseNameById(student.prefCourse),
           enrolled_batch: student.enrolled_batch,
-          studentDocId: student._id, // Add student document ID
-          isDeleted: student.isDeleted || false, // Add isDeleted status
+          studentDocId: student._id,
+          isDeleted: student.isDeleted || false,
         };
       })
       .filter(
@@ -127,10 +134,6 @@ useEffect(() => {
 
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentUsers = combinedData.slice(indexOfFirstItem, indexOfLastItem);
-
   const handleSelectUser = (userId) => {
     setSelectedUsers((prevSelected) => {
       const updatedSelection = prevSelected.includes(userId)
@@ -143,7 +146,7 @@ useEffect(() => {
   const handleSelectAll = () => {
     setSelectAll((prev) => !prev);
 
-    const allCurrentUserIds = currentUsers.map((user) => user._id);
+    const allCurrentUserIds = currentItems.map((user) => user._id);
 
     setSelectedUsers((prev) => {
       if (!selectAll) {
@@ -160,25 +163,23 @@ useEffect(() => {
       );
       return;
     }
-  
+
     if (!selectedBatch) {
       toast.error(
         "No batch selected. Please select a batch before proceeding."
       );
       return;
     }
-  
-    // Find the selected batch
+
     const batchToAssign = batchList.find(
       (batch) => batch.batchName === selectedBatch
     );
-  
+
     if (!batchToAssign) {
       toast.error("Invalid batch. The selected batch could not be found.");
       return;
     }
-  
-    // Check if batch has available seats
+
     const availableSeats =
       batchToAssign.seat - (batchToAssign.occupiedSeat || 0);
     if (selectedUsers.length > availableSeats) {
@@ -187,11 +188,14 @@ useEffect(() => {
       );
       return;
     }
-  
+
+    setLoading(true);
+    setIsAssigning(true);
+
     try {
       const successfulAssignments = [];
       const failedAssignments = [];
-  
+
       // First, verify all students can be assigned (pre-check)
       for (const userId of selectedUsers) {
         const student = students.find((s) => s.userId === userId);
@@ -199,23 +203,22 @@ useEffect(() => {
           failedAssignments.push(userId);
         }
       }
-  
+
       if (failedAssignments.length > 0) {
         toast.error(
           `Could not find ${failedAssignments.length} student records. Assignment aborted.`
         );
         return;
       }
-  
-      // Process all assignments in a single transaction if your backend supports it
-      // Alternatively, process sequentially with error handling
+
+      // Process all assignments
       for (const userId of selectedUsers) {
         try {
           const student = students.find((s) => s.userId === userId);
           const response = await axiosSecure.patch(`/students/${student._id}`, {
             enrolled_batch: batchToAssign._id,
           });
-  
+
           if (response.status === 200) {
             successfulAssignments.push(userId);
           } else {
@@ -226,21 +229,21 @@ useEffect(() => {
           failedAssignments.push(userId);
         }
       }
-  
+
       // Update batch occupied seats if any assignments were successful
       if (successfulAssignments.length > 0) {
         try {
-          const newOccupiedSeat = (batchToAssign.occupiedSeat || 0) + successfulAssignments.length;
-          
+          const newOccupiedSeat =
+            (batchToAssign.occupiedSeat || 0) + successfulAssignments.length;
+
           await axiosSecure.patch(`/batches/${batchToAssign._id}`, {
             occupiedSeat: newOccupiedSeat,
           });
-          
-          // Update local state to reflect the change immediately
-          setBatchList(prevBatchList => 
-            prevBatchList.map(batch => 
-              batch._id === batchToAssign._id 
-                ? { ...batch, occupiedSeat: newOccupiedSeat } 
+
+          setBatchList((prevBatchList) =>
+            prevBatchList.map((batch) =>
+              batch._id === batchToAssign._id
+                ? { ...batch, occupiedSeat: newOccupiedSeat }
                 : batch
             )
           );
@@ -266,35 +269,34 @@ useEffect(() => {
           return;
         }
       }
-  
+
       // Show result
       if (successfulAssignments.length > 0) {
         toast.success(
           `Successfully assigned ${batchToAssign.batchName} to ${successfulAssignments.length} students.`
         );
       }
-  
+
       if (failedAssignments.length > 0) {
         toast.error(`Failed to assign ${failedAssignments.length} students.`);
       }
-  
+
       // Refresh data
       await queryClient.refetchQueries(["students"]);
       await queryClient.refetchQueries(["batches"]);
     } catch (error) {
       console.error("Error during batch assignment:", error);
       if (error.response?.status === 401) {
-        // Handle unauthorized error (likely token expired)
         toast.error("Session expired. Please login again.");
-        // You might want to redirect to login here
       } else {
         toast.error("An unexpected error occurred during assignment.");
       }
     } finally {
-      // Reset selections
       setSelectedUsers([]);
       setSelectAll(false);
       setSelectedBatch("");
+      setLoading(false);
+      setIsAssigning(false);
     }
   };
 
@@ -323,6 +325,8 @@ useEffect(() => {
   };
 
   const availableBatches = batchList.filter((batch) => {
+    if (isAssigning) return false;
+
     const occupied = batch.occupiedSeat || 0;
     const hasAvailableSeats = occupied < batch.seat;
     const validStatus =
@@ -358,13 +362,12 @@ useEffect(() => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          {/* In the first select element (Filter by Course) */}
           <select
             className="select select-bordered w-full md:w-64"
             value={filterCourse}
             onChange={(e) => {
               setFilterCourse(e.target.value);
-              setCurrentPage(1); // Reset to first page when changing filter
+              setCurrentPage(1);
             }}
           >
             <option value="">Filter by Course</option>
@@ -392,7 +395,7 @@ useEffect(() => {
         </h2>
       </div>
 
-      {/* Batch Selection (shown only when students are selected) */}
+      {/* Batch Selection */}
       {selectedUsers.length > 0 && (
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
@@ -401,12 +404,18 @@ useEffect(() => {
                 Assign Selected Students ({selectedUsers.length}) to Batch:
               </label>
 
-              {availableBatches.length > 0 ? (
+              {isAssigning ? (
+                <div className="flex items-center gap-2">
+                  <span className="loading loading-spinner loading-sm"></span>
+                  <span>Processing assignment...</span>
+                </div>
+              ) : availableBatches.length > 0 ? (
                 <>
                   <select
                     className="select select-bordered w-full"
                     value={selectedBatch}
                     onChange={(e) => setSelectedBatch(e.target.value)}
+                    disabled={isAssigning}
                   >
                     <option value="">Select a Batch</option>
                     {availableBatches.map((batch) => {
@@ -467,9 +476,15 @@ useEffect(() => {
               <button
                 className="btn btn-primary"
                 onClick={handleAssignBatch}
-                disabled={!selectedBatch || availableBatches.length === 0}
+                disabled={
+                  !selectedBatch || availableBatches.length === 0 || isAssigning
+                }
               >
-               Enroll
+                {isAssigning ? (
+                  <span className="loading loading-spinner loading-sm"></span>
+                ) : (
+                  "Enroll"
+                )}
               </button>
               <button
                 className="btn btn-ghost"
@@ -477,6 +492,7 @@ useEffect(() => {
                   setSelectedUsers([]);
                   setSelectedBatch("");
                 }}
+                disabled={isAssigning}
               >
                 Cancel
               </button>
@@ -486,18 +502,18 @@ useEffect(() => {
       )}
 
       {/* Loading State */}
-      {loading && (
-        <div className="flex justify-center items-center h-64">
-          <span className="loading loading-spinner loading-lg"></span>
+      {tableLoading && (
+        <div className="flex justify-center items-center min-h-[calc(100vh-400px)]">
+          <span className="loading loading-ring loading-xl"></span>
         </div>
       )}
 
       {/* Data Loaded State */}
-      {!loading && (
+      {!tableLoading && (
         <>
           {/* No Data State */}
           {combinedData.length === 0 && (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
+            <div className="bg-white rounded-lg shadow flex justify-center items-center p-8 min-h-[calc(100vh-400px)]  text-center">
               <h3 className="text-xl font-semibold text-gray-700">
                 {filterCourse
                   ? "No students prefer the selected course"
@@ -521,6 +537,7 @@ useEffect(() => {
                               checked={selectAll}
                               onChange={handleSelectAll}
                               className="checkbox checkbox-sm bg-white border border-gray-300"
+                              disabled={isAssigning}
                             />
                           </th>
                           <th className="py-3 px-4 text-left">#</th>
@@ -536,7 +553,7 @@ useEffect(() => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {currentUsers.map((user, index) => (
+                        {currentItems.map((user, index) => (
                           <tr key={user._id} className="hover:bg-gray-50">
                             <td className="py-2 px-4">
                               <input
@@ -544,12 +561,12 @@ useEffect(() => {
                                 checked={selectedUsers.includes(user._id)}
                                 onChange={() => handleSelectUser(user._id)}
                                 className="checkbox checkbox-sm"
+                                disabled={isAssigning}
                               />
                             </td>
                             <td className="py-2 px-4">
                               {(currentPage - 1) * itemsPerPage + index + 1}
                             </td>
-                        
                             <td className="py-2 px-4 font-medium">
                               {user.name}
                             </td>
@@ -567,6 +584,7 @@ useEffect(() => {
                                   }}
                                   className="btn btn-ghost btn-sm text-gray-600 hover:text-blue-600"
                                   title="View Details"
+                                  disabled={isAssigning}
                                 >
                                   <FaEye size={16} />
                                 </button>
@@ -579,6 +597,7 @@ useEffect(() => {
                                   }
                                   className="btn btn-ghost btn-sm text-gray-600 hover:text-red-600"
                                   title="Archive Student"
+                                  disabled={isAssigning}
                                 >
                                   <FaRegFileArchive size={16} />
                                 </button>
@@ -602,7 +621,7 @@ useEffect(() => {
           <div className="join">
             <button
               className="join-item btn"
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || isAssigning}
               onClick={() => handlePageChange(currentPage - 1)}
             >
               «
@@ -612,7 +631,7 @@ useEffect(() => {
             </button>
             <button
               className="join-item btn"
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || isAssigning}
               onClick={() => handlePageChange(currentPage + 1)}
             >
               »
