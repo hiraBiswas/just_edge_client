@@ -13,20 +13,27 @@ const Notice = () => {
     const fetchNotices = async () => {
       try {
         const response = await axiosSecure.get("/notice");
-        // Sort notices by createdAt in descending order (newest first)
-        const sortedNotices = response.data.sort(
+  
+        // ✅ Filter out deleted notices
+        const activeNotices = response.data.filter(notice => notice.isDeleted === false);
+  
+        // ✅ Sort the filtered notices
+        const sortedNotices = activeNotices.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
+  
         setNotices(sortedNotices);
-        setFilteredNotices(sortedNotices); // Initialize with sorted notices
+        setFilteredNotices(sortedNotices);
       } catch (error) {
         console.error("Error fetching notices:", error);
       } finally {
         setIsLoading(false);
       }
     };
+  
     fetchNotices();
   }, [axiosSecure]);
+  
 
     // Filter notices instantly as the user types
     useEffect(() => {

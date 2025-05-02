@@ -79,7 +79,7 @@ const InstructorManagement = () => {
           name: userInfo.name,
           email: userInfo.email,
           image: userInfo.image,
-          contact: instructor.contact,
+          contact: userInfo.contact,
         };
       })
       .filter(Boolean);

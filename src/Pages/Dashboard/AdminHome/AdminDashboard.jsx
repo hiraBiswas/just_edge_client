@@ -139,11 +139,19 @@ const AdminDashboard = () => {
   const fetchNotices = async () => {
     try {
       const res = await axiosSecure.get("/notice");
-      setNotices(res.data || []);
+  
+      // Filter, sort, and take latest 3 notices
+      const activeNotices = res.data
+        .filter(notice => notice.isDeleted === false)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 3); // ✅ Only latest 3
+  
+      setNotices(activeNotices || []);
     } catch (error) {
       console.error("Error fetching notices:", error);
     }
   };
+  
 
   useEffect(() => {
     fetchAdminData();

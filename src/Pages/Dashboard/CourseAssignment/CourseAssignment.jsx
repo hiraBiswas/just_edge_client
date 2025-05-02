@@ -527,7 +527,7 @@ const CourseAssignment = () => {
             <>
               <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
-                  <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
+                  <div className="h-[calc(100vh-400px)] overflow-y-auto">
                     <table className="table w-full">
                       <thead className="bg-blue-950 text-white sticky top-0 z-10">
                         <tr>

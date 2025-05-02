@@ -14,19 +14,19 @@ const Main = () => {
       try {
         const response = await axiosSecure.get('/notice');
         console.log("Fetched notices:", response.data);
-
+  
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Reset today's time to midnight
-
+  
         const filteredNotices = response.data.filter(notice => {
-          if (notice.deadline) {
+          if (notice.isDeleted === false && notice.deadline) {
             const noticeDeadline = new Date(notice.deadline);
-            noticeDeadline.setHours(0, 0, 0, 0); // Reset notice deadline time to midnight
+            noticeDeadline.setHours(0, 0, 0, 0);
             return noticeDeadline >= today;
           }
           return false;
         });
-
+  
         setNotices(filteredNotices);
       } catch (error) {
         console.error('Error fetching notices:', error);
@@ -35,6 +35,7 @@ const Main = () => {
     
     fetchNotices();
   }, [axiosSecure]);
+  
 
   return (
     <div className="flex flex-col min-h-screen">

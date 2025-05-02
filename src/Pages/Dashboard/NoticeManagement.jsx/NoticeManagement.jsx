@@ -39,10 +39,15 @@ const NoticeManagement = () => {
     setIsLoading(true);
     try {
       const response = await axiosSecure.get("/notice");
-      // Sort notices by createdAt in descending order (newest first)
-      const sortedNotices = response.data.sort(
+      
+      // Filter out deleted notices
+      const activeNotices = response.data.filter(notice => notice.isDeleted === false);
+      
+      // Sort by newest first
+      const sortedNotices = activeNotices.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
+      
       setNotices(sortedNotices);
       setTotalNotices(sortedNotices.length);
     } catch (error) {
@@ -52,7 +57,7 @@ const NoticeManagement = () => {
       setIsLoading(false);
     }
   };
-
+  
   useEffect(() => {
     fetchNotices();
   }, []);

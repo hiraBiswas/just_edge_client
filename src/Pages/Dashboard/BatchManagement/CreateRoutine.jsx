@@ -271,29 +271,34 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       `Handling change for index ${index}, field ${field}, value ${value}`
     );
     const updatedSchedule = [...schedule];
-    const newMessages = [];
-
+    
     // Store previous value for comparison
     const previousValue = updatedSchedule[index][field];
     updatedSchedule[index][field] = value;
-
+  
     // Update the schedule state first for UI responsiveness
     setSchedule(updatedSchedule);
-
+    
+    // Clear errors and validation messages when a field changes
+    // This ensures errors disappear as soon as the user starts fixing them
+    setValidationMessages([]);
+    setErrors([]);
+    setInstructorConflicts([]);
+    setErrorsCleared(true); // Set flag to prevent immediate re-validation
+  
     // Validate day selection (only checking for duplicates and max classes)
     if (field === "day" && value) {
       // Check for duplicate days in current form immediately
       const isDuplicateInForm = updatedSchedule.some(
         (entry, i) => i !== index && entry.day === value && value !== ""
       );
-
+  
       if (isDuplicateInForm) {
         console.log("Duplicate day in form detected");
-        newMessages.push(`Already has a class scheduled for ${value} in this form`);
-        setValidationMessages(newMessages);
+        setValidationMessages([`Already has a class scheduled for ${value} in this form`]);
         return;
       }
-
+  
       // Check if day has reached maximum classes
       const checkMaxClasses = async () => {
         try {
@@ -303,18 +308,17 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
               const response = await axiosSecure.get(
                 `/instructors/${instructorId}/classes`
               );
-
+  
               if (
                 response.data.success &&
                 response.data.classCounts[value] >= 2
               ) {
                 console.log(`Maximum classes detected for ${value}`);
-                newMessages.push(
+                setValidationMessages([
                   `${getInstructorName(
                     instructorId
                   )} already has maximum classes (2) on ${value}`
-                );
-                setValidationMessages(newMessages);
+                ]);
                 break;
               }
             }
@@ -323,10 +327,10 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
           console.error("Error checking day class count:", error);
         }
       };
-
+  
       checkMaxClasses();
     }
-
+  
     // Immediate time validation for both start and end time
     if (
       (field === "startTime" || field === "endTime") &&
@@ -340,11 +344,10 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         timeToMinutes(updatedSchedule[index].startTime)
       ) {
         console.log("End time validation failed");
-        newMessages.push("End time must be after start time");
-        setValidationMessages(newMessages);
+        setValidationMessages(["End time must be after start time"]);
         return;
       }
-
+  
       // Then check for time conflicts with existing classes
       const checkTimeConflicts = async () => {
         try {
@@ -352,15 +355,15 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
             const day = updatedSchedule[index].day;
             const startTime = updatedSchedule[index].startTime;
             const endTime = updatedSchedule[index].endTime;
-
+  
             for (const instructorId of instructorIds) {
               const response = await axiosSecure.get(
                 `/instructors/${instructorId}/classes`
               );
-
+  
               if (response.data.success && response.data.schedule[day]) {
                 const existingClasses = response.data.schedule[day];
-
+  
                 for (const existingClass of existingClasses) {
                   if (
                     hasTimeOverlap(
@@ -370,14 +373,13 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
                       existingClass.endTime
                     )
                   ) {
-                    newMessages.push(
+                    setValidationMessages([
                       `${getInstructorName(
                         instructorId
                       )} has time conflict on ${day}: ` +
                         `Existing class at ${existingClass.startTime}-${existingClass.endTime} ` +
                         `conflicts with ${startTime}-${endTime}`
-                    );
-                    setValidationMessages(newMessages);
+                    ]);
                     return; // Stop checking after first conflict
                   }
                 }
@@ -388,10 +390,10 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
           console.error("Error checking time conflicts:", error);
         }
       };
-
+  
       checkTimeConflicts();
     }
-  };
+  }
 
   // Enhanced validation useEffect
   useEffect(() => {

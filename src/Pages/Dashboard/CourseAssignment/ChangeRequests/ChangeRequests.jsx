@@ -511,7 +511,7 @@ const ChangeRequests = () => {
               to="/dashboard/courseAssignment"
               className="text-blue-600 hover:underline font-medium"
             >
-              Batch Assignment
+              Batch Enrollment
             </Link>
           </li>
           <li className="text-gray-500 font-medium">Change Requests</li>
