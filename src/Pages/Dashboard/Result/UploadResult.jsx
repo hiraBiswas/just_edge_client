@@ -20,6 +20,7 @@ const UploadResult = () => {
   const [activeTab, setActiveTab] = useState("excel");
   const [loading, setLoading] = useState(false); // Loader state
   const [availableBatches, setAvailableBatches] = useState([]);
+  const [availableStudents, setAvailableStudents] = useState([]);
   const { user } = useContext(AuthContext);
 
   // Fetch Batches
@@ -45,6 +46,68 @@ const UploadResult = () => {
     fetchStudents();
   }, [batchId, axiosSecure]);
 
+  // Fetch students without results when batch changes
+  useEffect(() => {
+    if (!batchId) return;
+
+    const fetchStudentsWithoutResults = async () => {
+      try {
+        // Fetch all students in batch
+        const studentsRes = await axiosSecure.get(`/batch/${batchId}/students`);
+        const allStudents = studentsRes.data;
+
+        // Fetch student IDs with existing results
+        const existingIdsRes = await axiosSecure.get(
+          `/results/existingStudentIds?batchId=${batchId}`
+        );
+        const existingStudentIds = existingIdsRes.data || [];
+
+        // Filter students without results
+        const studentsWithoutResults = allStudents.filter(
+          (student) => !existingStudentIds.includes(student.studentID)
+        );
+
+        setAvailableStudents(studentsWithoutResults);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        toast.error("Failed to load student data");
+      }
+    };
+
+    fetchStudentsWithoutResults();
+  }, [batchId, axiosSecure]);
+
+  // Render student dropdown
+  const renderStudentDropdown = () => {
+    if (availableStudents.length === 0) {
+      return (
+        <select className="select select-bordered w-full" disabled>
+          <option>
+            {batchId ? "All students have results" : "Select a batch first"}
+          </option>
+        </select>
+      );
+    }
+
+    return (
+      <select
+        value={selectedStudent}
+        onChange={(e) => setSelectedStudent(e.target.value)}
+        className="select select-bordered w-full"
+        required
+      >
+        <option value="" disabled>
+          Select a student
+        </option>
+        {availableStudents.map((student) => (
+          <option key={student.studentID} value={student.studentID}>
+            {student.studentID} - {student.name}
+          </option>
+        ))}
+      </select>
+    );
+  };
+
   // Fetch instructors
   const { data: instructors = [] } = useQuery({
     queryKey: ["instructors"],
@@ -63,45 +126,37 @@ const UploadResult = () => {
     ? batches.filter((batch) => batch.instructorIds.includes(instructorId))
     : [];
 
-    // Filter batches to only show those where results haven't been published
+  // Filter batches to only show those where results haven't been published
   useEffect(() => {
     const fetchBatchesWithoutResults = async () => {
       if (!instructorBatches.length) return;
-      
+
       try {
         const batchesWithStatus = await Promise.all(
           instructorBatches.map(async (batch) => {
-            try {
-              const response = await axiosSecure.get(`/results/batch-status/${batch._id}`);
-              return {
-                ...batch,
-                isPublished: response.data.isPublished,
-                hasResults: true
-              };
-            } catch (error) {
-              if (error.response?.status === 404) {
-                // No results uploaded yet
-                return {
-                  ...batch,
-                  isPublished: false,
-                  hasResults: false
-                };
-              }
-              console.error(`Error fetching status for batch ${batch._id}:`, error);
-              return { ...batch, error: true };
-            }
+            const response = await axiosSecure.get(
+              `/results/batch-status/${batch._id}`
+            );
+            return {
+              ...batch,
+              isPublished: response.data.isPublished || false,
+              hasResults: response.data.hasResults || false,
+            };
           })
         );
-        
+
         // Filter batches that either have no results or where results aren't published
-        const filteredBatches = batchesWithStatus.filter(batch => 
-          !batch.error && (!batch.hasResults || !batch.isPublished)
+        const filteredBatches = batchesWithStatus.filter(
+          (batch) => !batch.isPublished
         );
-        
+
         setAvailableBatches(filteredBatches);
       } catch (error) {
         console.error("Error checking batch result status:", error);
-        toast.error("Failed to fetch batch information");
+        // Don't show toast for 404 errors - they're expected when no results exist
+        if (error.response?.status !== 404) {
+          toast.error("Failed to fetch batch information");
+        }
       }
     };
 
@@ -176,91 +231,108 @@ const UploadResult = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate inputs
-    if (!batchId || results.length === 0) {
-      toast.error("Please select a batch and upload a valid file.");
+    if (!batchId ||  results.length === 0) {
+      toast.error("Please select batch,  and upload a valid file.");
       return;
     }
 
     setLoading(true);
+
     try {
-      // Check if results already exist
-      const existingResults = await axiosSecure.get(`/results/checkExisting?batchId=${batchId}`);
-      
+      // Check if result already exists for this student in this batch
+      const existingResults = await axiosSecure.get(
+        `/results/checkExisting?batchId=${batchId}&studentID=${selectedStudent}`
+      );
+
       if (existingResults.data.length > 0) {
-        toast.error("Results already exist for this batch. Please edit instead.");
+        toast.error("Result already exists for this student.");
         setLoading(false);
-        return;
+        return; // ❗ Prevent further execution
       }
 
-      await axiosSecure.post("/results/upload", { batchId, results });
+      // Post result
+      await axiosSecure.post("/results/upload", {
+        batchId,
+        studentID: selectedStudent,
+        results,
+      });
+
       toast.success("Results uploaded successfully!");
-      queryClient.invalidateQueries(["results"]); // Refresh table data
-      closeModal();
+      queryClient.invalidateQueries(["results"]);
+      closeModal(); // ✅ Only close modal if success
     } catch (error) {
+      console.error(error);
       toast.error("Failed to upload results.");
+    } finally {
+      setLoading(false); // ✅ Always stop loading regardless of success or failure
     }
-    setLoading(false);
-};
-
-
-const handleManualSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-
-  if (!batchId || selectedStudent === "") {
-    toast.error("Please select a batch and student.");
-    setLoading(false);
-    return;
-  }
-
-  const formData = new FormData(e.target);
-  const formValues = Object.fromEntries(formData.entries());
-
-  // Create result object in the format backend expects
-  const result = {
-    studentID: selectedStudent,
-    Mid_Term: parseInt(formValues["Mid Term"]) || null,
-    Project: parseInt(formValues["Project"]) || null,
-    Assignment: parseInt(formValues["Assignment"]) || null,
-    Final_Exam: parseInt(formValues["Final Exam"]) || null,
-    Attendance: parseInt(formValues["Attendance"]) || null,
   };
 
-  try {
-    // Check if results already exist for the student
-    const existingResults = await axiosSecure.get(
-      `/results/checkExisting?batchId=${batchId}&studentID=${selectedStudent}`
-    );
-    
-    if (existingResults.data.length > 0) {
-      toast.error("Result already exists for this student in the selected batch. Please edit instead.");
+  const handleManualSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (!batchId || !selectedStudent) {
+      toast.error("Please select a batch and student.");
       setLoading(false);
       return;
     }
 
-    const response = await axiosSecure.post(
-      "/results/upload",
-      {
-        batchId,
-        results: [result], // Wrap in array to match backend expectation
-      },
-      {
-        headers: { "Content-Type": "application/json" },
+    const formData = new FormData(e.target);
+    const formValues = Object.fromEntries(formData.entries());
+
+    const result = {
+      studentID: selectedStudent,
+      Mid_Term: parseInt(formValues["Mid Term"]) || null,
+      Project: parseInt(formValues["Project"]) || null,
+      Assignment: parseInt(formValues["Assignment"]) || null,
+      Final_Exam: parseInt(formValues["Final Exam"]) || null,
+      Attendance: parseInt(formValues["Attendance"]) || null,
+    };
+
+    try {
+      // Check if result exists
+      const { data: existingResults } = await axiosSecure.get(
+        `/results/checkExisting?batchId=${batchId}&studentID=${selectedStudent}`
+      );
+
+      if (existingResults.length > 0) {
+        toast.error(
+          "Result already exists for this student. Please edit instead."
+        );
+        return;
       }
-    );
 
-    toast.success("Result uploaded successfully!");
-    queryClient.invalidateQueries(["results"]);
-    closeModal();
-  } catch (error) {
-    console.error("Upload Error:", error.response?.data);
-    toast.error(error.response?.data?.message || "Failed to upload result.");
-  } finally {
-    setLoading(false);
-  }
-};
+      // Upload result
+      const response = await axiosSecure.post(
+        "/results/upload",
+        {
+          batchId,
+          results: [result],
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
+      if (response.data) {
+        toast.success("Result uploaded successfully!");
+        queryClient.invalidateQueries(["results"]);
+
+        // Reset form and close modal
+        setBatchId("");
+        setSelectedStudent("");
+        setStudents([]);
+        e.target.reset(); // Reset the form directly
+        document.getElementById("upload_modal").close();
+      }
+    } catch (error) {
+      console.error("Upload Error:", error.response?.data);
+      toast.error(error.response?.data?.message || "Failed to upload result.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const closeModal = () => {
     document.getElementById("upload_modal").close();
@@ -328,7 +400,7 @@ const handleManualSubmit = async (e) => {
                   </option>
                   {availableBatches.map((batch) => (
                     <option key={batch._id} value={batch._id}>
-                      {batch.batchName} 
+                      {batch.batchName}
                     </option>
                   ))}
                 </select>
@@ -364,7 +436,7 @@ const handleManualSubmit = async (e) => {
                   </option>
                   {availableBatches.map((batch) => (
                     <option key={batch._id} value={batch._id}>
-                      {batch.batchName} 
+                      {batch.batchName}
                     </option>
                   ))}
                 </select>
@@ -373,15 +445,15 @@ const handleManualSubmit = async (e) => {
               <div className="my-2 flex justify-between gap-4 items-center ">
                 <label className="block text-md">Select Student ID:</label>
                 <select
-                  name="studentId"
-                  className="select select-md select-bordered w-64"
                   value={selectedStudent}
                   onChange={(e) => setSelectedStudent(e.target.value)}
+                  className="select select-bordered w-full"
+                  required
                 >
                   <option value="" disabled>
                     Select a student
                   </option>
-                  {students.map((student) => (
+                  {availableStudents.map((student) => (
                     <option key={student.studentID} value={student.studentID}>
                       {student.studentID} - {student.name}
                     </option>
@@ -392,16 +464,19 @@ const handleManualSubmit = async (e) => {
               {/* Exam Type Selection */}
 
               {examTypes.map((exam) => (
-  <div key={exam.id} className="my-2 flex justify-between gap-4 items-center">
-    <label className="block text-md">{exam.type} Marks:</label>
-    <input
-      type="number"
-      name={exam.type} // This should match exactly with the exam.type
-      className="input input-md input-bordered w-64"
-      placeholder={`Enter ${exam.type} Marks`}
-    />
-  </div>
-))}
+                <div
+                  key={exam.id}
+                  className="my-2 flex justify-between gap-4 items-center"
+                >
+                  <label className="block text-md">{exam.type} Marks:</label>
+                  <input
+                    type="number"
+                    name={exam.type} // This should match exactly with the exam.type
+                    className="input input-md input-bordered w-64"
+                    placeholder={`Enter ${exam.type} Marks`}
+                  />
+                </div>
+              ))}
 
               <button
                 type="submit"

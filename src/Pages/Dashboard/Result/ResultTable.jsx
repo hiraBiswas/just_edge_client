@@ -496,22 +496,24 @@ const ResultTable = () => {
                 Results for Batch: {selectedBatchName}
               </h3>
 
-              <PDFDownloadLink
-                document={
-                  <MyPDFDocument
-                    students={students}
-                    allResults={allResults}
-                    selectedBatchName={selectedBatchName}
-                  />
-                }
-                fileName={`Batch_${selectedBatchName}_Results.pdf`}
-              >
-                {({ loading }) => (
-                  <button className="px-4 py-2 bg-blue-950 text-white rounded-md hover:bg-blue-700 transition duration-300">
-                    {loading ? "Generating PDF..." : "Generate PDF"}
-                  </button>
-                )}
-              </PDFDownloadLink>
+              {batchPublished && (
+                <PDFDownloadLink
+                  document={
+                    <MyPDFDocument
+                      students={students}
+                      allResults={allResults}
+                      selectedBatchName={selectedBatchName}
+                    />
+                  }
+                  fileName={`Batch_${selectedBatchName}_Results.pdf`}
+                >
+                  {({ loading }) => (
+                    <button className="px-4 py-2 bg-blue-950 text-white rounded-md hover:bg-blue-700 transition duration-300">
+                      {loading ? "Generating PDF..." : "Download Results PDF"}
+                    </button>
+                  )}
+                </PDFDownloadLink>
+              )}
             </div>
 
             <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
