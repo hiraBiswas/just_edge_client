@@ -38,25 +38,27 @@ const CourseAssignment = () => {
     fetchBatches();
   }, [axiosSecure]);
 
-  // Fetch courses
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const response = await axiosSecure.get("/courses");
-        setCourseList(response.data);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-        if (error.code === "ERR_NETWORK") {
-          toast.error("Network Error: Please check your internet connection.");
-        } else {
-          toast.error(`Error fetching courses: ${error.message}`);
-        }
-      } finally {
-        setLoading(false);
+// Fetch courses
+useEffect(() => {
+  const fetchCourses = async () => {
+    try {
+      const response = await axiosSecure.get("/courses");
+      // Filter out courses where isDeleted is true
+      const activeCourses = response.data.filter(course => course.isDeleted === false);
+      setCourseList(activeCourses);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+      if (error.code === "ERR_NETWORK") {
+        toast.error("Network Error: Please check your internet connection.");
+      } else {
+        toast.error(`Error fetching courses: ${error.message}`);
       }
-    };
-    fetchCourses();
-  }, []);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchCourses();
+}, []);
 
   // Fetch users and students data
   const { data: users = [] } = useQuery({

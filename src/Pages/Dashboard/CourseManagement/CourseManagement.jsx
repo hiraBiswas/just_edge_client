@@ -20,8 +20,10 @@ const CourseManagement = () => {
       try {
         const response = await fetch("http://localhost:5000/courses");
         const data = await response.json();
-        // Filter out deleted courses right after fetching
-        const activeCourses = data.filter(course => !course.isDeleted);
+        // Filter out deleted courses and sort by createdAt (newest first)
+        const activeCourses = data
+          .filter(course => !course.isDeleted)
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setCourses(activeCourses);
       } catch (error) {
         console.error("Error fetching courses:", error);

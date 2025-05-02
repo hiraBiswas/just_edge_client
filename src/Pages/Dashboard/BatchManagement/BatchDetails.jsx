@@ -6,6 +6,12 @@ import UpdateRoutine from "./UpdateRoutine";
 import { RxCross2 } from "react-icons/rx";
 import { toast } from "react-hot-toast";
 
+const batchToast = {
+  success: (message) => toast.success(message, { id: "batch-toast" }),
+  error: (message) => toast.error(message, { id: "batch-toast" })
+};
+
+
 const BatchDetails = () => {
   const { id: batchId } = useParams();
   const [students, setStudents] = useState([]);
@@ -142,10 +148,10 @@ const BatchDetails = () => {
       );
       setInstructorBatches(updatedInstructorBatches);
 
-      toast.success("Instructor removed from batch successfully");
+      batchToast.success("Instructor removed from batch successfully");
     } catch (error) {
       console.error("Error deleting instructor:", error);
-      toast.error("Failed to remove instructor from batch");
+      batchToast.error("Failed to remove instructor from batch");
     }
   };
 
@@ -162,12 +168,12 @@ const BatchDetails = () => {
           "/instructors-batches"
         );
         setInstructorBatches(instructorsBatchesResponse.data);
-        toast.success("Instructor assigned successfully");
+        batchToast.success("Instructor assigned successfully");
         document.getElementById("assign_instructor_modal").close();
       }
     } catch (error) {
       console.error("Error assigning instructor:", error);
-      toast.error(
+      batchToast.error(
         error.response?.data?.message || "Failed to assign instructor to batch"
       );
     }
@@ -185,7 +191,7 @@ const BatchDetails = () => {
     }, {});
 
     setRoutines(Object.values(organizedRoutines));
-    toast.success("Routine updated successfully");
+    // toast.success("Routine updated successfully");
   };
 
   const sortedRoutines = Array.isArray(routines)

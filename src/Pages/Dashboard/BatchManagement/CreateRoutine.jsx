@@ -29,6 +29,12 @@ const hasTimeOverlap = (start1, end1, start2, end2) => {
   return result;
 };
 
+// Create an isolated toast function for this component only
+const modalToast = {
+  success: (message) => toast.success(message, { id: "modal-toast" }),
+  error: (message) => toast.error(message, { id: "modal-toast" })
+};
+
 const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
   console.log("CreateRoutine component rendering with batchId:", batchId);
   const [users, setUsers] = useState([]);
@@ -92,7 +98,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         console.log("Set batchName to:", batchData.batchName);
       } catch (error) {
         console.error("Error fetching batch data:", error);
-        toast.error("Failed to load batch data");
+        modalToast.error("Failed to load batch data");
       }
     };
 
@@ -102,7 +108,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         setAvailableInstructors(response.data);
       } catch (error) {
         console.error("Error fetching available instructors:", error);
-        toast.error("Failed to load available instructors");
+        modalToast.error("Failed to load available instructors");
       }
     };
 
@@ -259,7 +265,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       // Show toast for each conflict
       conflicts.forEach((conflict) => {
         console.log("Showing conflict toast:", conflict);
-        toast.error(conflict, { duration: 5000 });
+        modalToast.error(conflict);
       });
 
       const isValid = conflicts.length === 0;
@@ -293,7 +299,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
 
       if (isDuplicateInForm) {
         console.log("Duplicate day in form detected");
-        toast.error(`Already has a class scheduled for ${value} in this form`);
+        modalToast.error(`Already has a class scheduled for ${value} in this form`);
         return;
       }
 
@@ -312,7 +318,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
                 response.data.classCounts[value] >= 2
               ) {
                 console.log(`Maximum classes detected for ${value}`);
-                toast.error(
+                modalToast.error(
                   `${getInstructorName(
                     instructorId
                   )} already has maximum classes (2) on ${value}`
@@ -342,7 +348,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         timeToMinutes(updatedSchedule[index].startTime)
       ) {
         console.log("End time validation failed");
-        toast.error("End time must be after start time");
+        modalToast.error("End time must be after start time");
         return;
       }
 
@@ -371,7 +377,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
                       existingClass.endTime
                     )
                   ) {
-                    toast.error(
+                    modalToast.error(
                       `${getInstructorName(
                         instructorId
                       )} has time conflict on ${day}: ` +
@@ -439,13 +445,13 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
 
               // Show toast notifications for conflicts
               conflicts.forEach((conflict) => {
-                toast.error(conflict);
+                modalToast.error(conflict);
               });
             }
           } catch (error) {
             console.error("Error in validation:", error);
             if (isMounted) {
-              toast.error("Failed to validate schedule");
+              modalToast.error("Failed to validate schedule");
             }
           }
         }
@@ -473,7 +479,7 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
     try {
       // Ensure there's at least one instructor
       if (instructorIds.length === 0) {
-        toast.error("At least one instructor must be assigned to the batch");
+        modalToast.error("At least one instructor must be assigned to the batch");
         setLoading(false);
         return;
       }
@@ -503,28 +509,28 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
       // Check for successful status code (2xx) instead of response.data.success
       if (response.status >= 200 && response.status < 300) {
         console.log("Routine submission successful");
-        toast.success(response.data.message || "Routine created successfully!");
-        onSuccess(); // Refresh routines
-
+        modalToast.success(response.data.message || "Routine created successfully!");
         
-            // Delay closing the modal to allow toast to be visible
-            setTimeout(() => {
-              closeModal(); // Close modal after delay
-            }, 2000); // 2 seconds delay
-      
+        // Notify parent component of success but don't let it show its own toast
+        if (onSuccess) onSuccess();
+        
+        // Delay closing the modal to allow toast to be visible
+        setTimeout(() => {
+          closeModal(); // Close modal after delay
+        }, 2000); // 2 seconds delay
       } else {
         throw new Error(response.data.message || "Failed to create routine");
       }
     } catch (error) {
       console.error("Submission error:", error);
-      toast.error(
+      modalToast.error(
         error.response?.data?.message ||
           error.message ||
           "Failed to create routine"
       );
 
       if (error.response?.data?.error?.code === 11000) {
-        toast.error("Duplicate routine detected. Please check your entries.");
+        modalToast.error("Duplicate routine detected. Please check your entries.");
       }
     } finally {
       console.log("Submission process complete");
@@ -639,19 +645,27 @@ const CreateRoutine = ({ batchId, closeModal, onSuccess }) => {
         </button>
       </div>
 
+      {/* Modal-specific Toaster component with unique positioning */}
       <Toaster
+        id="modal-toaster"
         position="top-center"
-        reverseOrder={false}
         containerStyle={{
-          position: "fixed",
-          top: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 10000, 
+          position: 'absolute',
+          top: '10px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 10000, // Higher z-index to stay above everything
+          width: '100%',
+          maxWidth: '400px', // Constrains width for better readability
         }}
         toastOptions={{
+          id: 'modal-toast',
+          duration: 4000,
           style: {
-            zIndex: 10000, 
+            background: '#333',
+            color: '#fff',
+            padding: '10px 15px',
+            borderRadius: '4px',
           },
         }}
       />

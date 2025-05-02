@@ -13,8 +13,12 @@ const Notice = () => {
     const fetchNotices = async () => {
       try {
         const response = await axiosSecure.get("/notice");
-        setNotices(response.data);
-        setFilteredNotices(response.data); // Initialize with all notices
+        // Sort notices by createdAt in descending order (newest first)
+        const sortedNotices = response.data.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setNotices(sortedNotices);
+        setFilteredNotices(sortedNotices); // Initialize with sorted notices
       } catch (error) {
         console.error("Error fetching notices:", error);
       } finally {

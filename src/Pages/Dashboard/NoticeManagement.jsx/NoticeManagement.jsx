@@ -122,6 +122,47 @@ const NoticeManagement = () => {
     }
   };
 
+  // Update the handleFileInputChange function:
+  const handleFileInputChange = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      // Only take the first file
+      const file = e.target.files[0];
+      setIsLoading(true);
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const response = await fetch(image_hosting_api, {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          setNewNotice((prev) => ({
+            ...prev,
+            attachments: [
+              {
+                fileName: file.name,
+                fileType: file.type,
+                fileUrl: result.data.display_url,
+                fileSize: file.size,
+              },
+            ], // Always replace with new single file
+          }));
+          toast.success("File uploaded successfully");
+        } else {
+          toast.error("File upload failed");
+        }
+      } catch (error) {
+        console.error("File upload error:", error);
+        toast.error("File upload failed");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   const handleAddTag = () => {
     const trimmedTag = newNotice.currentTag.trim();
     if (trimmedTag && !newNotice.tags.includes(trimmedTag)) {
@@ -146,7 +187,19 @@ const NoticeManagement = () => {
       description: notice.description || "",
       tags: notice.tags || [],
       currentTag: "",
-      attachments: notice.attachment ? [{ fileUrl: notice.attachment }] : [],
+      attachments: notice.attachment
+        ? [
+            {
+              fileUrl: notice.attachment,
+              // Add dummy values for other properties if needed
+              fileName: "Uploaded file",
+              fileType: notice.attachment.includes(".pdf")
+                ? "application/pdf"
+                : "image",
+              fileSize: 0,
+            },
+          ]
+        : [],
       deadline: notice.deadline
         ? new Date(notice.deadline).toISOString().split("T")[0]
         : "",
@@ -166,8 +219,9 @@ const NoticeManagement = () => {
         tags: newNotice.tags,
         attachment: newNotice.attachments[0]?.fileUrl || "",
         deadline: newNotice.deadline,
+        isDeleted: false // Ensure new notices are not deleted
       };
-
+  
       let response;
       if (isEditing) {
         response = await axiosSecure.patch(
@@ -177,9 +231,8 @@ const NoticeManagement = () => {
       } else {
         response = await axiosSecure.post("/notice", noticeData);
       }
-
+  
       await fetchNotices();
-
       setIsModalOpen(false);
       setIsEditing(false);
       setEditingNoticeId(null);
@@ -191,11 +244,9 @@ const NoticeManagement = () => {
         attachments: [],
         deadline: "",
       });
-
+  
       toast.success(
-        isEditing
-          ? "Notice updated successfully"
-          : "Notice created successfully"
+        isEditing ? "Notice updated successfully" : "Notice created successfully"
       );
     } catch (error) {
       console.error("Error saving notice:", error);
@@ -206,39 +257,19 @@ const NoticeManagement = () => {
       setIsLoading(false);
     }
   };
+ 
 
   const handleDeleteNotice = async (noticeId) => {
     try {
-      await axiosSecure.delete(`/notice/${noticeId}`);
+      await axiosSecure.patch(`/notice/archive/${noticeId}`);
       setNotices((prevNotices) =>
         prevNotices.filter((notice) => notice._id !== noticeId)
       );
       setTotalNotices((prev) => prev - 1);
-      toast.success("Notice deleted successfully");
+      toast.success("Notice archived successfully");
     } catch (error) {
-      console.error("Error deleting notice:", error);
-      toast.error(error.response?.data?.message || "Failed to delete notice");
-    }
-  };
-
-  const handleFileInputChange = async (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setIsLoading(true);
-      try {
-        const uploadedFiles = await handleFileUpload(e);
-        if (uploadedFiles && uploadedFiles.length > 0) {
-          setNewNotice((prev) => ({
-            ...prev,
-            attachments: [...prev.attachments, ...uploadedFiles],
-          }));
-          toast.success("File uploaded successfully");
-        }
-      } catch (error) {
-        console.error("File upload error:", error);
-        toast.error("File upload failed");
-      } finally {
-        setIsLoading(false);
-      }
+      console.error("Error archiving notice:", error);
+      toast.error(error.response?.data?.message || "Failed to archive notice");
     }
   };
 
@@ -513,10 +544,11 @@ const NoticeManagement = () => {
                 />
               </div>
 
+         
               {/* File Upload */}
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Attachments</span>
+                  <span className="label-text">Attachment </span>
                 </label>
                 <input
                   type="file"
@@ -524,41 +556,37 @@ const NoticeManagement = () => {
                   onChange={handleFileInputChange}
                   accept=".pdf,.jpg,.jpeg,.png"
                 />
+                <label className="label">
+                  <span className="label-text-alt">
+                    Max 10MB (PDF, JPG, PNG)
+                  </span>
+                </label>
               </div>
 
-              {/* Display Attachments */}
+              {/* Display Attachment */}
               {newNotice.attachments.length > 0 && (
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Uploaded Files</span>
+                    <span className="label-text">Uploaded File</span>
                   </label>
-                  <ul className="list-disc pl-5 text-sm">
-                    {newNotice.attachments.map((file, index) => (
-                      <li
-                        key={index}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <span>
-                          {file.fileName || "File"} (
-                          {file.fileType || "unknown"})
-                        </span>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-xs text-error"
-                          onClick={() => {
-                            setNewNotice((prev) => ({
-                              ...prev,
-                              attachments: prev.attachments.filter(
-                                (_, i) => i !== index
-                              ),
-                            }));
-                          }}
-                        >
-                          <TrashIcon size={12} />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="flex items-center justify-between text-sm p-2 bg-gray-100 rounded">
+                    <span>
+                      {newNotice.attachments[0].fileName || "File"} (
+                      {newNotice.attachments[0].fileType || "unknown"})
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs text-error"
+                      onClick={() => {
+                        setNewNotice((prev) => ({
+                          ...prev,
+                          attachments: [],
+                        }));
+                      }}
+                    >
+                      <TrashIcon size={12} />
+                    </button>
+                  </div>
                 </div>
               )}
 

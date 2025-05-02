@@ -65,40 +65,18 @@ const BatchManagement = () => {
     });
   }, [instructors, users]);
 
-  // Fetch batches with isDeleted filter
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const response = await axiosSecure.get("/batches");
-        // Filter out deleted batches
-        const activeBatches = response.data.filter(batch => !batch.isDeleted);
-        
-        // Update batches with instructor names
-        const updatedBatches = activeBatches.map((batch) => {
-          const instructorNames = batch.instructors || [];
-          return {
-            ...batch,
-            instructors: instructorNames,
-          };
-        });
 
-        setBatches(updatedBatches);
-      } catch (error) {
-        console.error("Error fetching batches:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBatches();
-  }, [axiosSecure]);
-
-  const refreshBatches = async () => {
+// Fetch batches with isDeleted filter and sort by createdAt
+useEffect(() => {
+  const fetchBatches = async () => {
     try {
       const response = await axiosSecure.get("/batches");
-      // Filter out deleted batches
-      const activeBatches = response.data.filter(batch => !batch.isDeleted);
+      // Filter out deleted batches and sort by createdAt (newest first)
+      const activeBatches = response.data
+        .filter(batch => !batch.isDeleted)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
+      // Update batches with instructor names
       const updatedBatches = activeBatches.map((batch) => {
         const instructorNames = batch.instructors || [];
         return {
@@ -106,11 +84,38 @@ const BatchManagement = () => {
           instructors: instructorNames,
         };
       });
+
       setBatches(updatedBatches);
     } catch (error) {
-      console.error("Error refreshing batches:", error);
+      console.error("Error fetching batches:", error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  fetchBatches();
+}, [axiosSecure]);
+
+const refreshBatches = async () => {
+  try {
+    const response = await axiosSecure.get("/batches");
+    // Filter out deleted batches and sort by createdAt (newest first)
+    const activeBatches = response.data
+      .filter(batch => !batch.isDeleted)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    const updatedBatches = activeBatches.map((batch) => {
+      const instructorNames = batch.instructors || [];
+      return {
+        ...batch,
+        instructors: instructorNames,
+      };
+    });
+    setBatches(updatedBatches);
+  } catch (error) {
+    console.error("Error refreshing batches:", error);
+  }
+};
 
   // Archive batch function
   const handleArchive = async (batchId) => {
